@@ -1,0 +1,160 @@
+/* Sistema de animaciones J&M */
+@import '../styles/animations.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+
+/* ── VARIABLES GLOBALES ─────────────────────────────────────── */
+:root {
+  --color-dark:       #0a1628;
+  --color-primary:    #1e3a5f;
+  --color-accent:     #d4a017;
+  --color-gold-light: #f5c842;
+  --color-gold-dark:  #b8860b;
+  --font-playfair:    'Playfair Display', serif;
+  --font-jakarta:     'Plus Jakarta Sans', sans-serif;
+  --radius-card:      20px;
+  --shadow-card:      0 4px 24px rgba(10,22,40,0.08);
+  --shadow-hover:     0 20px 48px rgba(10,22,40,0.16);
+  --transition-base:  all .35s cubic-bezier(0.23,1,0.32,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
+body {
+  font-family: var(--font-jakarta);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── TIPOGRAFÍA ─────────────────────────────────────────────── */
+h1, h2, h3 {
+  font-family: var(--font-playfair);
+  font-weight: 700;
+  line-height: 1.1;
+  margin: 0;
+}
+
+em {
+  font-style: normal;
+  color: var(--color-gold-light);
+  font-family: var(--font-playfair);
+}
+
+p { margin: 0; }
+
+/* ── CONTAINER ──────────────────────────────────────────────── */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .container { padding: 0 2.5rem; }
+}
+
+/* ── SCROLLBAR ──────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; height: 5px; }
+::-webkit-scrollbar-track  { background: #f1f5f9; }
+::-webkit-scrollbar-thumb  { background: var(--color-primary); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
+
+/* ── SELECCIÓN ──────────────────────────────────────────────── */
+::selection {
+  background: rgba(212,160,23,0.25);
+  color: var(--color-dark);
+}
+
+/* ── FOCUS VISIBLE ──────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ── LINKS ──────────────────────────────────────────────────── */
+a { transition: color .2s ease; }
+
+/* ── SKELETON LOADING ───────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #e2e8f0 25%,
+    #f1f5f9 50%,
+    #e2e8f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+  border-radius: 8px;
+}
+
+/* ── SPACE UTILITIES ────────────────────────────────────────── */
+.space-y-4 > * + * { margin-top: 1rem; }
+.space-y-6 > * + * { margin-top: 1.5rem; }
+.space-y-8 > * + * { margin-top: 2rem; }
+
+/* ── HERO em DESTACADO ──────────────────────────────────────── */
+h1 em, h2 em {
+  background: linear-gradient(135deg, var(--color-gold-dark), var(--color-gold-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-style: italic;
+}
+
+/* Para secciones oscuras donde el em no necesita gradiente */
+.section-dark h2 em,
+.section-dark h1 em {
+  -webkit-text-fill-color: var(--color-gold-light);
+  background: none;
+  color: var(--color-gold-light);
+}
+
+/* ── PARALLAX SUAVE ─────────────────────────────────────────── */
+.parallax-slow  { will-change: transform; }
+
+/* ── GLASSMORPHISM ──────────────────────────────────────────── */
+.glass {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.glass-dark {
+  background: rgba(10,22,40,0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ── GRADIENT TEXT ──────────────────────────────────────────── */
+.text-gradient-gold {
+  background: linear-gradient(135deg, #b8860b, #f5c842);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── SECTION SEPARATORS ─────────────────────────────────────── */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(212,160,23,0.3), transparent);
+  border: none;
+  margin: 0;
+}
+
+/* ── RESPONSIVE GRIDS ───────────────────────────────────────── */
+@media(max-width:768px) {
+  h1 { font-size: clamp(1.75rem,6vw,2.5rem) !important; }
+  h2 { font-size: clamp(1.5rem,5vw,2rem) !important; }
+  .container { padding: 0 1rem; }
+}

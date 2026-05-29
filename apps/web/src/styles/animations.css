@@ -1,0 +1,33 @@
+﻿/* Animaciones globales de J&M */
+
+.books-track {
+  display: flex;
+  gap: 2rem;
+  width: max-content;
+  animation: scrollBooks 38s linear infinite;
+}
+
+@keyframes scrollBooks {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes floatUp {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: floatUp 5s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.08) 25%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.08) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}

@@ -1,0 +1,229 @@
+'use client';
+import { useState, useEffect } from 'react';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
+import { db, COL } from '@/lib/firebase';
+import { toast } from 'sonner';
+import Link from 'next/link';
+import { useModal } from '@/components/ui/Modal';
+import ImageUploader from '@/components/ui/ImageUploader';
+import { Plus, Eye, EyeOff, Trash2, Edit2, Check, X, GripVertical } from 'lucide-react';
+
+export default function ServiciosPage() {
+  const [servicios,  setServicios]  = useState<any[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [editingId,  setEditingId]  = useState<string|null>(null);
+  const [editData,   setEditData]   = useState<any>({});
+  const { open } = useModal();
+
+  useEffect(() => onSnapshot(
+    query(collection(db, COL.SERVICIOS), orderBy('order','asc')),
+    snap => { setServicios(snap.docs.map(d=>({id:d.id,...d.data()}))); setLoading(false); }
+  ), []);
+
+  const startEdit = (s: any) => {
+    setEditingId(s.id);
+    setEditData({ title:s.title, icon:s.icon||'🎉', desc:s.desc||'', order:s.order||1 });
+  };
+
+  const cancelEdit = () => { setEditingId(null); setEditData({}); };
+
+  const saveEdit = async (id: string) => {
+    if (!editData.title?.trim()) { toast.error('El nombre es requerido'); return; }
+    const payload: any = {
+      title: editData.title.trim(),
+      icon:  editData.icon,
+      desc:  editData.desc,
+      order: Number(editData.order) || 1,
+    };
+    if (editData.mediaSrc)  payload.mediaSrc   = editData.mediaSrc;
+    if (editData.mediaType) payload.mediaType  = editData.mediaType;
+    payload.mediaSound = !!editData.mediaSound;
+    await updateDoc(doc(db, COL.SERVICIOS, id), payload);
+    toast.success('Servicio actualizado');
+    cancelEdit();
+  };
+
+  const toggleVisible = (s: any) => open({
+    type:       s.visible ? 'hide' : 'show',
+    title:      s.visible ? `Ocultar "${s.title}"` : `Mostrar "${s.title}"`,
+    description: s.visible
+      ? 'Dejará de aparecer en el navbar y la web.'
+      : 'Volverá a aparecer en el navbar y la web.',
+    collection: COL.SERVICIOS, docId:s.id, field:'visible',
+  });
+
+  const handleDelete = (s: any) => open({
+    type:'delete', title:`Eliminar "${s.title}"`,
+    description:'Esta acción no se puede deshacer.',
+    onConfirm: async()=>{ await deleteDoc(doc(db,COL.SERVICIOS,s.id)); toast.success('Eliminado'); },
+  });
+
+  const getSlugUrl = (s: any) => {
+    if (s.link) return `/servicios/${s.link.replace('servicios/','').replace('.html','')}`;
+    return `/servicios/${s.id}`;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div>
+          <h1 style={{ fontFamily:'var(--font-playfair)', fontSize:'1.5rem', fontWeight:700, color:'#0a1628', margin:0 }}>
+            Servicios
+          </h1>
+          <p style={{ color:'#64748b', fontSize:'0.82rem', marginTop:4 }}>
+            {servicios.filter(s=>s.visible).length} activos · Clic en ✏️ para editar nombre, ícono o descripción
+          </p>
+        </div>
+        <Link href="/dashboard/servicios/nuevo" className="btn-primary" style={{ textDecoration:'none' }}>
+          <Plus size={16}/> Nuevo Servicio
+        </Link>
+      </div>
+
+      <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:12,
+                     padding:'0.875rem 1.25rem', display:'flex', gap:10 }}>
+        <span>💡</span>
+        <p style={{ fontSize:'0.8rem', color:'#1e40af', margin:0 }}>
+          Usa ✏️ para editar el nombre, ícono, descripción y orden de cualquier servicio existente.
+          Los cambios se reflejan en el navbar automáticamente.
+        </p>
+      </div>
+
+      <div className="admin-card" style={{ overflow:'hidden' }}>
+        {loading ? (
+          <div style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:12 }}>
+            {[...Array(6)].map((_,i)=><div key={i} className="skeleton" style={{ height:60, borderRadius:8 }}/>)}
+          </div>
+        ) : servicios.length === 0 ? (
+          <div style={{ padding:'4rem', textAlign:'center' }}>
+            <p style={{ fontSize:'3rem', marginBottom:12 }}>🎭</p>
+            <p style={{ color:'#64748b', marginBottom:16 }}>No hay servicios aún</p>
+            <Link href="/dashboard/servicios/nuevo" className="btn-primary" style={{ textDecoration:'none', display:'inline-flex' }}>
+              <Plus size={16}/> Crear primer servicio
+            </Link>
+          </div>
+        ) : (
+          <div>
+            {servicios.map(s => (
+              <div key={s.id}
+                   style={{ borderBottom:'1px solid #f1f5f9', padding:'1rem 1.25rem',
+                             background:editingId===s.id?'#fafbff':'#fff', transition:'background .2s' }}>
+
+                {editingId === s.id ? (
+                  /* ── Modo edición ── */
+                  <div>
+                    <div style={{ display:'grid', gridTemplateColumns:'80px 1fr 1fr 80px', gap:10, marginBottom:12, alignItems:'start' }}>
+                      <div>
+                        <label style={{ fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', color:'#94a3b8', display:'block', marginBottom:4 }}>Ícono</label>
+                        <input type="text" value={editData.icon}
+                               onChange={e=>setEditData((p:any)=>({...p,icon:e.target.value}))}
+                               className="admin-input" style={{ textAlign:'center', fontSize:'1.4rem', padding:'0.4rem' }}/>
+                      </div>
+                      <div>
+                        <label style={{ fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', color:'#94a3b8', display:'block', marginBottom:4 }}>Nombre *</label>
+                        <input type="text" value={editData.title}
+                               onChange={e=>setEditData((p:any)=>({...p,title:e.target.value}))}
+                               className="admin-input"/>
+                      </div>
+                      <div>
+                        <label style={{ fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', color:'#94a3b8', display:'block', marginBottom:4 }}>Descripción</label>
+                        <input type="text" value={editData.desc}
+                               onChange={e=>setEditData((p:any)=>({...p,desc:e.target.value}))}
+                               className="admin-input" placeholder="Breve descripción…"/>
+                      </div>
+                      <div>
+                        <label style={{ fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', color:'#94a3b8', display:'block', marginBottom:4 }}>Orden</label>
+                        <input type="number" value={editData.order}
+                               onChange={e=>setEditData((p:any)=>({...p,order:+e.target.value}))}
+                               className="admin-input" style={{ padding:'0.4rem' }}/>
+                      </div>
+                    </div>
+
+                    {/* Subir nueva media */}
+                    <div style={{ marginBottom:12 }}>
+                      <label style={{ fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', color:'#94a3b8', display:'block', marginBottom:6 }}>
+                        Imagen / Video de portada (opcional — máx 200MB)
+                      </label>
+                      <ImageUploader folder={`servicios/${s.id}`} acceptVideo={true}
+                        value={editData.mediaSrc||s.mediaSrc}
+                        soundEnabled={!!(editData.mediaSound??s.mediaSound)}
+                        onSound={v=>setEditData((p:any)=>({...p,mediaSound:v}))}
+                        onComplete={(url,_fp,type)=>{
+                          setEditData((p:any)=>({...p,mediaSrc:url,mediaType:type||'image'}));
+                        }}/>
+                    </div>
+
+                    <div style={{ display:'flex', gap:8 }}>
+                      <button onClick={()=>saveEdit(s.id)} className="btn-gold"
+                              style={{ display:'flex', alignItems:'center', gap:6 }}>
+                        <Check size={14}/> Guardar cambios
+                      </button>
+                      <button onClick={cancelEdit} className="btn-outline"
+                              style={{ display:'flex', alignItems:'center', gap:6 }}>
+                        <X size={14}/> Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── Modo vista ── */
+                  <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                    <span style={{ color:'#94a3b8', fontSize:'0.78rem', display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
+                      <GripVertical size={14}/> {s.order??0}
+                    </span>
+
+                    {/* Thumbnail */}
+                    <div style={{ width:52, height:52, borderRadius:10, overflow:'hidden', flexShrink:0,
+                                   background:'linear-gradient(135deg,#0a1628,#1e3a5f)',
+                                   display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.4rem' }}>
+                      {s.mediaSrc
+                        ? (s.mediaType==='video'
+                            ? <video src={s.mediaSrc} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                            : <img src={s.mediaSrc} alt={s.title} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>)
+                        : (s.icon||'🎉')}
+                    </div>
+
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <p style={{ fontWeight:600, color:'#0a1628', fontSize:'0.9rem', margin:0 }}>
+                        {s.icon} {s.title}
+                      </p>
+                      {s.desc && (
+                        <p style={{ color:'#94a3b8', fontSize:'0.75rem', margin:0,
+                                     overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:300 }}>
+                          {s.desc}
+                        </p>
+                      )}
+                      <code style={{ fontSize:'0.68rem', color:'#94a3b8' }}>{getSlugUrl(s)}</code>
+                    </div>
+
+                    <span className={s.visible?'badge badge-green':'badge badge-slate'}>
+                      {s.visible?'✓ Visible':'○ Oculto'}
+                    </span>
+
+                    <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                      <button onClick={()=>startEdit(s)} title="Editar"
+                              style={{ padding:'6px 10px', background:'#eff6ff', border:'1px solid #bfdbfe',
+                                        borderRadius:8, color:'#1e40af', cursor:'pointer', display:'flex', alignItems:'center' }}>
+                        <Edit2 size={13}/>
+                      </button>
+                      <button onClick={()=>toggleVisible(s)} title={s.visible?'Ocultar':'Mostrar'}
+                              style={{ padding:'6px 10px', background:s.visible?'#fffbeb':'#f0fdf4',
+                                        border:`1px solid ${s.visible?'#fde68a':'#bbf7d0'}`,
+                                        borderRadius:8, color:s.visible?'#92400e':'#166534',
+                                        cursor:'pointer', display:'flex', alignItems:'center' }}>
+                        {s.visible ? <EyeOff size={13}/> : <Eye size={13}/>}
+                      </button>
+                      <button onClick={()=>handleDelete(s)} title="Eliminar"
+                              style={{ padding:'6px 10px', background:'#fff1f2', border:'1px solid #fecaca',
+                                        borderRadius:8, color:'#ef4444', cursor:'pointer', display:'flex', alignItems:'center' }}>
+                        <Trash2 size={13}/>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
