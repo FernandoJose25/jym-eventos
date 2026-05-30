@@ -204,7 +204,7 @@ export default function ServicesSection({ services }: { services: Service[] }) {
   if (!services?.length) return null;
 
   return (
-    <section style={{ padding:'6rem 0', background:'#0a1628', position:'relative', overflow:'hidden' }}>
+    <section id="servicios" style={{ padding:'6rem 0', background:'#0a1628', position:'relative', overflow:'hidden' }}>
       {/* Fondo decorativo */}
       <div style={{ position:'absolute', top:-200, right:-200, width:600, height:600, borderRadius:'50%',
                      background:'radial-gradient(circle,rgba(212,160,23,0.06) 0%,transparent 70%)', pointerEvents:'none' }}/>
