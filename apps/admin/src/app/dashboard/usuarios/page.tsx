@@ -67,7 +67,8 @@ export default function UsuariosPage() {
       await reauthenticateWithCredential(user, credential);
       if (creds.newEmail && creds.newEmail !== user.email) {
         await verifyBeforeUpdateEmail(user, creds.newEmail);
-        toast.success('Se envió un enlace de verificación a ' + creds.newEmail + '. El correo cambiará al hacer clic en él.');
+        await updateDoc(doc(db, COL.USUARIOS, user.uid), { email: creds.newEmail });
+        toast.success('Correo actualizado en el panel. Verifica tu nuevo correo para completar el cambio en Firebase.');
       }
       if (creds.newPass) {
         await updatePassword(user, creds.newPass);
