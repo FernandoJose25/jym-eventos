@@ -209,7 +209,7 @@ function TierCard({ tier, inView, delay }: {
         </div>
 
         <a
-          href="https://wa.me/51945203708?text=Hola%2C%20me%20interesa%20anunciar%20con%20ustedes"
+          href="https://wa.me/51902508499?text=Hola%2C%20me%20interesa%20anunciar%20con%20ustedes"
           target="_blank" rel="noopener noreferrer"
           style={{
             display: 'block', width: '100%', padding: '0.8rem',
@@ -474,7 +474,7 @@ export default function AnunciaConNosotros() {
 
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a
-                href="https://wa.me/51945203708?text=Hola%2C%20me%20interesa%20anunciar%20con%20ustedes%20en%20J%26M%20Eventos"
+                href="https://wa.me/51902508499?text=Hola%2C%20me%20interesa%20anunciar%20con%20ustedes%20en%20J%26M%20Eventos"
                 target="_blank" rel="noopener noreferrer"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
@@ -489,23 +489,6 @@ export default function AnunciaConNosotros() {
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(212,160,23,0.35)'; }}
               >
                 💬 WhatsApp
-              </a>
-
-              <a
-                href="mailto:djjofer.25@gmail.com?subject=Publicidad%20en%20J%26M%20Eventos&body=Hola%2C%20me%20interesa%20anunciar%20en%20su%20sitio."
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  padding: '0.85rem 1.75rem', borderRadius: 9999,
-                  background: 'rgba(212,160,23,0.1)',
-                  border: '1px solid rgba(212,160,23,0.3)',
-                  color: '#f5c842', fontWeight: 700, fontSize: '0.9rem',
-                  textDecoration: 'none',
-                  transition: 'background 0.15s',
-                }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,0.18)'}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,0.1)'}
-              >
-                ✉️ Correo
               </a>
             </div>
 
