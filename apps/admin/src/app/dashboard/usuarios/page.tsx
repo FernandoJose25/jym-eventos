@@ -64,17 +64,27 @@ export default function UsuariosPage() {
     setSavingCreds(true);
     try {
       const user = auth.currentUser!;
+      // Reautenticar primero para verificar contraseña actual
       const credential = EmailAuthProvider.credential(user.email!, creds.currentPass);
       await reauthenticateWithCredential(user, credential);
-      if (creds.newEmail && creds.newEmail !== user.email) {
-        await verifyBeforeUpdateEmail(user, creds.newEmail);
-        await updateDoc(doc(db, COL.USUARIOS, user.uid), { email: creds.newEmail });
-        toast.success('Correo actualizado en el panel. Verifica tu nuevo correo para completar el cambio en Firebase.');
-      }
-      if (creds.newPass) {
-        await updatePassword(user, creds.newPass);
-        toast.success('Contraseña actualizada');
-      }
+
+      // Actualizar via Admin SDK (sin restricciones de verificación)
+      const body: any = { uid: user.uid };
+      if (creds.newEmail && creds.newEmail !== user.email) body.email = creds.newEmail;
+      if (creds.newPass) body.password = creds.newPass;
+
+      const res = await fetch('/api/admin/update-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      // Actualizar Firestore si cambió el correo
+      if (body.email) await updateDoc(doc(db, COL.USUARIOS, user.uid), { email: body.email });
+
+      toast.success('Credenciales actualizadas correctamente');
       setEditingCreds(false);
       setCreds({ currentPass:'', newEmail:'', newPass:'' });
     } catch(e:any) {
