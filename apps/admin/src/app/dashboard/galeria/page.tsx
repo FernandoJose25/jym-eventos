@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { cxThumb, cxVideo } from '@/lib/cloudinary';
 import { db, COL } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -8,17 +8,17 @@ import { useModal } from '@/components/ui/Modal';
 import ImageUploader from '@/components/ui/ImageUploader';
 import { Plus, Eye, EyeOff, Trash2, Filter, Search, X, Pencil } from 'lucide-react';
 
-const TREE: Record<string, string[]> = {
+const SUBCATS: Record<string, string[]> = {
   'General':                    [],
   'Shows Infantiles':           ['Mickey Mouse','Pocoyo','Frozen','Encanto','Spider-Man','Princesas','Minnie Mouse','Baby Shark','Paw Patrol','Otro'],
   'Show Hora Loca':             ['Cumpleaños','Boda','Quinceañero','Corporativo','Bautizo','Otro'],
   'Activaciones Empresariales': ['Lanzamiento','Team Building','Feria','Corporativo','Otro'],
   'Decoración Temática':        ['Princesas','Superhéroes','Tropical','Boho/Rústico','Elegante','Personalizada','Otro'],
   'Fotografía':                 ['Show Infantil','Hora Loca','Corporativo','Decoración','General'],
+  'Filmación y Fotografía':     ['Show Infantil','Hora Loca','Corporativo','Decoración','General'],
   'Catering':                   ['Carrito Snacks','Mesa Dulces','Candy Bar','Catering General'],
+  'Catering y Carritos Snacks': ['Carrito Snacks','Mesa Dulces','Candy Bar','Catering General'],
 };
-
-const CATS = Object.keys(TREE);
 
 const BLANK = { categoria:'General', subcategoria:'', tipo:'imagen', visible:true, alt:'' };
 
@@ -73,6 +73,7 @@ export default function GaleriaPage() {
   const [filterCat,setFilterCat]= useState('Todas');
   const [searchQ,  setSearchQ]  = useState('');
   const [formData, setFormData] = useState<any>(BLANK);
+  const [cats,     setCats]     = useState<string[]>(Object.keys(SUBCATS));
   const { open } = useModal();
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -81,7 +82,14 @@ export default function GaleriaPage() {
     snap => { setItems(snap.docs.map(d=>({id:d.id,...d.data()}))); setLoading(false); }
   ), []);
 
-  const subcatsDisponibles = TREE[formData.categoria] || [];
+  useEffect(() => {
+    getDocs(query(collection(db, COL.SERVICIOS), orderBy('order','asc'))).then(snap => {
+      const titles = snap.docs.map(d => (d.data() as any).title).filter(Boolean);
+      setCats(['General', ...titles]);
+    });
+  }, []);
+
+  const subcatsDisponibles = SUBCATS[formData.categoria] || [];
 
   const openAdd = () => {
     setFormData(BLANK);
@@ -219,7 +227,7 @@ export default function GaleriaPage() {
                   value={formData.categoria}
                   onChange={e => setFormData((p:any) => ({ ...p, categoria:e.target.value, subcategoria:'', _subcatDrop:'' }))}
                   className="admin-input">
-                  {CATS.map(c => <option key={c}>{c}</option>)}
+                  {cats.map(c => <option key={c}>{c}</option>)}
                 </select>
                 <p style={{ fontSize:'0.68rem', color:'#94a3b8', marginTop:4 }}>
                   Define el filtro principal en la galería pública.
@@ -344,7 +352,7 @@ export default function GaleriaPage() {
           {/* Category filter pills */}
           <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
             <Filter size={14} style={{ color:'#94a3b8' }}/>
-            {['Todas', ...CATS.filter(c => items.some(i=>i.categoria===c))].map(cat => (
+            {['Todas', ...cats.filter(c => items.some(i=>i.categoria===c))].map(cat => (
               <button key={cat} onClick={() => setFilterCat(cat)}
                       style={{ padding:'0.35rem 0.875rem', borderRadius:999, border:'none', cursor:'pointer',
                                 fontFamily:'var(--font-jakarta)', fontSize:'0.78rem', fontWeight:filterCat===cat?600:400,

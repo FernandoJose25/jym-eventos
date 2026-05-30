@@ -85,7 +85,7 @@ export default function ServiceContentPage() {
       const res = await fetch('/api/generate-servicio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: srvData.title }),
+        body: JSON.stringify({ nombre: srvData.title, instrucciones: srvData.aiInstrucciones || '' }),
       });
       const ai = await res.json();
       if (ai.error) throw new Error(ai.error);
@@ -175,9 +175,19 @@ export default function ServiceContentPage() {
             </div>
           </div>
         </div>
-        <div style={{ display:'flex', gap:10 }}>
+        <div style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+            <textarea
+              rows={2}
+              value={srvData.aiInstrucciones || ''}
+              onChange={e => set('aiInstrucciones', e.target.value)}
+              placeholder="Instrucciones para la IA (opcional): ej. «enfócate en quinceañeros», «incluye paquetes», «tono más formal»…"
+              className="admin-input"
+              style={{ width:340, resize:'vertical', fontSize:'0.78rem', minHeight:52 }}
+            />
+          </div>
           <button onClick={handleGenerate} disabled={generating}
-            style={{ display:'flex', alignItems:'center', gap:7, padding:'0.6rem 1.1rem', background:'linear-gradient(135deg,#7c3aed,#a855f7)', color:'#fff', border:'none', borderRadius:12, fontWeight:700, fontSize:'0.82rem', cursor:'pointer', opacity:generating?0.6:1, fontFamily:'var(--font-jakarta)' }}>
+            style={{ display:'flex', alignItems:'center', gap:7, padding:'0.6rem 1.1rem', background:'linear-gradient(135deg,#7c3aed,#a855f7)', color:'#fff', border:'none', borderRadius:12, fontWeight:700, fontSize:'0.82rem', cursor:'pointer', opacity:generating?0.6:1, fontFamily:'var(--font-jakarta)', flexShrink:0, marginTop:2 }}>
             <Sparkles size={15}/> {generating ? 'Generando…' : '✨ Generar con IA'}
           </button>
           <button onClick={handleSave} disabled={saving}

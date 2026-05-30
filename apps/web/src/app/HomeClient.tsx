@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import CapybaraLoader      from '@/components/ui/CapybaraLoader';
 import HeroSection         from '@/components/sections/HeroSection';
 import StatsSection        from '@/components/sections/StatsSection';
 import ServicesSection     from '@/components/sections/ServicesSection';
@@ -79,17 +80,7 @@ export default function HomeClient() {
     })();
   }, []);
 
-  if (!data.loaded) return (
-    <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#050d1a,#1e3a5f)',
-                   display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <div style={{ textAlign:'center' }}>
-        <div className="spinner" style={{ width:52, height:52, margin:'0 auto 16px' }}/>
-        <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.85rem', letterSpacing:'.1em', textTransform:'uppercase' }}>
-          Cargando J&M Eventos
-        </p>
-      </div>
-    </div>
-  );
+  if (!data.loaded) return <CapybaraLoader />;
 
   return (
     <>
@@ -101,14 +92,24 @@ export default function HomeClient() {
         <StatsSection data={data.stats} />
       </Section>
 
-      {/* Servicios con stagger */}
-      <Section>
-        <ServicesSection services={data.services} />
-      </Section>
-
       {/* Por qué elegirnos */}
       <Section>
         <WhyUsSection data={data.whyUs} />
+      </Section>
+
+      {/* Marcas */}
+      <Section>
+        <BrandsSection data={data.brands} />
+      </Section>
+
+      {/* About / Quiénes somos */}
+      <Section>
+        <AboutSection data={data.about} />
+      </Section>
+
+      {/* Servicios */}
+      <Section>
+        <ServicesSection services={data.services} />
       </Section>
 
       {/* Galería */}
@@ -116,19 +117,9 @@ export default function HomeClient() {
         <GallerySection items={data.gallery} />
       </Section>
 
-      {/* About */}
-      <Section>
-        <AboutSection data={data.about} />
-      </Section>
-
       {/* Testimonios */}
       <Section>
         <TestimonialsSection items={data.testimonials} />
-      </Section>
-
-      {/* Marcas */}
-      <Section>
-        <BrandsSection data={data.brands} />
       </Section>
 
       {/* Contacto */}

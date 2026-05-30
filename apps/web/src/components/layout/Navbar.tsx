@@ -150,7 +150,7 @@ export default function Navbar() {
 
                 {/* Mega dropdown */}
                 <div style={{
-                  position: 'absolute', top: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)',
+                  position: 'absolute', top: 'calc(100% + 10px)', left: '50%',
                   background: 'rgba(8,17,32,0.97)', backdropFilter: 'blur(24px) saturate(160%)',
                   WebkitBackdropFilter: 'blur(24px) saturate(160%)',
                   border: '1px solid rgba(212,160,23,0.2)', borderRadius: 18,

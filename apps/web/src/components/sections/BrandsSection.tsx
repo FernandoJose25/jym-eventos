@@ -1,17 +1,20 @@
 'use client';
 
 const DEFAULT_BRANDS = [
-  { name:'Telecable Smart',       logo:'📡' },
-  { name:'Komatsu',               logo:'⚙️' },
-  { name:'Misky Mayo',            logo:'🌿' },
-  { name:'Salón El Paraíso',      logo:'🏛️' },
-  { name:'Luminex',               logo:'💡' },
-  { name:'Quavii',                logo:'🎯' },
+  { name:'Telecable Smart',   logo:'📡' },
+  { name:'Komatsu',           logo:'⚙️'  },
+  { name:'Misky Mayo',        logo:'🌿' },
+  { name:'Salón El Paraíso',  logo:'🏛️' },
+  { name:'Luminex',           logo:'💡' },
+  { name:'Quavii',            logo:'🎯' },
 ];
 
 export default function BrandsSection({ data }: { data: any }) {
-  const brands = data?.brands?.length ? data.brands : DEFAULT_BRANDS;
+  const raw    = data?.brands?.length ? data.brands : DEFAULT_BRANDS;
+  const brands = raw.filter((b: any) => b.visible !== false);
   const h2     = data?.h2 || 'Empresas que confían en nosotros';
+
+  if (!brands.length) return null;
 
   return (
     <section style={{ padding:'4rem 0', background:'#f8fafc',

@@ -13,15 +13,18 @@ interface GItem {
   tipo?:string;
 }
 
-const CATS = [
-  { id:'Todos',                  icon:'🎪' },
-  { id:'Shows Infantiles',       icon:'🎭' },
-  { id:'Show Hora Loca',         icon:'🎉' },
-  { id:'Activaciones Empresariales', icon:'🏢' },
-  { id:'Decoración Temática',    icon:'🎨' },
-  { id:'Fotografía',             icon:'📸' },
-  { id:'Catering',               icon:'🍽️' },
-];
+const CAT_ICONS: Record<string, string> = {
+  'Todos':                      '🎪',
+  'Shows Infantiles':           '🎭',
+  'Show Hora Loca':             '🎉',
+  'Activaciones Empresariales': '🏢',
+  'Decoración Temática':        '🎨',
+  'Fotografía':                 '📸',
+  'Filmación y Fotografía':     '📸',
+  'Catering':                   '🍽️',
+  'Catering y Carritos Snacks': '🍽️',
+  'General':                    '🖼️',
+};
 
 const isVideo = (item: GItem) =>
   item.tipo === 'video' || !!item.url?.match(/\.(mp4|webm|mov)(\?|$)/i);
@@ -113,6 +116,19 @@ export default function GaleriaPage() {
     [subFiltered, searchQ]
   );
 
+  // Build category list dynamically from loaded items
+  const cats = useMemo(() => {
+    const seen = new Set<string>();
+    const result: { id: string; icon: string }[] = [];
+    for (const item of items) {
+      if (item.categoria && !seen.has(item.categoria)) {
+        seen.add(item.categoria);
+        result.push({ id: item.categoria, icon: CAT_ICONS[item.categoria] ?? '✨' });
+      }
+    }
+    return [{ id: 'Todos', icon: '🎪' }, ...result];
+  }, [items]);
+
   const haySubs = subcats.length > 1;
 
   // Lightbox keyboard
@@ -198,7 +214,7 @@ export default function GaleriaPage() {
 
           {/* Categorías principales */}
           <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:'1rem', flexWrap:'wrap' }}>
-            {CATS.map(cat => {
+            {cats.map(cat => {
               const count = cat.id === 'Todos' ? items.length : items.filter(i=>i.categoria===cat.id).length;
               if (cat.id !== 'Todos' && count === 0) return null;
               const active = catActiva === cat.id;

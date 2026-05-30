@@ -220,7 +220,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span style={{ position:'absolute', top:3, right:3, width:7, height:7, borderRadius:'50%', background:'#ef4444' }}/>
               </Link>
             )}
-            <a href="https://jym-eventos.web.app" target="_blank" rel="noopener noreferrer"
+            <a href="https://jym-eventos-web.vercel.app" target="_blank" rel="noopener noreferrer"
                style={{ display:'flex', alignItems:'center', gap:5, padding:'0.4rem 0.875rem',
                          background:'linear-gradient(135deg,#b8860b,#f5c842)', borderRadius:8,
                          color:'#0a1628', fontSize:'0.78rem', fontWeight:700, textDecoration:'none',

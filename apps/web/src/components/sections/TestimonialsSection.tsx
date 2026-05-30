@@ -27,7 +27,7 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
     <div
       onMouseEnter={() => setFlipped(true)}
       onMouseLeave={() => setFlipped(false)}
-      style={{ width:190, height:254, overflow:'visible', flexShrink:0, cursor:'pointer' }}
+      style={{ width:240, height:320, overflow:'visible', flexShrink:0, cursor:'pointer' }}
     >
       {/* Content wrapper — gira en Y */}
       <div style={{
@@ -89,7 +89,7 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
 
             {/* Iniciales o ícono */}
             <div style={{ position:'relative', zIndex:2,
-                           width:64, height:64, borderRadius:'50%',
+                           width:76, height:76, borderRadius:'50%',
                            background:'rgba(255,255,255,0.15)',
                            border:`2px solid ${col.c1}`,
                            display:'flex', alignItems:'center', justifyContent:'center',
@@ -103,12 +103,12 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
 
             <div style={{ position:'relative', zIndex:2, textAlign:'center', padding:'0 12px' }}>
               <p style={{ color:'#fff', fontFamily:'var(--font-playfair)', fontWeight:700,
-                           fontSize:'0.9rem', margin:'0 0 4px' }}>{t.name}</p>
-              <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.65rem', margin:0 }}>{t.role}</p>
+                           fontSize:'1.05rem', margin:'0 0 4px' }}>{t.name}</p>
+              <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.75rem', margin:0 }}>{t.role}</p>
             </div>
 
             <strong style={{ position:'relative', zIndex:2, color:'rgba(255,255,255,0.5)',
-                               fontSize:'0.65rem', letterSpacing:'.1em', textTransform:'uppercase' }}>
+                               fontSize:'0.72rem', letterSpacing:'.1em', textTransform:'uppercase' }}>
               Hover Me
             </strong>
           </div>
@@ -166,13 +166,13 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
               </div>
 
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                <p style={{ fontSize:'0.72rem', fontFamily:'var(--font-playfair)', fontWeight:700,
+                <p style={{ fontSize:'0.85rem', fontFamily:'var(--font-playfair)', fontWeight:700,
                               color:'#fff', margin:0, width:'80%', lineHeight:1.3 }}>
                   {t.name}
                 </p>
               </div>
 
-              <p style={{ color:'rgba(255,255,255,0.6)', marginTop:5, fontSize:'0.7rem', lineHeight:1.5 }}>
+              <p style={{ color:'rgba(255,255,255,0.6)', marginTop:5, fontSize:'0.8rem', lineHeight:1.5 }}>
                 "{t.text?.slice(0,100)}{(t.text?.length||0)>100?'…':'"'}"
               </p>
             </div>

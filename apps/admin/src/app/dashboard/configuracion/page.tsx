@@ -14,6 +14,15 @@ import { Eye, EyeOff, Trash2, Edit2, Plus } from 'lucide-react';
 /* ─────────────────────────────────────────────────────
    DEFAULT ITEMS
 ───────────────────────────────────────────────────── */
+const DEFAULT_BRANDS = [
+  { name:'Telecable Smart',   logo:'📡', logoUrl:'', visible:true },
+  { name:'Komatsu',           logo:'⚙️',  logoUrl:'', visible:true },
+  { name:'Misky Mayo',        logo:'🌿', logoUrl:'', visible:true },
+  { name:'Salón El Paraíso',  logo:'🏛️', logoUrl:'', visible:true },
+  { name:'Luminex',           logo:'💡', logoUrl:'', visible:true },
+  { name:'Quavii',            logo:'🎯', logoUrl:'', visible:true },
+];
+
 const DEFAULT_WHY_ITEMS = [
   { icon:'🏆', title:'Experiencia Comprobada', desc:'Más de 10 años organizando eventos exitosos.', visible:true },
   { icon:'🎨', title:'Diseño Personalizado',   desc:'Cada evento es único y a tu medida.', visible:true },
@@ -173,6 +182,10 @@ export default function ConfiguracionPage() {
       /* Always initialise why-us items so partial saves don't lose defaults */
       if (section === 'why-us' && (!loaded.items || loaded.items.length === 0)) {
         loaded.items = DEFAULT_WHY_ITEMS;
+      }
+      /* Always initialise brands so the section starts populated */
+      if (section === 'brands' && (!loaded.brands || loaded.brands.length === 0)) {
+        loaded.brands = DEFAULT_BRANDS;
       }
       setData(loaded);
       setLoading(false);

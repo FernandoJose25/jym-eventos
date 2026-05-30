@@ -136,7 +136,8 @@ function WhyCard({ item, i }: { item: typeof DEFAULT_ITEMS[0]; i: number }) {
 }
 
 export default function WhyUsSection({ data }: { data: any }) {
-  const items = data?.items || DEFAULT_ITEMS;
+  const rawItems = data?.items || DEFAULT_ITEMS;
+  const items = rawItems.filter((item: any) => item.visible !== false);
   const h2    = data?.h2   || '¿Por qué <em>elegirnos</em>?';
   const desc  = data?.desc || 'Más de una década transformando celebraciones en Sechura, Piura.';
 

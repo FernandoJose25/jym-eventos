@@ -1,30 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(req: NextRequest) {
-  const { nombre } = await req.json();
-  if (!nombre) return NextResponse.json({ error:'nombre requerido' }, { status:400 });
-
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-  if (!ANTHROPIC_API_KEY) return NextResponse.json({ error:'API key no configurada' }, { status:500 });
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version':'2023-06-01',
-      },
-      body: JSON.stringify({
-        model:'claude-haiku-4-5-20251001',
-        max_tokens:1000,
-        system:`Eres copywriter especializado en empresas de eventos y decoraciones peruanas.
+const PROMPT = (nombre: string, instrucciones?: string) => `Eres copywriter especializado en empresas de eventos y decoraciones peruanas.
 Escribe para J&M Eventos y Decoraciones de Sechura, Piura.
 Tono: emotivo, cálido, familiar. Español peruano natural.
-RESPONDE ÚNICAMENTE con JSON válido, sin markdown ni texto extra.`,
-        messages:[{
-          role:'user',
-          content:`Genera contenido completo para el servicio: "${nombre}"
+RESPONDE ÚNICAMENTE con JSON válido, sin markdown ni texto extra.
+${instrucciones ? `\nInstrucciones adicionales del cliente:\n${instrucciones}\n` : ''}
+Genera contenido completo para el servicio: "${nombre}"
 
 Responde SOLO con este JSON:
 {
@@ -51,14 +32,33 @@ Responde SOLO con este JSON:
   "ctaH2": "título del CTA final",
   "ctaDescripcion": "1 oración motivadora",
   "seoDescripcion": "meta descripción para Google (max 155 chars)"
-}`,
-        }],
+}`;
+
+export async function POST(req: NextRequest) {
+  const { nombre, instrucciones } = await req.json();
+  if (!nombre) return NextResponse.json({ error:'nombre requerido' }, { status:400 });
+
+  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  if (!GROQ_API_KEY) return NextResponse.json({ error:'API key no configurada' }, { status:500 });
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [{ role: 'user', content: PROMPT(nombre, instrucciones) }],
+        temperature: 0.7,
+        max_tokens: 1200,
       }),
     });
 
     const data = await res.json();
-    const text = data.content?.[0]?.text || '{}';
-    const clean = text.replace(/```json|```/g,'').trim();
+    const text = data.choices?.[0]?.message?.content || '{}';
+    const clean = text.replace(/```json|```/g, '').trim();
     return NextResponse.json(JSON.parse(clean));
   } catch(e) {
     console.error('[generate-servicio]', e);
