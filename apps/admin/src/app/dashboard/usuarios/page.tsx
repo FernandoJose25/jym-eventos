@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, updateDoc, setDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { createUserWithEmailAndPassword, verifyBeforeUpdateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { db, auth, COL } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -66,9 +66,8 @@ export default function UsuariosPage() {
       const credential = EmailAuthProvider.credential(user.email!, creds.currentPass);
       await reauthenticateWithCredential(user, credential);
       if (creds.newEmail && creds.newEmail !== user.email) {
-        await updateEmail(user, creds.newEmail);
-        await updateDoc(doc(db, COL.USUARIOS, user.uid), { email: creds.newEmail });
-        toast.success('Correo actualizado');
+        await verifyBeforeUpdateEmail(user, creds.newEmail);
+        toast.success('Se envió un enlace de verificación a ' + creds.newEmail + '. El correo cambiará al hacer clic en él.');
       }
       if (creds.newPass) {
         await updatePassword(user, creds.newPass);
