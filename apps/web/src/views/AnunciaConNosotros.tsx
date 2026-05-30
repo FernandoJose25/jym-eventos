@@ -119,123 +119,199 @@ function TierCard({ tier, inView, delay }: {
   inView: boolean; delay: number;
 }) {
   const [hovered, setHovered] = useState(false);
+
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        flex: '1 1 260px', borderRadius: 24, padding: tier.popular ? '0.25rem' : '1px',
-        background: tier.popular
-          ? 'linear-gradient(135deg,#b8860b,#f5c842,#b8860b)'
-          : `1px solid ${hovered ? 'rgba(212,160,23,0.3)' : 'rgba(255,255,255,0.08)'}`,
-        border: tier.popular ? 'none' : `1px solid ${hovered ? 'rgba(212,160,23,0.3)' : 'rgba(255,255,255,0.08)'}`,
+        flex: '1 1 260px',
+        position: 'relative',
+        borderRadius: 24,
         opacity: inView ? 1 : 0,
         transform: inView
-          ? tier.popular ? 'translateY(-8px) scale(1.02)' : 'translateY(0)'
+          ? tier.popular ? 'translateY(-10px) scale(1.03)' : 'translateY(0)'
           : 'translateY(32px)',
         transition: `opacity 0.65s ease ${delay}ms, transform 0.65s ease ${delay}ms`,
-        boxShadow: tier.popular
-          ? '0 20px 60px rgba(212,160,23,0.25), 0 0 0 1px rgba(245,200,66,0.1)'
-          : hovered ? '0 12px 40px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.2)',
         cursor: 'default',
       }}
     >
+      {/* ── Glow layer ── */}
       <div style={{
-        borderRadius: tier.popular ? 20 : 23,
+        position: 'absolute', inset: 0, borderRadius: 24, zIndex: 0,
         background: tier.popular
-          ? 'rgba(10,22,40,0.97)'
-          : 'rgba(255,255,255,0.03)',
-        padding: '2rem 1.75rem',
-        height: '100%',
-        boxSizing: 'border-box',
-        backdropFilter: 'blur(12px)',
-        position: 'relative', overflow: 'hidden',
+          ? 'radial-gradient(ellipse at 50% 0%, rgba(212,160,23,0.45) 0%, transparent 70%)'
+          : 'radial-gradient(ellipse at 50% 0%, rgba(212,160,23,0.22) 0%, transparent 70%)',
+        opacity: hovered ? 1 : 0,
+        transition: 'opacity 0.4s ease',
+        filter: 'blur(18px)',
+        pointerEvents: 'none',
+      }} />
+
+      {/* ── Border wrapper (gradient for popular, solid for rest) ── */}
+      <div style={{
+        position: 'relative', zIndex: 1,
+        borderRadius: 24,
+        padding: tier.popular ? '1.5px' : '1px',
+        background: tier.popular
+          ? 'linear-gradient(135deg,#b8860b,#f5c842 45%,#b8860b)'
+          : hovered
+            ? 'linear-gradient(135deg,rgba(212,160,23,0.5),rgba(245,200,66,0.15))'
+            : 'linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))',
+        transition: 'background 0.35s ease',
+        boxShadow: tier.popular
+          ? hovered
+            ? '0 24px 70px rgba(212,160,23,0.35), 0 0 0 1px rgba(245,200,66,0.15)'
+            : '0 16px 50px rgba(212,160,23,0.22), 0 0 0 1px rgba(245,200,66,0.1)'
+          : hovered
+            ? '0 16px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(212,160,23,0.2)'
+            : '0 4px 20px rgba(0,0,0,0.25)',
+        transition: 'box-shadow 0.35s ease, background 0.35s ease',
       }}>
-        {tier.popular && (
-          <div style={{
-            position: 'absolute', top: 16, right: 16,
-            background: 'linear-gradient(135deg,#b8860b,#f5c842)',
-            color: '#0a1628', fontSize: '0.68rem', fontWeight: 800,
-            padding: '0.3rem 0.75rem', borderRadius: 999,
-            letterSpacing: '.06em', textTransform: 'uppercase',
-          }}>
-            Más popular
-          </div>
-        )}
 
+        {/* ── Card body (overflow:hidden for shine clip) ── */}
         <div style={{
-          color: tier.popular ? '#f5c842' : 'rgba(255,255,255,0.45)',
-          fontSize: '0.75rem', fontWeight: 700, letterSpacing: '.1em',
-          textTransform: 'uppercase', marginBottom: '0.75rem',
+          borderRadius: 22,
+          background: tier.popular ? 'rgba(9,19,36,0.98)' : 'rgba(12,22,40,0.92)',
+          backdropFilter: 'blur(16px)',
+          padding: '2rem 1.75rem',
+          position: 'relative',
+          overflow: 'hidden',
+          height: '100%',
+          boxSizing: 'border-box',
         }}>
-          {tier.name}
-        </div>
 
-        <div style={{ marginBottom: '1.5rem' }}>
-          <span style={{
-            fontFamily: 'var(--font-playfair, Georgia, serif)',
-            fontSize: '2.4rem', fontWeight: 700, color: '#fff',
-          }}>
-            {tier.price}
-          </span>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.82rem', marginLeft: 4 }}>
-            {tier.period}
-          </span>
-        </div>
+          {/* ── Shine layer ── */}
+          <div style={{
+            position: 'absolute',
+            top: '-60%', left: '-40%',
+            width: '180%', height: '180%',
+            background: 'linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.07) 50%, transparent 60%)',
+            transform: hovered ? 'translateX(60%)' : 'translateX(-10%)',
+            opacity: hovered ? 1 : 0,
+            transition: 'transform 0.55s ease, opacity 0.3s ease',
+            pointerEvents: 'none',
+            zIndex: 0,
+          }} />
 
-        <div style={{ marginBottom: '2rem' }}>
-          {tier.features.map((f, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'flex-start', gap: 10,
-              padding: '0.5rem 0',
-              borderBottom: i < tier.features.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-            }}>
-              <span style={{
-                width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1,
-                background: tier.popular
-                  ? 'linear-gradient(135deg,#b8860b,#f5c842)'
-                  : 'rgba(212,160,23,0.2)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '0.6rem',
-                color: tier.popular ? '#0a1628' : '#f5c842',
+          {/* ── Inner top glow strip ── */}
+          <div style={{
+            position: 'absolute', top: 0, left: '10%', right: '10%', height: 1,
+            background: tier.popular
+              ? 'linear-gradient(90deg,transparent,rgba(245,200,66,0.7),transparent)'
+              : 'linear-gradient(90deg,transparent,rgba(245,200,66,0.25),transparent)',
+            opacity: hovered ? 1 : tier.popular ? 0.6 : 0,
+            transition: 'opacity 0.35s ease',
+            zIndex: 1,
+          }} />
+
+          {/* ── Content (above shine) ── */}
+          <div style={{ position: 'relative', zIndex: 2 }}>
+
+            {tier.popular && (
+              <div style={{
+                position: 'absolute', top: 0, right: 0,
+                background: 'linear-gradient(135deg,#b8860b,#f5c842)',
+                color: '#0a1628', fontSize: '0.66rem', fontWeight: 800,
+                padding: '0.28rem 0.7rem', borderRadius: 999,
+                letterSpacing: '.07em', textTransform: 'uppercase',
+                boxShadow: '0 2px 10px rgba(212,160,23,0.4)',
               }}>
-                ✓
+                Más popular
+              </div>
+            )}
+
+            <div style={{
+              color: tier.popular ? '#f5c842' : 'rgba(255,255,255,0.38)',
+              fontSize: '0.72rem', fontWeight: 700, letterSpacing: '.12em',
+              textTransform: 'uppercase', marginBottom: '0.75rem',
+            }}>
+              {tier.name}
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <span style={{
+                fontFamily: 'var(--font-playfair, Georgia, serif)',
+                fontSize: '2.4rem', fontWeight: 700, color: '#fff', lineHeight: 1,
+              }}>
+                {tier.price}
               </span>
-              <span style={{ color: 'rgba(255,255,255,0.72)', fontSize: '0.875rem', lineHeight: 1.5 }}>
-                {f}
+              <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', marginLeft: 5 }}>
+                {tier.period}
               </span>
             </div>
-          ))}
-        </div>
 
-        <a
-          href="https://wa.me/51902508499?text=Hola%2C%20me%20interesa%20anunciar%20con%20ustedes"
-          target="_blank" rel="noopener noreferrer"
-          style={{
-            display: 'block', width: '100%', padding: '0.8rem',
-            borderRadius: 12, textAlign: 'center',
-            fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none',
-            background: tier.popular
-              ? 'linear-gradient(135deg,#b8860b,#f5c842)'
-              : 'rgba(212,160,23,0.1)',
-            color: tier.popular ? '#0a1628' : '#f5c842',
-            border: tier.popular ? 'none' : '1px solid rgba(212,160,23,0.3)',
-            transition: 'all 0.15s ease',
-            boxSizing: 'border-box',
-          }}
-          onMouseEnter={e => {
-            const el = e.currentTarget as HTMLElement;
-            if (tier.popular) { el.style.boxShadow = '0 6px 20px rgba(212,160,23,0.4)'; el.style.transform = 'translateY(-1px)'; }
-            else { el.style.background = 'rgba(212,160,23,0.18)'; }
-          }}
-          onMouseLeave={e => {
-            const el = e.currentTarget as HTMLElement;
-            if (tier.popular) { el.style.boxShadow = 'none'; el.style.transform = 'none'; }
-            else { el.style.background = 'rgba(212,160,23,0.1)'; }
-          }}
-        >
-          {tier.cta}
-        </a>
+            <div style={{ marginBottom: '2rem' }}>
+              {tier.features.map((f, i) => (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 10,
+                  padding: '0.5rem 0',
+                  borderBottom: i < tier.features.length - 1
+                    ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                }}>
+                  <span style={{
+                    width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 2,
+                    background: tier.popular
+                      ? 'linear-gradient(135deg,#b8860b,#f5c842)'
+                      : 'rgba(212,160,23,0.18)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.58rem',
+                    color: tier.popular ? '#0a1628' : '#f5c842',
+                    boxShadow: tier.popular ? '0 0 6px rgba(212,160,23,0.4)' : 'none',
+                    transition: 'box-shadow 0.3s',
+                  }}>
+                    ✓
+                  </span>
+                  <span style={{
+                    color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', lineHeight: 1.55,
+                  }}>
+                    {f}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <a
+              href="https://wa.me/51902508499?text=Hola%2C%20me%20interesa%20anunciar%20con%20ustedes"
+              target="_blank" rel="noopener noreferrer"
+              style={{
+                display: 'block', width: '100%', padding: '0.82rem',
+                borderRadius: 12, textAlign: 'center',
+                fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none',
+                background: tier.popular
+                  ? 'linear-gradient(135deg,#b8860b,#f5c842)'
+                  : 'rgba(212,160,23,0.08)',
+                color: tier.popular ? '#0a1628' : '#f5c842',
+                border: tier.popular ? 'none' : '1px solid rgba(212,160,23,0.25)',
+                transition: 'all 0.18s ease',
+                boxSizing: 'border-box',
+              }}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLElement;
+                if (tier.popular) {
+                  el.style.boxShadow = '0 6px 22px rgba(212,160,23,0.45)';
+                  el.style.transform = 'translateY(-1px)';
+                } else {
+                  el.style.background = 'rgba(212,160,23,0.16)';
+                  el.style.borderColor = 'rgba(212,160,23,0.45)';
+                }
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLElement;
+                if (tier.popular) {
+                  el.style.boxShadow = 'none';
+                  el.style.transform = 'none';
+                } else {
+                  el.style.background = 'rgba(212,160,23,0.08)';
+                  el.style.borderColor = 'rgba(212,160,23,0.25)';
+                }
+              }}
+            >
+              {tier.cta}
+            </a>
+
+          </div>
+        </div>
       </div>
     </div>
   );
