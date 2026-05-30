@@ -1,6 +1,6 @@
 'use client';
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, FileRejection } from 'react-dropzone';
 import { validateFile } from '@/lib/file-validation';
 import { getToken } from '@/lib/get-token';
 
@@ -558,7 +558,7 @@ export default function ImageUploader({
       : { 'image/*':['.jpg','.jpeg','.png','.webp','.heic'] },
     maxSize: MAX_VIDEO_BYTES,
     multiple: false,
-    onDrop: async (accepted: File[], rejected: { errors: { code: string }[] }[]) => {
+    onDrop: async (accepted: File[], rejected: FileRejection[]) => {
       if (rejected.length) {
         setError(rejected[0].errors[0].code === 'file-too-large'
           ? 'El archivo supera el límite.' : 'Formato no válido.');
