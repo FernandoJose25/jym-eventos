@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, updateDoc, setDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, verifyBeforeUpdateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential, getAuth } from 'firebase/auth';
+import { authHeaders } from '@/lib/get-token';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { db, auth, COL } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -41,7 +42,7 @@ export default function UsuariosPage() {
     try {
       const res = await fetch('/api/admin/delete-user', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await authHeaders(),
         body: JSON.stringify({ uid: u.uid }),
       });
       const data = await res.json();
@@ -92,7 +93,7 @@ export default function UsuariosPage() {
 
       const res = await fetch('/api/admin/update-user', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await authHeaders(),
         body: JSON.stringify(body),
       });
       const data = await res.json();

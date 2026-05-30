@@ -8,6 +8,7 @@ import { slugify } from '@/lib/utils';
 import ImageUploader from '@/components/ui/ImageUploader';
 import Link from 'next/link';
 import { ArrowLeft, Save, Sparkles } from 'lucide-react';
+import { authHeaders } from '@/lib/get-token';
 
 export default function NuevoServicioPage() {
   const router     = useRouter();
@@ -32,7 +33,7 @@ export default function NuevoServicioPage() {
     try {
       const res = await fetch('/api/generate-servicio', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await authHeaders(),
         body: JSON.stringify({ nombre: form.title.trim() }),
       });
       const ai = await res.json();

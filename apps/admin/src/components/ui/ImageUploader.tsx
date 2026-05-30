@@ -1,16 +1,8 @@
 'use client';
-/**
- * ImageUploader — sube imágenes Y videos a Cloudinary
- * Cloud name:    dvcmazqtp
- * Upload preset: ybtav8vp  (Unsigned)
- *
- * Para imágenes: muestra un modal de recorte nativo (sin librerías externas).
- */
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
-
-const CLOUD  = 'dvcmazqtp';
-const PRESET = 'ybtav8vp';
+import { validateFile } from '@/lib/file-validation';
+import { getToken } from '@/lib/get-token';
 
 interface FP { x: number; y: number }
 interface CropBox { x: number; y: number; w: number; h: number }
@@ -486,10 +478,23 @@ export default function ImageUploader({
   const upload = useCallback(async (file: File, currentFp?: FP) => {
     const useFp = currentFp ?? fp;
     setError(''); setUploading(true); setProgress(0);
-    const isVideo  = file.type.startsWith('video/');
-    const endpoint = `https://api.cloudinary.com/v1_1/${CLOUD}/${isVideo ? 'video' : 'image'}/upload`;
+    const isVideo = file.type.startsWith('video/');
 
     try {
+      // Obtener firma del servidor (verifica autenticación + tipo de archivo)
+      const token = await getToken();
+      const signRes = await fetch('/api/cloudinary-sign', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileSize: file.size, fileType: file.type, folder }),
+      });
+      if (!signRes.ok) {
+        const err = await signRes.json();
+        throw new Error(err.error || 'Error al firmar la subida');
+      }
+      const { timestamp, signature, apiKey, cloudName } = await signRes.json();
+      const endpoint = `https://api.cloudinary.com/v1_1/${cloudName}/${isVideo ? 'video' : 'image'}/upload`;
+
       let fileToUpload = file;
       if (!isVideo) {
         try {
@@ -507,7 +512,9 @@ export default function ImageUploader({
       const url = await new Promise<string>((resolve, reject) => {
         const form = new FormData();
         form.append('file', fileToUpload);
-        form.append('upload_preset', PRESET);
+        form.append('api_key', apiKey);
+        form.append('timestamp', String(timestamp));
+        form.append('signature', signature);
         form.append('folder', folder);
         if (!isVideo) form.append('context', `focal_x=${useFp.x}|focal_y=${useFp.y}`);
 
@@ -551,13 +558,19 @@ export default function ImageUploader({
       : { 'image/*':['.jpg','.jpeg','.png','.webp','.heic'] },
     maxSize: MAX_VIDEO_BYTES,
     multiple: false,
-    onDrop: (accepted, rejected) => {
+    onDrop: async (accepted: File[], rejected: { errors: { code: string }[] }[]) => {
       if (rejected.length) {
         setError(rejected[0].errors[0].code === 'file-too-large'
           ? 'El archivo supera el límite.' : 'Formato no válido.');
         return;
       }
       const file = accepted[0];
+      // Validar magic bytes antes de procesar
+      const validation = await validateFile(file);
+      if (!validation.ok) {
+        setError(validation.reason ?? 'Archivo no permitido.');
+        return;
+      }
       if (file.type.startsWith('video/')) {
         setPreview(URL.createObjectURL(file));
         setPreviewType('video');

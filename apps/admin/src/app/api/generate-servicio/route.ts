@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyToken } from '@/lib/auth-server';
 
 const PROMPT = (nombre: string, instrucciones?: string) => `Eres copywriter especializado en empresas de eventos y decoraciones peruanas.
 Escribe para J&M Eventos y Decoraciones de Sechura, Piura.
@@ -35,6 +36,9 @@ Responde SOLO con este JSON:
 }`;
 
 export async function POST(req: NextRequest) {
+  const auth = await verifyToken(req);
+  if (auth.response) return auth.response;
+
   const { nombre, instrucciones } = await req.json();
   if (!nombre) return NextResponse.json({ error:'nombre requerido' }, { status:400 });
 

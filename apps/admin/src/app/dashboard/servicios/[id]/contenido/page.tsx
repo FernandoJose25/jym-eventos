@@ -8,6 +8,7 @@ import ImageUploader from '@/components/ui/ImageUploader';
 import { useModal } from '@/components/ui/Modal';
 import EditModal from '@/components/ui/EditModal';
 import { Eye, EyeOff, Trash2, Edit2, ArrowLeft, Save, Sparkles } from 'lucide-react';
+import { authHeaders } from '@/lib/get-token';
 
 /* ── Label helper ── */
 const lbl = (text: string) => (
@@ -84,7 +85,7 @@ export default function ServiceContentPage() {
     try {
       const res = await fetch('/api/generate-servicio', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await authHeaders(),
         body: JSON.stringify({ nombre: srvData.title, instrucciones: srvData.aiInstrucciones || '' }),
       });
       const ai = await res.json();
