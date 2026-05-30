@@ -122,9 +122,14 @@ export default function UsuariosPage() {
       secondaryApp = initializeApp(auth.app.options, `secondary-${Date.now()}`);
       const secondaryAuth = getAuth(secondaryApp);
       const cred = await createUserWithEmailAndPassword(secondaryAuth, newUser.email, newUser.pass);
-      await setDoc(doc(db, COL.USUARIOS, cred.user.uid), {
+      const userData = {
         uid: cred.user.uid, email:newUser.email, nombre:newUser.nombre,
         rol:newUser.rol, activo:true, creadoEn:new Date().toISOString(),
+      };
+      await setDoc(doc(db, COL.USUARIOS, cred.user.uid), userData);
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        email: newUser.email, name: newUser.nombre,
+        role: newUser.rol, createdAt: new Date(),
       });
       toast.success(`"${newUser.nombre}" creado correctamente`);
       setAdding(false);
