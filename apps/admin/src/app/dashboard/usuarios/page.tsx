@@ -5,7 +5,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { db, auth, COL } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus } from 'lucide-react';
+import { Plus, Pencil, Check, X } from 'lucide-react';
 import type { Usuario, RolUsuario } from '@/types';
 
 const ROL_DESC: Record<RolUsuario,{ label:string; desc:string; bg:string; color:string }> = {
@@ -21,6 +21,8 @@ export default function UsuariosPage() {
   const [adding,   setAdding]   = useState(false);
   const [newUser,  setNewUser]  = useState({ email:'', nombre:'', rol:'editor' as RolUsuario, pass:'' });
   const [saving,   setSaving]   = useState(false);
+  const [editingNombre, setEditingNombre] = useState<string|null>(null);
+  const [editNombreVal, setEditNombreVal] = useState('');
 
   useEffect(() => onSnapshot(collection(db, COL.USUARIOS),
     snap => { setUsuarios(snap.docs.map(d=>d.data()) as Usuario[]); setLoading(false); }
@@ -31,6 +33,24 @@ export default function UsuariosPage() {
     if (uid === me?.uid) { toast.error('No puedes cambiar tu propio rol'); return; }
     await updateDoc(doc(db, COL.USUARIOS, uid), { rol });
     toast.success('Rol actualizado');
+  };
+
+  const handleToggleActivo = async (u: Usuario) => {
+    if (u.uid === me?.uid) { toast.error('No puedes desactivarte a ti mismo'); return; }
+    await updateDoc(doc(db, COL.USUARIOS, u.uid), { activo: !u.activo });
+    toast.success(u.activo ? 'Usuario desactivado' : 'Usuario activado');
+  };
+
+  const startEditNombre = (u: Usuario) => {
+    setEditingNombre(u.uid);
+    setEditNombreVal(u.nombre);
+  };
+
+  const saveNombre = async (uid: string) => {
+    if (!editNombreVal.trim()) { toast.error('El nombre no puede estar vacío'); return; }
+    await updateDoc(doc(db, COL.USUARIOS, uid), { nombre: editNombreVal.trim() });
+    toast.success('Nombre actualizado');
+    setEditingNombre(null);
   };
 
   const handleAdd = async () => {
@@ -105,21 +125,43 @@ export default function UsuariosPage() {
           </div>
         ) : (
           <table className="admin-table">
-            <thead><tr><th>Usuario</th><th>Correo</th><th>Rol</th><th>Creado</th></tr></thead>
+            <thead><tr><th>Usuario</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Creado</th></tr></thead>
             <tbody>
               {usuarios.map(u => {
                 const meta = ROL_DESC[u.rol];
                 const isMe = u.uid === me?.uid;
+                const isEditing = editingNombre === u.uid;
                 return (
-                  <tr key={u.uid}>
+                  <tr key={u.uid} style={{ opacity: u.activo === false ? 0.5 : 1 }}>
                     <td>
                       <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                         <div style={{ width:36, height:36, borderRadius:10, flexShrink:0, background:'linear-gradient(135deg,#1e3a5f,#2563eb)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:700, fontSize:'0.9rem' }}>
                           {u.nombre.charAt(0).toUpperCase()}
                         </div>
-                        <p style={{ fontWeight:600, fontSize:'0.85rem', color:'#0a1628', margin:0 }}>
-                          {u.nombre} {isMe && <span style={{ fontSize:'0.72rem', color:'#2563eb', fontWeight:500 }}>(tú)</span>}
-                        </p>
+                        <div>
+                          {isEditing ? (
+                            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                              <input
+                                autoFocus
+                                value={editNombreVal}
+                                onChange={e=>setEditNombreVal(e.target.value)}
+                                onKeyDown={e=>{ if(e.key==='Enter') saveNombre(u.uid); if(e.key==='Escape') setEditingNombre(null); }}
+                                style={{ fontSize:'0.82rem', border:'1px solid #2563eb', borderRadius:6, padding:'2px 6px', width:130 }}
+                              />
+                              <button onClick={()=>saveNombre(u.uid)} style={{ background:'none', border:'none', cursor:'pointer', color:'#16a34a', padding:2 }}><Check size={14}/></button>
+                              <button onClick={()=>setEditingNombre(null)} style={{ background:'none', border:'none', cursor:'pointer', color:'#ef4444', padding:2 }}><X size={14}/></button>
+                            </div>
+                          ) : (
+                            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                              <p style={{ fontWeight:600, fontSize:'0.85rem', color:'#0a1628', margin:0 }}>
+                                {u.nombre} {isMe && <span style={{ fontSize:'0.72rem', color:'#2563eb', fontWeight:500 }}>(tú)</span>}
+                              </p>
+                              <button onClick={()=>startEditNombre(u)} style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', padding:2 }} title="Editar nombre">
+                                <Pencil size={12}/>
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td><span style={{ fontSize:'0.82rem', color:'#475569' }}>{u.email}</span></td>
@@ -133,6 +175,22 @@ export default function UsuariosPage() {
                           <option value="editor">Editor</option>
                           <option value="lector">Lector</option>
                         </select>
+                      )}
+                    </td>
+                    <td>
+                      {isMe ? (
+                        <span style={{ fontSize:'0.75rem', color:'#16a34a', fontWeight:600 }}>Activo</span>
+                      ) : (
+                        <button
+                          onClick={()=>handleToggleActivo(u)}
+                          style={{
+                            fontSize:'0.72rem', fontWeight:700, padding:'3px 10px', borderRadius:9999, cursor:'pointer', border:'none',
+                            background: u.activo !== false ? '#dcfce7' : '#fee2e2',
+                            color:      u.activo !== false ? '#16a34a'  : '#dc2626',
+                          }}
+                        >
+                          {u.activo !== false ? 'Activo' : 'Inactivo'}
+                        </button>
                       )}
                     </td>
                     <td><span style={{ fontSize:'0.75rem', color:'#94a3b8' }}>
