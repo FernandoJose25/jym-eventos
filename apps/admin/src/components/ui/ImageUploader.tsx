@@ -518,7 +518,6 @@ export default function ImageUploader({
           form.append('timestamp', String(timestamp));
           form.append('signature', signature);
           form.append('folder', folder);
-          if (!isVideo) form.append('context', `focal_x=${useFp.x}|focal_y=${useFp.y}`);
 
           const xhr = new XMLHttpRequest();
           xhr.open('POST', endpoint);
