@@ -215,19 +215,21 @@ export default function Navbar() {
                   })}
 
                   <div style={{ margin: '0.5rem 0.875rem 0.25rem', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.5rem' }}>
-                    <Link href="/contacto" style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      padding: '0.55rem', borderRadius: 10,
-                      background: 'linear-gradient(135deg,rgba(184,134,11,0.25),rgba(245,200,66,0.15))',
-                      border: '1px solid rgba(212,160,23,0.25)',
-                      color: '#f5c842', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none',
-                      transition: 'background 0.15s',
-                    }}
+                    <a href="https://wa.me/51945203708?text=Hola%2C%20quiero%20cotizar%20un%20evento"
+                      target="_blank" rel="noopener noreferrer"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: '0.55rem', borderRadius: 10,
+                        background: 'linear-gradient(135deg,rgba(184,134,11,0.25),rgba(245,200,66,0.15))',
+                        border: '1px solid rgba(212,160,23,0.25)',
+                        color: '#f5c842', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none',
+                        transition: 'background 0.15s',
+                      }}
                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg,rgba(184,134,11,0.4),rgba(245,200,66,0.25))'}
                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg,rgba(184,134,11,0.25),rgba(245,200,66,0.15))'}
                     >
                       Cotizar un evento →
-                    </Link>
+                    </a>
                   </div>
                 </div>
               </div>

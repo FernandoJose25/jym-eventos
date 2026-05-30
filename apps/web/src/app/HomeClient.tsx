@@ -104,7 +104,9 @@ export default function HomeClient() {
 
       {/* About / Quiénes somos */}
       <Section>
-        <AboutSection data={data.about} />
+        <div id="nosotros">
+          <AboutSection data={data.about} />
+        </div>
       </Section>
 
       {/* Servicios */}
