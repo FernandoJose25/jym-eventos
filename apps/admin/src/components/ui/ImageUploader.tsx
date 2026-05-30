@@ -3,6 +3,8 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDropzone, FileRejection } from 'react-dropzone';
 import { validateFile } from '@/lib/file-validation';
 import { getToken } from '@/lib/get-token';
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 interface FP { x: number; y: number }
 interface CropBox { x: number; y: number; w: number; h: number }
@@ -481,20 +483,6 @@ export default function ImageUploader({
     const isVideo = file.type.startsWith('video/');
 
     try {
-      // Obtener firma del servidor (verifica autenticación + tipo de archivo)
-      const token = await getToken();
-      const signRes = await fetch('/api/cloudinary-sign', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileSize: file.size, fileType: file.type, folder }),
-      });
-      if (!signRes.ok) {
-        const err = await signRes.json();
-        throw new Error(err.error || 'Error al firmar la subida');
-      }
-      const { timestamp, signature, apiKey, cloudName } = await signRes.json();
-      const endpoint = `https://api.cloudinary.com/v1_1/${cloudName}/${isVideo ? 'video' : 'image'}/upload`;
-
       let fileToUpload = file;
       if (!isVideo) {
         try {
@@ -507,38 +495,67 @@ export default function ImageUploader({
           }) as File;
         } catch { /* falla compresión → sube original */ }
       }
-      setProgress(isVideo ? 5 : 45);
 
-      const url = await new Promise<string>((resolve, reject) => {
-        const form = new FormData();
-        form.append('file', fileToUpload);
-        form.append('api_key', apiKey);
-        form.append('timestamp', String(timestamp));
-        form.append('signature', signature);
-        form.append('folder', folder);
-        if (!isVideo) form.append('context', `focal_x=${useFp.x}|focal_y=${useFp.y}`);
+      let url: string;
 
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', endpoint);
-        xhr.upload.onprogress = e => {
-          if (e.lengthComputable) {
-            setProgress(isVideo
-              ? Math.round(e.loaded / e.total * 90)
-              : 45 + Math.round(e.loaded / e.total * 50));
-          }
-        };
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300)
-            resolve(JSON.parse(xhr.responseText).secure_url);
-          else {
-            try { reject(new Error(JSON.parse(xhr.responseText)?.error?.message || `Error ${xhr.status}`)); }
-            catch { reject(new Error(`Error HTTP ${xhr.status}`)); }
-          }
-        };
-        xhr.onerror = () => reject(new Error('Error de red. Intenta de nuevo.'));
-        xhr.onabort = () => reject(new Error('Subida cancelada.'));
-        xhr.send(form);
+      // Intentar Cloudinary primero
+      const token = await getToken();
+      const signRes = await fetch('/api/cloudinary-sign', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileSize: file.size, fileType: file.type, folder }),
       });
+
+      if (signRes.ok) {
+        const { timestamp, signature, apiKey, cloudName } = await signRes.json();
+        const endpoint = `https://api.cloudinary.com/v1_1/${cloudName}/${isVideo ? 'video' : 'image'}/upload`;
+        setProgress(isVideo ? 5 : 45);
+
+        url = await new Promise<string>((resolve, reject) => {
+          const form = new FormData();
+          form.append('file', fileToUpload);
+          form.append('api_key', apiKey);
+          form.append('timestamp', String(timestamp));
+          form.append('signature', signature);
+          form.append('folder', folder);
+          if (!isVideo) form.append('context', `focal_x=${useFp.x}|focal_y=${useFp.y}`);
+
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', endpoint);
+          xhr.upload.onprogress = e => {
+            if (e.lengthComputable) {
+              setProgress(isVideo
+                ? Math.round(e.loaded / e.total * 90)
+                : 45 + Math.round(e.loaded / e.total * 50));
+            }
+          };
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300)
+              resolve(JSON.parse(xhr.responseText).secure_url);
+            else {
+              try { reject(new Error(JSON.parse(xhr.responseText)?.error?.message || `Error ${xhr.status}`)); }
+              catch { reject(new Error(`Error HTTP ${xhr.status}`)); }
+            }
+          };
+          xhr.onerror = () => reject(new Error('Error de red'));
+          xhr.onabort = () => reject(new Error('Subida cancelada'));
+          xhr.send(form);
+        });
+      } else {
+        // Fallback: subir a Firebase Storage
+        setProgress(isVideo ? 5 : 40);
+        const ext = fileToUpload.name.split('.').pop() || 'bin';
+        const path = `${folder}/${Date.now()}.${ext}`;
+        const storageRef = ref(storage, path);
+        url = await new Promise<string>((resolve, reject) => {
+          const task = uploadBytesResumable(storageRef, fileToUpload);
+          task.on('state_changed',
+            snap => setProgress(Math.round(snap.bytesTransferred / snap.totalBytes * 95)),
+            reject,
+            () => getDownloadURL(task.snapshot.ref).then(resolve).catch(reject),
+          );
+        });
+      }
 
       setProgress(100);
       setPreview(url);
