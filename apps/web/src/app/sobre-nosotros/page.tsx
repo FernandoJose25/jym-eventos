@@ -393,7 +393,7 @@ export default function SobreNosotrosPage() {
                              background:'linear-gradient(to bottom,#d4a017,rgba(212,160,23,0.1))', borderRadius:9999,
                              animation:'lineGlow 3s ease-in-out infinite' }}/>
 
-              {HITOS.map((h, i) => (
+              {HITOS.map((h: typeof HITOS_DEFAULT[0], i) => (
                 <div key={i} className={`sn3-reveal stg-${i+1}`}
                      style={{ marginBottom:i<HITOS.length-1?'3rem':0, position:'relative' }}>
                   <div style={{
