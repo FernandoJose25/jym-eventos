@@ -6,7 +6,7 @@ import { initializeApp, deleteApp } from 'firebase/app';
 import { db, auth, COL } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Pencil, Check, X, KeyRound } from 'lucide-react';
+import { Plus, Pencil, Check, X, KeyRound, Trash2 } from 'lucide-react';
 import type { Usuario, RolUsuario } from '@/types';
 
 const ROL_DESC: Record<RolUsuario,{ label:string; desc:string; bg:string; color:string }> = {
@@ -34,6 +34,23 @@ export default function UsuariosPage() {
     if (uid === me?.uid) { toast.error('No puedes cambiar tu propio rol'); return; }
     await updateDoc(doc(db, COL.USUARIOS, uid), { rol });
     toast.success('Rol actualizado');
+  };
+
+  const handleDelete = async (u: Usuario) => {
+    if (!window.confirm(`¿Eliminar a "${u.nombre}" permanentemente? Esta acción no se puede deshacer.`)) return;
+    try {
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: u.uid }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      await import('firebase/firestore').then(({ deleteDoc, doc: fDoc }) =>
+        deleteDoc(fDoc(db, COL.USUARIOS, u.uid))
+      );
+      toast.success(`"${u.nombre}" eliminado`);
+    } catch(e:any) { toast.error(e?.message || 'Error al eliminar'); }
   };
 
   const handleToggleActivo = async (u: Usuario) => {
@@ -172,7 +189,7 @@ export default function UsuariosPage() {
           </div>
         ) : (
           <table className="admin-table">
-            <thead><tr><th>Usuario</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Creado</th></tr></thead>
+            <thead><tr><th>Usuario</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Creado</th><th></th></tr></thead>
             <tbody>
               {usuarios.map(u => {
                 const meta = ROL_DESC[u.rol];
@@ -248,6 +265,14 @@ export default function UsuariosPage() {
                     <td><span style={{ fontSize:'0.75rem', color:'#94a3b8' }}>
                       {new Date(u.creadoEn).toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'2-digit'})}
                     </span></td>
+                    <td>
+                      {!isMe && isAdmin && (
+                        <button onClick={()=>handleDelete(u)} title="Eliminar usuario"
+                          style={{ background:'none', border:'none', cursor:'pointer', color:'#ef4444', padding:4, borderRadius:6, display:'flex', alignItems:'center' }}>
+                          <Trash2 size={15}/>
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
