@@ -322,6 +322,12 @@ export default function HeroSection({ data }: { data: HeroData }) {
           {/* BOTÓN SECUNDARIO */}
           <a
             href={btn2url}
+            onClick={(e) => {
+              if (btn2url === '/#servicios' || btn2url === '#servicios') {
+                e.preventDefault();
+                document.getElementById('servicios')?.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
