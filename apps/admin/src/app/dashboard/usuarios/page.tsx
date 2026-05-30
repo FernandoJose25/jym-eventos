@@ -98,8 +98,11 @@ export default function UsuariosPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      // Actualizar Firestore si cambió el correo
-      if (body.email) await updateDoc(doc(db, COL.USUARIOS, user.uid), { email: body.email });
+      // Actualizar Firestore si cambió el correo (en ambas colecciones)
+      if (body.email) {
+        await updateDoc(doc(db, COL.USUARIOS, user.uid), { email: body.email });
+        await updateDoc(doc(db, 'users', user.uid), { email: body.email }).catch(()=>{});
+      }
 
       toast.success('Credenciales actualizadas correctamente');
       setEditingCreds(false);
