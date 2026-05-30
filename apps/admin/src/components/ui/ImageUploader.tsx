@@ -6,7 +6,7 @@
  *
  * Para imágenes: muestra un modal de recorte nativo (sin librerías externas).
  */
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 
 const CLOUD  = 'dvcmazqtp';
@@ -74,6 +74,28 @@ async function applyCropToFile(
 /* ─── crop modal ─── */
 type Handle = 'nw'|'n'|'ne'|'e'|'se'|'s'|'sw'|'w'|'move'|null;
 
+/**
+ * Bugs corregidos vs versión anterior:
+ *
+ * 1. onOverlayClick disparaba después de cada arrastre (dragRef ya era null
+ *    cuando llegaba el evento click → box saltaba a la posición de release).
+ *    FIX: ref `didDrag` que suprime el onClick si hubo movimiento.
+ *
+ * 2. onPointerMove en el container era poco fiable cuando el puntero salía
+ *    del div durante el resize rápido.
+ *    FIX: listeners globales en window (pointermove / pointerup) montados
+ *    con useEffect mientras hay una operación de arrastre activa.
+ *
+ * 3. imgSize leída de closure en useCallback podía estar en 0,0 si el
+ *    callback se ejecutaba antes de la primera re-render tras onLoad.
+ *    FIX: imgW / imgH se capturan en el dragRef en el momento exacto de
+ *    pointerdown desde imgRef.current.offsetWidth/offsetHeight.
+ *
+ * 4. Aspect-ratio: al llegar al borde el eje dependiente no se recalculaba
+ *    correctamente causando deformación.
+ *    FIX: ambos ejes se calculan y se ajusta el eje libre para respetar
+ *    siempre la relación de aspecto.
+ */
 function CropModal({
   src,
   aspect,
@@ -82,69 +104,77 @@ function CropModal({
 }: {
   src:     string;
   aspect?: number;
-  /** Debe retornar Promise<void>; rechaza con Error en caso de fallo. */
   onApply: (box: CropBox, displayW: number, displayH: number, img: HTMLImageElement) => Promise<void>;
   onSkip:  () => void;
 }) {
+  const imgRef      = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const imgRef       = useRef<HTMLImageElement>(null);
-  const [imgSize,   setImgSize]   = useState({ w: 0, h: 0 });
-  const [box,       setBox]       = useState<CropBox>({ x: 0, y: 0, w: 0, h: 0 });
-  const [applying,  setApplying]  = useState(false);
-  const [applyErr,  setApplyErr]  = useState('');
-  const dragRef = useRef<{
-    handle: Handle;
-    startX: number; startY: number;
+
+  const [box,      setBox]      = useState<CropBox>({ x:0, y:0, w:0, h:0 });
+  const [imgSize,  setImgSize]  = useState({ w:0, h:0 });
+  const [applying, setApplying] = useState(false);
+  const [applyErr, setApplyErr] = useState('');
+
+  /* ── drag state ──────────────────────────────────────────────────────────
+     Todo se guarda en un ref para que los handlers de window no tengan
+     closures rancias. imgW/imgH se leen del DOM en el momento del pointerdown.
+  ───────────────────────────────────────────────────────────────────────── */
+  const drag = useRef<{
+    handle:  Handle;
+    startX:  number;
+    startY:  number;
     origBox: CropBox;
+    imgW:    number;
+    imgH:    number;
   } | null>(null);
 
+  /* Impide que onClick dispare la lógica de reposicionado después de un drag */
+  const didDrag = useRef(false);
+
+  /* ── init box ────────────────────────────────────────────────────────── */
   const initBox = useCallback((w: number, h: number) => {
     if (aspect) {
-      const bw = w * 0.9;
-      const bh = bw / aspect;
-      const bh2 = Math.min(bh, h * 0.9);
-      const bw2 = bh2 * aspect;
-      setBox({ x: (w - bw2) / 2, y: (h - bh2) / 2, w: bw2, h: bh2 });
+      const bw  = w * 0.9;
+      const bh  = Math.min(bw / aspect, h * 0.9);
+      const bw2 = bh * aspect;
+      setBox({ x:(w - bw2) / 2, y:(h - bh) / 2, w:bw2, h:bh });
     } else {
       const pad = Math.min(w, h) * 0.05;
-      setBox({ x: pad, y: pad, w: w - pad * 2, h: h - pad * 2 });
+      setBox({ x:pad, y:pad, w:w - pad * 2, h:h - pad * 2 });
     }
   }, [aspect]);
 
   const onImgLoad = () => {
     const img = imgRef.current!;
-    setImgSize({ w: img.offsetWidth, h: img.offsetHeight });
+    setImgSize({ w:img.offsetWidth, h:img.offsetHeight });
     initBox(img.offsetWidth, img.offsetHeight);
   };
 
-  const onPointerDown = (e: React.PointerEvent, handle: Handle) => {
-    e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    dragRef.current = {
-      handle,
-      startX: e.clientX, startY: e.clientY,
-      origBox: { ...box },
-    };
-  };
+  /* ── listeners globales en window ───────────────────────────────────────
+     Se montan una sola vez. Leen todo desde `drag.current` (ref),
+     sin closures sobre state.
+  ───────────────────────────────────────────────────────────────────────── */
+  useEffect(() => {
+    const MIN   = 20;
+    const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragRef.current) return;
-    const { handle, startX, startY, origBox } = dragRef.current;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-    const { w: iw, h: ih } = imgSize;
-    const MIN = 20;
+    const onMove = (e: PointerEvent) => {
+      if (!drag.current) return;
+      didDrag.current = true;
 
-    setBox(() => {
+      const { handle, startX, startY, origBox, imgW, imgH } = drag.current;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
       let { x, y, w, h } = origBox;
-      const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
       if (handle === 'move') {
-        x = clamp(x + dx, 0, iw - w);
-        y = clamp(y + dy, 0, ih - h);
+        x = clamp(x + dx, 0, imgW - w);
+        y = clamp(y + dy, 0, imgH - h);
       } else {
-        if (handle?.includes('e')) { w = clamp(w + dx, MIN, iw - x); }
-        if (handle?.includes('s')) { h = clamp(h + dy, MIN, ih - y); }
+        /* ── resize ──────────────────────────────────────────────────── */
+        if (handle?.includes('e')) w = clamp(w + dx,  MIN, imgW - x);
+        if (handle?.includes('s')) h = clamp(h + dy,  MIN, imgH - y);
         if (handle?.includes('w')) {
           const nw = clamp(w - dx, MIN, x + w);
           x = x + w - nw; w = nw;
@@ -153,65 +183,107 @@ function CropModal({
           const nh = clamp(h - dy, MIN, y + h);
           y = y + h - nh; h = nh;
         }
+
+        /* ── mantener aspect ratio ───────────────────────────────────── */
         if (aspect) {
           if (handle?.includes('e') || handle?.includes('w')) {
-            h = clamp(w / aspect, MIN, ih - y);
+            /* ancla: x + w; ajusta h */
+            const newH = w / aspect;
+            if (newH >= MIN && y + newH <= imgH) {
+              h = newH;
+            } else {
+              h  = clamp(imgH - y, MIN, imgH);
+              w  = clamp(h * aspect, MIN, imgW - x);
+            }
           } else {
-            w = clamp(h * aspect, MIN, iw - x);
+            /* ancla: y + h; ajusta w */
+            const newW = h * aspect;
+            if (newW >= MIN && x + newW <= imgW) {
+              w = newW;
+            } else {
+              w  = clamp(imgW - x, MIN, imgW);
+              h  = clamp(w / aspect, MIN, imgH - y);
+            }
           }
         }
       }
-      return { x, y, w, h };
-    });
-  }, [imgSize, aspect]);
 
-  const onPointerUp = () => { dragRef.current = null; };
+      setBox({ x, y, w, h });
+    };
 
-  const onOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (dragRef.current) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    const mx = e.clientX - r.left;
-    const my = e.clientY - r.top;
-    setBox(prev => {
-      const nx = Math.max(0, Math.min(mx - prev.w / 2, imgSize.w - prev.w));
-      const ny = Math.max(0, Math.min(my - prev.h / 2, imgSize.h - prev.h));
-      return { ...prev, x: nx, y: ny };
-    });
+    const onUp = () => { drag.current = null; };
+
+    window.addEventListener('pointermove', onMove, { passive:true });
+    window.addEventListener('pointerup',   onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup',   onUp);
+    };
+  }, []); /* sin dependencias — todo se lee desde refs */
+
+  /* ── pointerdown en handles / crop-box ──────────────────────────────── */
+  const onPointerDown = (e: React.PointerEvent, handle: Handle) => {
+    e.preventDefault();     // evita selección de texto y drag nativo del browser
+    e.stopPropagation();
+    if (!imgRef.current) return;
+    didDrag.current = false;
+    drag.current = {
+      handle,
+      startX:  e.clientX,
+      startY:  e.clientY,
+      origBox: { ...box },                      // snapshot del estado actual
+      imgW:    imgRef.current.offsetWidth,      // tamaño real en el DOM ahora
+      imgH:    imgRef.current.offsetHeight,
+    };
   };
 
+  /* ── click en el overlay (solo si NO hubo drag) ─────────────────────── */
+  const onOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (didDrag.current) { didDrag.current = false; return; }
+    const r  = containerRef.current!.getBoundingClientRect();
+    const mx = e.clientX - r.left;
+    const my = e.clientY - r.top;
+    setBox(prev => ({
+      ...prev,
+      x: Math.max(0, Math.min(mx - prev.w / 2, imgSize.w - prev.w)),
+      y: Math.max(0, Math.min(my - prev.h / 2, imgSize.h - prev.h)),
+    }));
+  };
+
+  /* ── apply ──────────────────────────────────────────────────────────── */
   const handleApply = async () => {
     if (!imgRef.current || applying) return;
     setApplyErr('');
     setApplying(true);
     try {
       await onApply(box, imgSize.w, imgSize.h, imgRef.current);
-      // Si llegamos aquí sin error el padre ya llamó setCropSrc('') → modal se cierra
-    } catch (e: any) {
-      setApplyErr(e?.message || 'Error al recortar. Intenta de nuevo.');
+    } catch (err: any) {
+      setApplyErr(err?.message || 'Error al recortar. Intenta de nuevo.');
       setApplying(false);
     }
   };
 
-  const handles: { id: Handle; cursor: string; style: React.CSSProperties }[] = [
-    { id:'nw', cursor:'nw-resize', style:{ top:-6, left:-6 } },
-    { id:'n',  cursor:'n-resize',  style:{ top:-6, left:'calc(50% - 6px)' } },
-    { id:'ne', cursor:'ne-resize', style:{ top:-6, right:-6 } },
-    { id:'e',  cursor:'e-resize',  style:{ top:'calc(50% - 6px)', right:-6 } },
-    { id:'se', cursor:'se-resize', style:{ bottom:-6, right:-6 } },
-    { id:'s',  cursor:'s-resize',  style:{ bottom:-6, left:'calc(50% - 6px)' } },
-    { id:'sw', cursor:'sw-resize', style:{ bottom:-6, left:-6 } },
-    { id:'w',  cursor:'w-resize',  style:{ top:'calc(50% - 6px)', left:-6 } },
+  const handles: { id:Handle; cursor:string; style:React.CSSProperties }[] = [
+    { id:'nw', cursor:'nw-resize', style:{ top:-7,  left:-7  } },
+    { id:'n',  cursor:'n-resize',  style:{ top:-7,  left:'calc(50% - 7px)' } },
+    { id:'ne', cursor:'ne-resize', style:{ top:-7,  right:-7 } },
+    { id:'e',  cursor:'e-resize',  style:{ top:'calc(50% - 7px)', right:-7 } },
+    { id:'se', cursor:'se-resize', style:{ bottom:-7, right:-7 } },
+    { id:'s',  cursor:'s-resize',  style:{ bottom:-7, left:'calc(50% - 7px)' } },
+    { id:'sw', cursor:'sw-resize', style:{ bottom:-7, left:-7  } },
+    { id:'w',  cursor:'w-resize',  style:{ top:'calc(50% - 7px)', left:-7 } },
   ];
 
+  /* ── render ─────────────────────────────────────────────────────────── */
   return (
     <div style={{
       position:'fixed', inset:0, zIndex:9999,
-      background:'rgba(0,0,0,0.82)', display:'flex',
+      background:'rgba(0,0,0,0.85)', display:'flex',
       alignItems:'center', justifyContent:'center', padding:'1rem',
     }}>
       <div style={{
         background:'#fff', borderRadius:20, overflow:'hidden',
-        maxWidth:700, width:'100%', boxShadow:'0 32px 64px rgba(0,0,0,0.5)',
+        maxWidth:720, width:'100%', boxShadow:'0 32px 64px rgba(0,0,0,0.55)',
         display:'flex', flexDirection:'column', maxHeight:'92vh',
       }}>
         {/* header */}
@@ -222,7 +294,7 @@ function CropModal({
               ✂️ Recortar / ajustar imagen
             </p>
             <p style={{ fontSize:'0.72rem', color:'#94a3b8', margin:0, marginTop:2 }}>
-              Arrastra las esquinas o bordes para recortar · Mueve el área para reposicionar
+              Arrastra los bordes o esquinas · Mueve el área · Haz clic fuera para centrar
             </p>
           </div>
           <button onClick={onSkip} type="button" disabled={applying} style={{
@@ -231,17 +303,17 @@ function CropModal({
           }}>✕</button>
         </div>
 
-        {/* canvas area */}
+        {/* canvas */}
         <div style={{ flex:1, overflowY:'auto', padding:'1rem',
                       background:'#0d1117', display:'flex',
-                      alignItems:'center', justifyContent:'center' }}>
+                      alignItems:'center', justifyContent:'center',
+                      /* evita scroll accidental durante el drag */
+                      touchAction:'none' }}>
           <div
             ref={containerRef}
             onClick={onOverlayClick}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
             style={{ position:'relative', display:'inline-block',
-                     userSelect:'none', lineHeight:0 }}
+                     userSelect:'none', lineHeight:0, cursor:'crosshair' }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -250,63 +322,74 @@ function CropModal({
               alt="crop"
               onLoad={onImgLoad}
               draggable={false}
-              style={{ maxWidth:'100%', maxHeight:'60vh', display:'block',
-                       opacity:.55, pointerEvents:'none' }}
+              style={{ maxWidth:'100%', maxHeight:'58vh', display:'block',
+                       opacity:.45, pointerEvents:'none' }}
             />
 
             {imgSize.w > 0 && (
               <>
-                {[
-                  { top:0, left:0, width:'100%', height:box.y },
-                  { top:box.y+box.h, left:0, width:'100%', bottom:0 },
-                  { top:box.y, left:0, width:box.x, height:box.h },
-                  { top:box.y, left:box.x+box.w, right:0, height:box.h },
-                ].map((s, i) => (
-                  <div key={i} style={{ position:'absolute', background:'rgba(0,0,0,0.55)',
-                                         pointerEvents:'none', ...s as React.CSSProperties }} />
+                {/* sombra alrededor del recorte */}
+                {([
+                  { top:0,          left:0,       width:'100%', height:box.y           },
+                  { top:box.y+box.h,left:0,       width:'100%', bottom:0               },
+                  { top:box.y,      left:0,       width:box.x,  height:box.h           },
+                  { top:box.y,      left:box.x+box.w, right:0,  height:box.h           },
+                ] as React.CSSProperties[]).map((s, i) => (
+                  <div key={i} style={{ position:'absolute', background:'rgba(0,0,0,0.6)',
+                                        pointerEvents:'none', ...s }} />
                 ))}
 
+                {/* área de recorte */}
                 <div
                   onPointerDown={e => onPointerDown(e, 'move')}
                   style={{
                     position:'absolute',
                     left:box.x, top:box.y, width:box.w, height:box.h,
-                    border:'2px solid #fff',
-                    boxShadow:'0 0 0 1px rgba(0,0,0,0.5)',
+                    border:'1.5px solid rgba(255,255,255,0.9)',
+                    boxShadow:'0 0 0 1px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.15)',
                     cursor:'move', boxSizing:'border-box',
                   }}
                 >
+                  {/* rejilla de tercios */}
                   {[1,2].map(n => (
                     <div key={`v${n}`} style={{ position:'absolute', top:0, bottom:0, width:1,
-                                                 left:`${n*33.33}%`, background:'rgba(255,255,255,0.3)' }}/>
+                                                left:`${n*33.33}%`, background:'rgba(255,255,255,0.25)',
+                                                pointerEvents:'none' }}/>
                   ))}
                   {[1,2].map(n => (
                     <div key={`h${n}`} style={{ position:'absolute', left:0, right:0, height:1,
-                                                 top:`${n*33.33}%`, background:'rgba(255,255,255,0.3)' }}/>
+                                                top:`${n*33.33}%`, background:'rgba(255,255,255,0.25)',
+                                                pointerEvents:'none' }}/>
                   ))}
 
+                  {/* handles de redimensión — más grandes y fáciles de agarrar */}
                   {handles.map(({ id, cursor, style }) => (
                     <div
                       key={id}
                       onPointerDown={e => onPointerDown(e, id)}
                       style={{
-                        position:'absolute', width:13, height:13,
-                        background:'#fff', border:'2px solid #1e3a5f',
-                        borderRadius:3, cursor, ...style,
-                        boxShadow:'0 1px 4px rgba(0,0,0,0.5)',
+                        position:'absolute', width:14, height:14,
+                        background:'#fff',
+                        border:'2px solid #1e3a5f',
+                        borderRadius:3, cursor,
+                        boxShadow:'0 1px 5px rgba(0,0,0,0.55)',
+                        zIndex:2,
+                        ...style,
                       }}
                     />
                   ))}
                 </div>
 
+                {/* badge de tamaño */}
                 <div style={{
                   position:'absolute',
                   left: box.x + box.w / 2,
-                  top: box.y + box.h + 8,
+                  top:  Math.max(box.y + box.h + 6, box.y + box.h + 4),
                   transform:'translateX(-50%)',
-                  background:'rgba(0,0,0,0.7)', color:'#fff',
-                  fontSize:'0.65rem', padding:'2px 8px', borderRadius:6,
+                  background:'rgba(0,0,0,0.75)', color:'#fff',
+                  fontSize:'0.63rem', padding:'2px 9px', borderRadius:6,
                   pointerEvents:'none', whiteSpace:'nowrap',
+                  fontVariantNumeric:'tabular-nums',
                 }}>
                   {Math.round(box.w)} × {Math.round(box.h)} px
                 </div>
@@ -316,19 +399,25 @@ function CropModal({
         </div>
 
         {/* info row */}
-        <div style={{ padding:'0.5rem 1.5rem', background:'#f8fafc',
+        <div style={{ padding:'0.45rem 1.5rem', background:'#f8fafc',
                       borderTop:'1px solid #e2e8f0', display:'flex',
-                      gap:20, flexWrap:'wrap', fontSize:'0.72rem', color:'#64748b', flexShrink:0 }}>
+                      gap:20, flexWrap:'wrap', fontSize:'0.7rem',
+                      color:'#64748b', flexShrink:0 }}>
           <span>X: <strong>{Math.round(box.x)}</strong></span>
           <span>Y: <strong>{Math.round(box.y)}</strong></span>
           <span>Ancho: <strong>{Math.round(box.w)}</strong></span>
           <span>Alto: <strong>{Math.round(box.h)}</strong></span>
-          {aspect && <span style={{ color:'#94a3b8' }}>Relación: {aspect.toFixed(2)}</span>}
+          {aspect && (
+            <span style={{ color:'#94a3b8' }}>
+              Relación fija: <strong>{aspect.toFixed(2)}</strong>
+            </span>
+          )}
         </div>
 
         {/* footer */}
         <div style={{ padding:'1rem 1.5rem', borderTop:'1px solid #e2e8f0',
-                      display:'flex', gap:10, alignItems:'center', justifyContent:'flex-end', flexShrink:0, flexWrap:'wrap' }}>
+                      display:'flex', gap:10, alignItems:'center',
+                      justifyContent:'flex-end', flexShrink:0, flexWrap:'wrap' }}>
           {applyErr && (
             <p style={{ flex:1, margin:0, fontSize:'0.78rem', color:'#ef4444',
                         background:'#fff1f2', border:'1px solid #fecaca',
@@ -338,18 +427,18 @@ function CropModal({
           )}
           <button onClick={onSkip} type="button" disabled={applying} style={{
             padding:'0.6rem 1.2rem', borderRadius:10, border:'1.5px solid #e2e8f0',
-            background:'#fff', cursor: applying ? 'not-allowed' : 'pointer',
+            background:'#fff', cursor:applying ? 'not-allowed' : 'pointer',
             fontSize:'0.85rem', color:'#475569',
-            fontFamily:'inherit', fontWeight:600, opacity: applying ? 0.5 : 1,
+            fontFamily:'inherit', fontWeight:600, opacity:applying ? 0.5 : 1,
           }}>
             Usar sin recortar
           </button>
           <button onClick={handleApply} type="button" disabled={applying} style={{
             padding:'0.6rem 1.4rem', borderRadius:10, border:'none',
-            background: applying
+            background:applying
               ? 'linear-gradient(135deg,#4b6a8f,#6b93d6)'
               : 'linear-gradient(135deg,#1e3a5f,#2563eb)',
-            color:'#fff', cursor: applying ? 'not-allowed' : 'pointer',
+            color:'#fff', cursor:applying ? 'not-allowed' : 'pointer',
             fontSize:'0.85rem', fontFamily:'inherit', fontWeight:700,
             display:'flex', alignItems:'center', gap:8,
           }}>

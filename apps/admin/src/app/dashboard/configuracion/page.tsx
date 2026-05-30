@@ -63,40 +63,91 @@ function F({ label: lb, fieldKey, type = 'text', placeholder = '', rows = 3, val
 
 /* ─────────────────────────────────────────────────────
    ItemCard — row with Edit / Hide / Delete
+   Muestra thumbnail (imagen/video) cuando el ítem tiene
+   logoUrl, mediaSrc, avatar o url. Si no, muestra emoji.
+   Si tiene gradient (valores), muestra swatch de color.
 ───────────────────────────────────────────────────── */
 function ItemCard({ item, onEdit, onToggle, onDelete }: {
   item: any; onEdit: () => void; onToggle: () => void; onDelete: () => void;
 }) {
-  const hidden = item.visible === false;
+  const hidden   = item.visible === false;
+  const mediaUrl = item.logoUrl || item.mediaSrc || item.avatar || item.url || '';
+  const isVideo  = (item.mediaType === 'video')
+    || (!!mediaUrl && /\.(mp4|webm|mov)/i.test(mediaUrl.split('?')[0]));
+  const emoji    = item.icon || item.logo || '';
+  // logos (logoUrl) se muestran con contain; avatares/media con cover
+  const fit      = item.logoUrl ? 'contain' : 'cover';
+
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:12, background:'#f8fafc', borderRadius:10, padding:'0.875rem 1rem', border:'1px solid #e2e8f0', opacity:hidden?0.55:1, transition:'opacity .2s' }}>
-      {(item.icon || item.logo) && (
-        <span style={{ fontSize:'1.4rem', width:32, textAlign:'center', flexShrink:0 }}>{item.icon || item.logo}</span>
+    <div style={{ display:'flex', alignItems:'center', gap:12, background:'#f8fafc', borderRadius:10,
+                  padding:'0.75rem 1rem', border:'1px solid #e2e8f0',
+                  opacity:hidden ? 0.55 : 1, transition:'opacity .2s' }}>
+
+      {/* ── thumbnail ── */}
+      {mediaUrl ? (
+        <div style={{ width:44, height:44, borderRadius:10, overflow:'hidden', flexShrink:0,
+                      background: fit === 'contain' ? '#fff' : 'linear-gradient(135deg,#1e3a5f,#2563eb)',
+                      border:'1px solid #e2e8f0', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          {isVideo
+            ? <video src={mediaUrl} muted style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+            : <img src={mediaUrl} alt={item.name || item.title || ''}
+                   style={{ width:'100%', height:'100%', objectFit:fit }}/>}
+        </div>
+      ) : emoji ? (
+        <span style={{ fontSize:'1.3rem', width:38, textAlign:'center', flexShrink:0, lineHeight:1 }}>{emoji}</span>
+      ) : item.gradient ? (
+        /* valores — swatch */
+        <div style={{ width:38, height:38, borderRadius:10, flexShrink:0,
+                      background:`linear-gradient(135deg,${item.gradient})`,
+                      border:'1px solid rgba(0,0,0,0.06)' }}/>
+      ) : (
+        <div style={{ width:38, height:38, borderRadius:10, flexShrink:0,
+                      background:'#e2e8f0' }}/>
       )}
-      {item.logoUrl && !item.icon && !item.logo && (
-        <img src={item.logoUrl} alt={item.name||''} style={{ width:40, height:40, objectFit:'contain', borderRadius:6, flexShrink:0 }}/>
-      )}
+
+      {/* ── text ── */}
       <div style={{ flex:1, minWidth:0 }}>
-        {(item.title || item.label || item.name) && (
-          <p style={{ fontWeight:600, fontSize:'0.88rem', color:'#0a1628', margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-            {item.title || item.label || item.name}
-            {item.year && <span style={{ color:'#94a3b8', fontWeight:400, marginLeft:4 }}>({item.year})</span>}
-          </p>
-        )}
+        <p style={{ fontWeight:600, fontSize:'0.88rem', color:'#0a1628', margin:'0 0 2px',
+                    overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+          {/* cuando hay imagen Y emoji, muestra el emoji dentro del título */}
+          {mediaUrl && emoji ? <span style={{ marginRight:5 }}>{emoji}</span> : null}
+          {item.title || item.label || item.name ||
+            <span style={{ color:'#94a3b8', fontWeight:400 }}>Sin título</span>}
+          {item.year &&
+            <span style={{ color:'#94a3b8', fontWeight:400, fontSize:'0.78rem', marginLeft:6 }}>
+              {item.year}
+            </span>}
+        </p>
         {(item.desc || item.text) && (
-          <p style={{ fontSize:'0.78rem', color:'#64748b', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+          <p style={{ fontSize:'0.75rem', color:'#64748b', margin:0,
+                      overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
             {item.desc || item.text}
           </p>
         )}
       </div>
-      {hidden && <span style={{ fontSize:'0.65rem', background:'#f1f5f9', color:'#94a3b8', borderRadius:4, padding:'2px 6px', flexShrink:0 }}>Oculto</span>}
+
+      {hidden &&
+        <span style={{ fontSize:'0.62rem', background:'#f1f5f9', color:'#94a3b8',
+                       borderRadius:4, padding:'2px 6px', flexShrink:0, whiteSpace:'nowrap' }}>
+          Oculto
+        </span>}
+
       <div style={{ display:'flex', gap:6, flexShrink:0 }}>
         <button onClick={onEdit} title="Editar"
-          style={{ background:'none', border:'1px solid #bfdbfe', borderRadius:8, padding:'6px', cursor:'pointer', color:'#2563eb', display:'flex', alignItems:'center' }}><Edit2 size={14}/></button>
-        <button onClick={onToggle} title={hidden?'Mostrar':'Ocultar'}
-          style={{ background:'none', border:'1px solid #e2e8f0', borderRadius:8, padding:'6px', cursor:'pointer', color:'#64748b', display:'flex', alignItems:'center' }}>{hidden?<Eye size={14}/>:<EyeOff size={14}/>}</button>
+          style={{ background:'none', border:'1px solid #bfdbfe', borderRadius:8, padding:'6px',
+                   cursor:'pointer', color:'#2563eb', display:'flex', alignItems:'center' }}>
+          <Edit2 size={14}/>
+        </button>
+        <button onClick={onToggle} title={hidden ? 'Mostrar' : 'Ocultar'}
+          style={{ background:'none', border:'1px solid #e2e8f0', borderRadius:8, padding:'6px',
+                   cursor:'pointer', color:'#64748b', display:'flex', alignItems:'center' }}>
+          {hidden ? <Eye size={14}/> : <EyeOff size={14}/>}
+        </button>
         <button onClick={onDelete} title="Eliminar"
-          style={{ background:'none', border:'1px solid #fecaca', borderRadius:8, padding:'6px', cursor:'pointer', color:'#ef4444', display:'flex', alignItems:'center' }}><Trash2 size={14}/></button>
+          style={{ background:'none', border:'1px solid #fecaca', borderRadius:8, padding:'6px',
+                   cursor:'pointer', color:'#ef4444', display:'flex', alignItems:'center' }}>
+          <Trash2 size={14}/>
+        </button>
       </div>
     </div>
   );
@@ -150,6 +201,8 @@ export default function ConfiguracionPage() {
   const [data,    setData]    = useState<Record<string,any>>({});
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
+  /* Flag para saber si la sección muestra datos de ejemplo (nunca guardados) */
+  const [isDefaults, setIsDefaults] = useState(false);
 
   /* Testimonios */
   const [testimonios, setTestimonios] = useState<any[]>([]);
@@ -174,19 +227,22 @@ export default function ConfiguracionPage() {
 
   /* ── Load section doc ── */
   useEffect(() => {
-    if (section === 'testimonios') { setLoading(false); return; }
+    if (section === 'testimonios') { setLoading(false); setIsDefaults(false); return; }
     setLoading(true);
-    setData({}); // clear stale data
+    setIsDefaults(false);
+    setData({});
     getDoc(doc(db, COL.CONFIGURACION, section)).then(snap => {
       const loaded: Record<string,any> = snap.exists() ? snap.data() : {};
-      /* Always initialise why-us items so partial saves don't lose defaults */
+      let usedDefaults = false;
       if (section === 'why-us' && (!loaded.items || loaded.items.length === 0)) {
         loaded.items = DEFAULT_WHY_ITEMS;
+        usedDefaults = !snap.exists();
       }
-      /* Always initialise brands so the section starts populated */
       if (section === 'brands' && (!loaded.brands || loaded.brands.length === 0)) {
         loaded.brands = DEFAULT_BRANDS;
+        usedDefaults = !snap.exists();
       }
+      setIsDefaults(usedDefaults);
       setData(loaded);
       setLoading(false);
     });
@@ -211,6 +267,7 @@ export default function ConfiguracionPage() {
     setSaving(true);
     await setDoc(doc(db, COL.CONFIGURACION, section), data, { merge:true });
     setSaving(false);
+    setIsDefaults(false);
     toast.success('✅ Guardado. Los cambios ya están en la web.');
   };
 
@@ -469,6 +526,24 @@ export default function ConfiguracionPage() {
               {/* ══════════ HERO ══════════ */}
               {section === 'hero' && (
                 <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+                  {/* Media actual establecida */}
+                  {data.bgImage && (
+                    <div style={{ borderRadius:12, overflow:'hidden', position:'relative', height:120, background:'#0a1628' }}>
+                      {data.bgMediaType === 'video'
+                        ? <video src={data.bgImage} muted autoPlay loop playsInline
+                            style={{ width:'100%', height:'100%', objectFit:'cover', opacity:.7 }}/>
+                        : <img src={data.bgImage} alt="Fondo hero"
+                            style={{ width:'100%', height:'100%', objectFit:'cover', opacity:.7,
+                                     objectPosition:`${(data.bgFocalX??0.5)*100}% ${(data.bgFocalY??0.4)*100}%` }}/>}
+                      <div style={{ position:'absolute', inset:0, background:'linear-gradient(to right, rgba(10,22,40,.7) 0%, transparent 60%)' }}/>
+                      <div style={{ position:'absolute', bottom:10, left:14 }}>
+                        <span style={{ background:'rgba(0,0,0,.65)', color:'#fff', fontSize:'0.65rem',
+                                       padding:'2px 10px', borderRadius:999, fontWeight:600 }}>
+                          {data.bgMediaType === 'video' ? '🎬 Video de fondo activo' : '🖼️ Imagen de fondo activa'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   <F label="Eyebrow (texto sobre el H1)" fieldKey="eyebrow" value={data.eyebrow||''} onChange={handleField} placeholder="Organizamos tu momento especial"/>
                   <F label='H1 — usa <em>texto</em> para color dorado' fieldKey="h1" value={data.h1||''} onChange={handleField} placeholder='Eventos que dejan <em>huella</em>'/>
                   <F label="Descripción" fieldKey="desc" value={data.desc||''} onChange={handleField} type="textarea" rows={3} placeholder="Somos expertos en transformar cada celebración..."/>
@@ -505,6 +580,31 @@ export default function ConfiguracionPage() {
               {/* ══════════ ABOUT ══════════ */}
               {section === 'about' && (
                 <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+                  {/* Miniaturas de las imágenes/videos establecidos */}
+                  {(data.img1 || data.img2) && (
+                    <div style={{ display:'grid', gridTemplateColumns: data.img1 && data.img2 ? '1fr 1fr' : '1fr', gap:10 }}>
+                      {data.img1 && (
+                        <div style={{ borderRadius:10, overflow:'hidden', position:'relative', aspectRatio:'3/4', background:'#0a1628', maxHeight:160 }}>
+                          {data.img1Type === 'video'
+                            ? <video src={data.img1} muted autoPlay loop playsInline style={{ width:'100%', height:'100%', objectFit:'cover', opacity:.8 }}/>
+                            : <img src={data.img1} alt="Foto principal" style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:data.img1Pos||'center', opacity:.85 }}/>}
+                          <span style={{ position:'absolute', bottom:6, left:8, background:'rgba(0,0,0,.65)', color:'#fff', fontSize:'0.6rem', padding:'2px 8px', borderRadius:999 }}>
+                            {data.img1Type === 'video' ? '🎬' : '🖼️'} Principal
+                          </span>
+                        </div>
+                      )}
+                      {data.img2 && (
+                        <div style={{ borderRadius:10, overflow:'hidden', position:'relative', aspectRatio:'4/3', background:'#0a1628', maxHeight:160 }}>
+                          {data.img2Type === 'video'
+                            ? <video src={data.img2} muted autoPlay loop playsInline style={{ width:'100%', height:'100%', objectFit:'cover', opacity:.8 }}/>
+                            : <img src={data.img2} alt="Foto secundaria" style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:data.img2Pos||'center', opacity:.85 }}/>}
+                          <span style={{ position:'absolute', bottom:6, left:8, background:'rgba(0,0,0,.65)', color:'#fff', fontSize:'0.6rem', padding:'2px 8px', borderRadius:999 }}>
+                            {data.img2Type === 'video' ? '🎬' : '🖼️'} Secundaria
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <F label="Badge / etiqueta" fieldKey="label" value={data.label||''} onChange={handleField} placeholder="Quiénes Somos"/>
                   <F label="Título H2" fieldKey="h2" value={data.h2||''} onChange={handleField} placeholder="Tu Evento en Manos de Expertos"/>
                   <F label="Párrafo 1" fieldKey="p1" value={data.p1||''} onChange={handleField} type="textarea" rows={3} placeholder="Somos una empresa especializada en..."/>
@@ -635,6 +735,14 @@ export default function ConfiguracionPage() {
               {/* ══════════ WHY US ══════════ */}
               {section === 'why-us' && (
                 <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+                  {isDefaults && (
+                    <div style={{ background:'#fffbeb', border:'1px solid #fde68a', borderRadius:10, padding:'0.75rem 1rem', display:'flex', gap:10, alignItems:'flex-start' }}>
+                      <span style={{ fontSize:'1.1rem', flexShrink:0 }}>💡</span>
+                      <p style={{ fontSize:'0.82rem', color:'#92400e', margin:0 }}>
+                        Estos son <strong>datos de ejemplo</strong> — aún no has guardado esta sección. Edítalos a tu gusto y haz clic en <strong>Guardar sección</strong>.
+                      </p>
+                    </div>
+                  )}
                   <F label='Título H2 (usa <em>texto</em> para dorado)' fieldKey="h2" value={data.h2||''} onChange={handleField} placeholder='¿Por qué <em>elegirnos</em>?'/>
                   <F label="Descripción" fieldKey="desc" value={data.desc||''} onChange={handleField} placeholder="Más de una década transformando celebraciones en Sechura."/>
 
@@ -673,6 +781,14 @@ export default function ConfiguracionPage() {
               {/* ══════════ BRANDS ══════════ */}
               {section === 'brands' && (
                 <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+                  {isDefaults && (
+                    <div style={{ background:'#fffbeb', border:'1px solid #fde68a', borderRadius:10, padding:'0.75rem 1rem', display:'flex', gap:10, alignItems:'flex-start' }}>
+                      <span style={{ fontSize:'1.1rem', flexShrink:0 }}>💡</span>
+                      <p style={{ fontSize:'0.82rem', color:'#92400e', margin:0 }}>
+                        Estos son <strong>datos de ejemplo</strong> — aún no has guardado esta sección. Edítalos a tu gusto y haz clic en <strong>Guardar sección</strong>.
+                      </p>
+                    </div>
+                  )}
                   <F label="Título de la sección" fieldKey="h2" value={data.h2||''} onChange={handleField} placeholder="Empresas que confían en nosotros"/>
                   <ListHeader lb="Empresas / Marcas" count={(data.brands||[]).length} listKey="brands" def={{ name:'', logo:'🏢', logoUrl:'', visible:true }}/>
                   {(data.brands||[]).length === 0 && (
