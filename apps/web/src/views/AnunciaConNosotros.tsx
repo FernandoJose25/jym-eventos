@@ -158,7 +158,6 @@ function TierCard({ tier, inView, delay }: {
           : hovered
             ? 'linear-gradient(135deg,rgba(212,160,23,0.5),rgba(245,200,66,0.15))'
             : 'linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))',
-        transition: 'background 0.35s ease',
         boxShadow: tier.popular
           ? hovered
             ? '0 24px 70px rgba(212,160,23,0.35), 0 0 0 1px rgba(245,200,66,0.15)'
