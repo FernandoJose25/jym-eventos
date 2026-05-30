@@ -1,11 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, updateDoc, setDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { db, auth, COL } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Pencil, Check, X } from 'lucide-react';
+import { Plus, Pencil, Check, X, KeyRound } from 'lucide-react';
 import type { Usuario, RolUsuario } from '@/types';
 
 const ROL_DESC: Record<RolUsuario,{ label:string; desc:string; bg:string; color:string }> = {
@@ -51,6 +51,35 @@ export default function UsuariosPage() {
     await updateDoc(doc(db, COL.USUARIOS, uid), { nombre: editNombreVal.trim() });
     toast.success('Nombre actualizado');
     setEditingNombre(null);
+  };
+
+  const [editingCreds, setEditingCreds] = useState(false);
+  const [creds, setCreds] = useState({ currentPass:'', newEmail:'', newPass:'' });
+  const [savingCreds, setSavingCreds] = useState(false);
+
+  const handleSaveCreds = async () => {
+    if (!creds.currentPass) { toast.error('Ingresa tu contraseña actual'); return; }
+    if (!creds.newEmail && !creds.newPass) { toast.error('Ingresa un nuevo correo o contraseña'); return; }
+    setSavingCreds(true);
+    try {
+      const user = auth.currentUser!;
+      const credential = EmailAuthProvider.credential(user.email!, creds.currentPass);
+      await reauthenticateWithCredential(user, credential);
+      if (creds.newEmail && creds.newEmail !== user.email) {
+        await updateEmail(user, creds.newEmail);
+        await updateDoc(doc(db, COL.USUARIOS, user.uid), { email: creds.newEmail });
+        toast.success('Correo actualizado');
+      }
+      if (creds.newPass) {
+        await updatePassword(user, creds.newPass);
+        toast.success('Contraseña actualizada');
+      }
+      setEditingCreds(false);
+      setCreds({ currentPass:'', newEmail:'', newPass:'' });
+    } catch(e:any) {
+      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') toast.error('Contraseña actual incorrecta');
+      else toast.error(e?.message || 'Error al actualizar');
+    } finally { setSavingCreds(false); }
   };
 
   const handleAdd = async () => {
@@ -159,6 +188,11 @@ export default function UsuariosPage() {
                               <button onClick={()=>startEditNombre(u)} style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', padding:2 }} title="Editar nombre">
                                 <Pencil size={12}/>
                               </button>
+                              {isMe && (
+                                <button onClick={()=>setEditingCreds(true)} style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', padding:2 }} title="Cambiar correo / contraseña">
+                                  <KeyRound size={12}/>
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
@@ -203,6 +237,36 @@ export default function UsuariosPage() {
           </table>
         )}
       </div>
+
+      {/* Modal cambiar credenciales propias */}
+      {editingCreds && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div className="admin-card" style={{ padding:'2rem', width:'100%', maxWidth:420, margin:'1rem' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+              <h3 style={{ fontSize:'1rem', fontWeight:700, color:'#0a1628', margin:0 }}>Mis credenciales</h3>
+              <button onClick={()=>{ setEditingCreds(false); setCreds({ currentPass:'', newEmail:'', newPass:'' }); }} style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8' }}><X size={18}/></button>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              {[
+                { label:'Contraseña actual *', key:'currentPass', type:'password', ph:'Tu contraseña actual' },
+                { label:'Nuevo correo (opcional)', key:'newEmail', type:'email', ph: auth.currentUser?.email || '' },
+                { label:'Nueva contraseña (opcional)', key:'newPass', type:'password', ph:'Mín. 6 caracteres' },
+              ].map(({ label, key, type, ph }) => (
+                <div key={key}>
+                  <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>{label}</label>
+                  <input type={type} value={(creds as any)[key]} onChange={e=>setCreds(p=>({...p,[key]:e.target.value}))} placeholder={ph} className="admin-input"/>
+                </div>
+              ))}
+            </div>
+            <div style={{ display:'flex', gap:10, marginTop:20 }}>
+              <button onClick={()=>{ setEditingCreds(false); setCreds({ currentPass:'', newEmail:'', newPass:'' }); }} className="btn-outline">Cancelar</button>
+              <button onClick={handleSaveCreds} disabled={savingCreds} className="btn-gold" style={{ opacity:savingCreds?0.6:1 }}>
+                {savingCreds ? 'Guardando…' : '✅ Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
