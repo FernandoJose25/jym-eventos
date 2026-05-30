@@ -37,8 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (u) {
         try {
           const snap = await getDoc(doc(db, COL.USUARIOS, u.uid));
-          if (snap.exists()) setProfile(snap.data() as Usuario);
-          else setProfile({ uid:u.uid, email:u.email||'', nombre:u.email||'', rol:'lector', activo:true, creadoEn:new Date().toISOString() });
+          if (snap.exists()) {
+            const data = snap.data() as Usuario;
+            if (data.activo === false) { await fbSignOut(auth); return; }
+            setProfile(data);
+          } else {
+            setProfile({ uid:u.uid, email:u.email||'', nombre:u.email||'', rol:'lector', activo:true, creadoEn:new Date().toISOString() });
+          }
         } catch { setProfile(null); }
       } else {
         setProfile(null);

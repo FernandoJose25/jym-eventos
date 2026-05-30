@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, updateDoc, setDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, verifyBeforeUpdateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { createUserWithEmailAndPassword, verifyBeforeUpdateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential, getAuth } from 'firebase/auth';
+import { initializeApp, deleteApp } from 'firebase/app';
 import { db, auth, COL } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
@@ -85,8 +86,12 @@ export default function UsuariosPage() {
   const handleAdd = async () => {
     if (!newUser.email||!newUser.nombre||!newUser.pass) { toast.error('Completa todos los campos'); return; }
     setSaving(true);
+    let secondaryApp: any = null;
     try {
-      const cred = await createUserWithEmailAndPassword(auth, newUser.email, newUser.pass);
+      // App secundaria para no cerrar la sesión del admin actual
+      secondaryApp = initializeApp(auth.app.options, `secondary-${Date.now()}`);
+      const secondaryAuth = getAuth(secondaryApp);
+      const cred = await createUserWithEmailAndPassword(secondaryAuth, newUser.email, newUser.pass);
       await setDoc(doc(db, COL.USUARIOS, cred.user.uid), {
         uid: cred.user.uid, email:newUser.email, nombre:newUser.nombre,
         rol:newUser.rol, activo:true, creadoEn:new Date().toISOString(),
@@ -95,7 +100,10 @@ export default function UsuariosPage() {
       setAdding(false);
       setNewUser({ email:'', nombre:'', rol:'editor', pass:'' });
     } catch(e:any) { toast.error(e?.message||'Error al crear usuario'); }
-    finally { setSaving(false); }
+    finally {
+      if (secondaryApp) await deleteApp(secondaryApp);
+      setSaving(false);
+    }
   };
 
   if (!isAdmin) return (
