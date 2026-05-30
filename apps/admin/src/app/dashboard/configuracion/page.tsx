@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   doc, getDoc, setDoc, collection, query, orderBy,
-  onSnapshot, deleteDoc, updateDoc,
+  onSnapshot, deleteDoc, updateDoc, where, getDocs,
 } from 'firebase/firestore';
 import { db, COL } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -204,6 +204,17 @@ export default function ConfiguracionPage() {
   /* Flag para saber si la sección muestra datos de ejemplo (nunca guardados) */
   const [isDefaults, setIsDefaults] = useState(false);
 
+  /* Conteo automático de servicios visibles */
+  const [servicesCount, setServicesCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    const unsub = onSnapshot(
+      query(collection(db, COL.SERVICIOS), where('visible', '==', true)),
+      snap => setServicesCount(snap.size)
+    );
+    return unsub;
+  }, []);
+
   /* Testimonios */
   const [testimonios, setTestimonios] = useState<any[]>([]);
   const [testLoading, setTestLoading] = useState(false);
@@ -265,7 +276,10 @@ export default function ConfiguracionPage() {
   /* ── Save section ── */
   const handleSave = async () => {
     setSaving(true);
-    await setDoc(doc(db, COL.CONFIGURACION, section), data, { merge:true });
+    const saveData = section === 'stats' && servicesCount !== null
+      ? { ...data, s4num: String(servicesCount) }
+      : data;
+    await setDoc(doc(db, COL.CONFIGURACION, section), saveData, { merge:true });
     setSaving(false);
     setIsDefaults(false);
     toast.success('✅ Guardado. Los cambios ya están en la web.');
@@ -567,13 +581,34 @@ export default function ConfiguracionPage() {
                   <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:10, padding:'0.75rem 1rem' }}>
                     <p style={{ fontSize:'0.8rem', color:'#166534', margin:0 }}>💡 Haz clic en "Editar" para modificar cada contador. Los cambios se guardan al presionar "Guardar sección".</p>
                   </div>
-                  {[1,2,3,4].map(n => (
+                  {[1,2,3].map(n => (
                     <StatCard key={n} index={n}
                       num={data[`s${n}num`]||''}
                       label={data[`s${n}label`]||''}
                       secondary={data[`s${n}sub`]||''}
                       onEdit={() => openStatsEdit('main', n)}/>
                   ))}
+                  {/* Stat #4: Servicios disponibles — auto-calculado */}
+                  <div style={{ display:'flex', alignItems:'center', gap:12, background:'#eff6ff', borderRadius:10,
+                                padding:'0.75rem 1rem', border:'1px solid #bfdbfe' }}>
+                    <div style={{ width:44, height:44, borderRadius:10, flexShrink:0, display:'flex', alignItems:'center',
+                                  justifyContent:'center', background:'#1d4ed8', color:'#fff',
+                                  fontWeight:800, fontSize:'1.1rem' }}>
+                      {servicesCount ?? data.s4num ?? '?'}
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <p style={{ fontWeight:600, fontSize:'0.88rem', color:'#0a1628', margin:'0 0 2px' }}>
+                        {data.s4label || 'Servicios disponibles'}
+                      </p>
+                      <p style={{ fontSize:'0.72rem', color:'#3b82f6', margin:0 }}>
+                        🔄 Se actualiza automáticamente según los servicios activos
+                      </p>
+                    </div>
+                    <span style={{ fontSize:'0.65rem', background:'#dbeafe', color:'#1d4ed8',
+                                   borderRadius:6, padding:'3px 8px', fontWeight:700 }}>
+                      AUTO
+                    </span>
+                  </div>
                 </div>
               )}
 

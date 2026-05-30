@@ -218,6 +218,72 @@ const SERVICIOS_DATA: Record<string, any> = {
     waText: 'Hola, me interesa el servicio de Decoración Temática',
     color: '#db2777',
   },
+  'promociones': {
+    badge: '🎁 Promociones', title: 'Promociones',
+    hero: 'Paquetes especiales y ofertas exclusivas para que tu evento sea perfecto sin salirse del presupuesto.',
+    h2: 'Las Mejores Ofertas para tu Evento Especial',
+    p1: 'Tenemos paquetes combinados pensados para maximizar la experiencia de tu evento al mejor precio. Combinamos shows, decoración, catering y fotografía en ofertas diseñadas para cada tipo de celebración.',
+    p2: 'Nuestras promociones cambian cada temporada y se adaptan a cumpleaños, bodas, quinceañeros y eventos corporativos. Consulta disponibilidad y obtén hasta un 20% de descuento al contratar servicios combinados.',
+    features: [
+      { text: 'Paquetes combinados', detail: 'Combinación de 2 o más servicios con precio especial.' },
+      { text: 'Descuentos por temporada', detail: 'Ofertas exclusivas en fechas especiales del año.' },
+      { text: 'Paquete cumpleaños', detail: 'Show + decoración + catering en un solo paquete.' },
+      { text: 'Paquete boda', detail: 'Hora loca + fotografía + catering con precio especial.' },
+      { text: 'Paquete corporativo', detail: 'Activación + catering + registro multimedia.' },
+      { text: 'Financiamiento', detail: 'Paga en cuotas cómodas sin interés con anticipo.' },
+    ],
+    incluye: [
+      { icon: '🎯', title: 'Asesoría Personalizada', desc: 'Te ayudamos a elegir el paquete ideal según tu evento y presupuesto.' },
+      { icon: '💰', title: 'Precio Todo Incluido', desc: 'Sin costos ocultos: el precio del paquete incluye todo lo listado.' },
+      { icon: '📋', title: 'Contrato Detallado', desc: 'Documento claro con todos los servicios y condiciones acordadas.' },
+      { icon: '🎁', title: 'Sorpresas Incluidas', desc: 'Detalles y obsequios adicionales para los paquetes premium.' },
+      { icon: '📞', title: 'Coordinador Dedicado', desc: 'Un coordinador asignado a tu evento desde la contratación.' },
+      { icon: '🚗', title: 'Cobertura en Piura', desc: 'Servicio disponible en toda la región Piura y alrededores.' },
+    ],
+    cta: 'Aprovecha Nuestras Promociones',
+    ctaDesc: 'Consulta disponibilidad de paquetes y obtén tu cotización personalizada.',
+    img: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&auto=format&fit=crop&q=80',
+    relacionados: [
+      { title: 'Shows Infantiles', icon: '🎭', href: '/servicios/shows-infantiles' },
+      { title: 'Show Hora Loca', icon: '🎉', href: '/servicios/hora-loca' },
+      { title: 'Decoración Temática', icon: '🎨', href: '/servicios/decoracion-tematica' },
+    ],
+    waText: 'Hola, me interesan las Promociones disponibles',
+    color: '#16a34a',
+  },
+  'quinceanios': {
+    badge: '👑 Quinceañeros', title: 'Quinceañeros',
+    hero: 'Celebra el momento más especial con una fiesta de quinceañera que supere todos tus sueños.',
+    h2: 'Una Celebración Digna de una Reina',
+    p1: 'Los quinceañeros merecen una celebración única y memorable. Nos encargamos de cada detalle: desde la decoración temática y el show de hora loca hasta la filmación y el catering, para que la quinceañera y su familia solo disfruten.',
+    p2: 'Creamos experiencias personalizadas que reflejan la personalidad de la festejada. Con nuestra coordinación integral, tu quinceañero será el evento del que todos hablarán.',
+    features: [
+      { text: 'Coordinación integral', detail: 'Planificación completa del evento de principio a fin.' },
+      { text: 'Decoración temática', detail: 'Ambientación personalizada acorde a los sueños de la quinceañera.' },
+      { text: 'Show Hora Loca', detail: 'Animación explosiva que hace bailar a todos los invitados.' },
+      { text: 'Filmación y fotografía', detail: 'Captura profesional de cada momento especial.' },
+      { text: 'Catering y mesa dulces', detail: 'Bocaditos, torta y mesa de dulces temática.' },
+      { text: 'Sorpresas especiales', detail: 'Detalles únicos que hacen memorable la celebración.' },
+    ],
+    incluye: [
+      { icon: '👑', title: 'Coordinación Completa', desc: 'Un equipo dedicado que gestiona todos los aspectos del evento.' },
+      { icon: '🎀', title: 'Decoración Personalizada', desc: 'Temática elegida por la quinceañera con arcos, backdrop y centros de mesa.' },
+      { icon: '🎉', title: 'Show Hora Loca', desc: 'Animación profesional con accesorios, música y serpentinas.' },
+      { icon: '📸', title: 'Fotografía y Video', desc: 'Cobertura completa con galería digital y video editado.' },
+      { icon: '🍽️', title: 'Catering', desc: 'Mesa de dulces temática y snacks para todos los invitados.' },
+      { icon: '🚗', title: 'Servicio en Sechura', desc: 'Llegamos a tu local o domicilio en Sechura, Piura y alrededores.' },
+    ],
+    cta: 'Organiza el Quinceañero de sus Sueños',
+    ctaDesc: 'Conversemos sobre la visión de la festejada y diseñamos el evento perfecto.',
+    img: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=1200&auto=format&fit=crop&q=80',
+    relacionados: [
+      { title: 'Decoración Temática', icon: '🎨', href: '/servicios/decoracion-tematica' },
+      { title: 'Show Hora Loca', icon: '🎉', href: '/servicios/hora-loca' },
+      { title: 'Filmación y Fotografía', icon: '📸', href: '/servicios/filmacion-fotografia' },
+    ],
+    waText: 'Hola, me interesa organizar un Quinceañero',
+    color: '#9333ea',
+  },
 };
 
 function toPlain(d: Record<string, any>): Record<string, any> {
@@ -1161,9 +1227,11 @@ export default function ServicioPage() {
               <p style={{ color: accentColor, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Otros Servicios</p>
               <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#0c1e30', margin: 0, letterSpacing: '-.03em' }}>También Te Puede Interesar</h2>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '1.25rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.25rem' }}>
               {sd.relacionados.map((r: any, i: number) => {
                 const rid = `rel-${i}`;
+                const relSlug = r.href?.split('/').pop() ?? '';
+                const relImg = SERVICIOS_DATA[relSlug]?.img ?? r.img ?? '';
                 return (
                   <a key={i} href={r.href} style={{ textDecoration: 'none', display: 'block' }}
                      data-reveal={rid}>
@@ -1177,7 +1245,7 @@ export default function ServicioPage() {
                       onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-8px)'; el.style.boxShadow = '0 24px 50px rgba(12,30,48,0.15)'; }}
                       onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 1px 8px rgba(12,30,48,0.06)'; }}>
                       <div style={{ height: 220, overflow: 'hidden', position: 'relative' }}>
-                        <img src={cxCard(r.img)} alt={r.title} loading="lazy" decoding="async"
+                        <img src={cxCard(relImg)} alt={r.title} loading="lazy" decoding="async"
                              style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .6s cubic-bezier(.25,.46,.45,.94)' }}
                              onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.08)'}
                              onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'} />

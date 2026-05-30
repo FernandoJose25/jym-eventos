@@ -89,7 +89,7 @@ export default function HomeClient() {
 
       {/* Stats */}
       <Section>
-        <StatsSection data={data.stats} />
+        <StatsSection data={{ ...data.stats, s4num: String(data.services.length) }} />
       </Section>
 
       {/* Por qué elegirnos */}

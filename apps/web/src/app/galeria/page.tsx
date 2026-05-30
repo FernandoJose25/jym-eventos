@@ -129,7 +129,7 @@ export default function GaleriaPage() {
     return [{ id: 'Todos', icon: '🎪' }, ...result];
   }, [items]);
 
-  const haySubs = subcats.length > 1;
+  const haySubs = catActiva !== 'Todos' && subcats.length > 1;
 
   // Lightbox keyboard
   useEffect(() => {
