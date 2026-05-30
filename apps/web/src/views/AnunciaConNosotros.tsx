@@ -115,201 +115,206 @@ function BenefitCard({ icon, title, desc, delay, inView }: {
 
 /* ─── Tier card ─── */
 function TierCard({ tier, inView, delay }: {
-  tier: { name: string; price: string; period: string; features: string[]; popular?: boolean; cta: string };
+  tier: { name: string; price: string; period: string; features: string[]; popular?: boolean; cta: string; color: string; icon: string };
   inView: boolean; delay: number;
 }) {
   const [hovered, setHovered] = useState(false);
+  const [shine, setShine] = useState({ x: 50, y: 50 });
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = (e: { clientX: number; clientY: number }) => {
+    const el = cardRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setShine({ x, y });
+  };
 
   return (
     <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       style={{
         flex: '1 1 260px',
         position: 'relative',
-        borderRadius: 24,
         opacity: inView ? 1 : 0,
         transform: inView
           ? tier.popular ? 'translateY(-10px) scale(1.03)' : 'translateY(0)'
           : 'translateY(32px)',
         transition: `opacity 0.65s ease ${delay}ms, transform 0.65s ease ${delay}ms`,
-        cursor: 'default',
       }}
     >
-      {/* ── Glow layer ── */}
+      {/* ── card__glow — difuso exterior, sigue al mouse ── */}
       <div style={{
-        position: 'absolute', inset: 0, borderRadius: 24, zIndex: 0,
+        position: 'absolute',
+        top: '50%', left: '50%',
+        width: '80%', height: '80%',
+        transform: `translate(calc(-50% + ${(shine.x - 50) * 0.3}px), calc(-50% + ${(shine.y - 50) * 0.3}px))`,
         background: tier.popular
-          ? 'radial-gradient(ellipse at 50% 0%, rgba(212,160,23,0.45) 0%, transparent 70%)'
-          : 'radial-gradient(ellipse at 50% 0%, rgba(212,160,23,0.22) 0%, transparent 70%)',
+          ? `radial-gradient(ellipse at center, rgba(212,160,23,0.55) 0%, transparent 70%)`
+          : `radial-gradient(ellipse at center, rgba(212,160,23,0.28) 0%, transparent 70%)`,
         opacity: hovered ? 1 : 0,
         transition: 'opacity 0.4s ease',
-        filter: 'blur(18px)',
+        filter: 'blur(24px)',
         pointerEvents: 'none',
+        zIndex: 0,
       }} />
 
-      {/* ── Border wrapper (gradient for popular, solid for rest) ── */}
-      <div style={{
-        position: 'relative', zIndex: 1,
-        borderRadius: 24,
-        padding: tier.popular ? '1.5px' : '1px',
-        background: tier.popular
-          ? 'linear-gradient(135deg,#b8860b,#f5c842 45%,#b8860b)'
-          : hovered
-            ? 'linear-gradient(135deg,rgba(212,160,23,0.5),rgba(245,200,66,0.15))'
-            : 'linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))',
-        boxShadow: tier.popular
-          ? hovered
-            ? '0 24px 70px rgba(212,160,23,0.35), 0 0 0 1px rgba(245,200,66,0.15)'
-            : '0 16px 50px rgba(212,160,23,0.22), 0 0 0 1px rgba(245,200,66,0.1)'
-          : hovered
-            ? '0 16px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(212,160,23,0.2)'
-            : '0 4px 20px rgba(0,0,0,0.25)',
-        transition: 'box-shadow 0.35s ease, background 0.35s ease',
-      }}>
-
-        {/* ── Card body (overflow:hidden for shine clip) ── */}
-        <div style={{
-          borderRadius: 22,
-          background: tier.popular ? 'rgba(9,19,36,0.98)' : 'rgba(12,22,40,0.92)',
+      {/* ── card wrapper con borde ── */}
+      <div
+        ref={cardRef}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => { setHovered(false); setShine({ x: 50, y: 50 }); }}
+        onMouseMove={handleMouseMove}
+        style={{
+          position: 'relative', zIndex: 1,
+          borderRadius: 24,
+          border: tier.popular
+            ? '1.5px solid rgba(245,200,66,0.6)'
+            : `1px solid ${hovered ? 'rgba(212,160,23,0.35)' : 'rgba(255,255,255,0.07)'}`,
+          background: tier.popular ? 'rgba(9,19,36,0.98)' : 'rgba(11,21,38,0.94)',
           backdropFilter: 'blur(16px)',
-          padding: '2rem 1.75rem',
-          position: 'relative',
           overflow: 'hidden',
-          height: '100%',
-          boxSizing: 'border-box',
+          cursor: 'default',
+          boxShadow: tier.popular
+            ? hovered
+              ? '0 28px 70px rgba(212,160,23,0.3), 0 0 0 1px rgba(245,200,66,0.1)'
+              : '0 16px 50px rgba(212,160,23,0.18)'
+            : hovered
+              ? '0 16px 48px rgba(0,0,0,0.45)'
+              : '0 4px 20px rgba(0,0,0,0.25)',
+          transition: 'box-shadow 0.35s ease, border-color 0.35s ease',
+        }}
+      >
+        {/* ── card__shine — radial que sigue al cursor ── */}
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none', borderRadius: 24,
+          background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.08) 0%, transparent 55%)`,
+          opacity: hovered ? 1 : 0,
+          transition: 'opacity 0.3s ease',
+        }} />
+
+        {/* ── card__image — bloque de color en la parte superior ── */}
+        <div style={{
+          width: '100%', height: 110,
+          background: tier.color,
+          position: 'relative', overflow: 'hidden',
+          flexShrink: 0,
         }}>
-
-          {/* ── Shine layer ── */}
+          {/* brillo interno sobre la imagen */}
           <div style={{
-            position: 'absolute',
-            top: '-60%', left: '-40%',
-            width: '180%', height: '180%',
-            background: 'linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.07) 50%, transparent 60%)',
-            transform: hovered ? 'translateX(60%)' : 'translateX(-10%)',
+            position: 'absolute', inset: 0,
+            background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.18) 0%, transparent 60%)`,
             opacity: hovered ? 1 : 0,
-            transition: 'transform 0.55s ease, opacity 0.3s ease',
-            pointerEvents: 'none',
-            zIndex: 0,
+            transition: 'opacity 0.3s ease',
           }} />
-
-          {/* ── Inner top glow strip ── */}
+          {/* icono central */}
           <div style={{
-            position: 'absolute', top: 0, left: '10%', right: '10%', height: 1,
-            background: tier.popular
-              ? 'linear-gradient(90deg,transparent,rgba(245,200,66,0.7),transparent)'
-              : 'linear-gradient(90deg,transparent,rgba(245,200,66,0.25),transparent)',
-            opacity: hovered ? 1 : tier.popular ? 0.6 : 0,
-            transition: 'opacity 0.35s ease',
-            zIndex: 1,
-          }} />
-
-          {/* ── Content (above shine) ── */}
-          <div style={{ position: 'relative', zIndex: 2 }}>
-
-            {tier.popular && (
-              <div style={{
-                position: 'absolute', top: 0, right: 0,
-                background: 'linear-gradient(135deg,#b8860b,#f5c842)',
-                color: '#0a1628', fontSize: '0.66rem', fontWeight: 800,
-                padding: '0.28rem 0.7rem', borderRadius: 999,
-                letterSpacing: '.07em', textTransform: 'uppercase',
-                boxShadow: '0 2px 10px rgba(212,160,23,0.4)',
-              }}>
-                Más popular
-              </div>
-            )}
-
-            <div style={{
-              color: tier.popular ? '#f5c842' : 'rgba(255,255,255,0.38)',
-              fontSize: '0.72rem', fontWeight: 700, letterSpacing: '.12em',
-              textTransform: 'uppercase', marginBottom: '0.75rem',
-            }}>
-              {tier.name}
-            </div>
-
-            <div style={{ marginBottom: '1.5rem' }}>
-              <span style={{
-                fontFamily: 'var(--font-playfair, Georgia, serif)',
-                fontSize: '2.4rem', fontWeight: 700, color: '#fff', lineHeight: 1,
-              }}>
-                {tier.price}
-              </span>
-              <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', marginLeft: 5 }}>
-                {tier.period}
-              </span>
-            </div>
-
-            <div style={{ marginBottom: '2rem' }}>
-              {tier.features.map((f, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 10,
-                  padding: '0.5rem 0',
-                  borderBottom: i < tier.features.length - 1
-                    ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                }}>
-                  <span style={{
-                    width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 2,
-                    background: tier.popular
-                      ? 'linear-gradient(135deg,#b8860b,#f5c842)'
-                      : 'rgba(212,160,23,0.18)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.58rem',
-                    color: tier.popular ? '#0a1628' : '#f5c842',
-                    boxShadow: tier.popular ? '0 0 6px rgba(212,160,23,0.4)' : 'none',
-                    transition: 'box-shadow 0.3s',
-                  }}>
-                    ✓
-                  </span>
-                  <span style={{
-                    color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', lineHeight: 1.55,
-                  }}>
-                    {f}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <a
-              href="https://wa.me/51902508499?text=Hola%2C%20me%20interesa%20anunciar%20con%20ustedes"
-              target="_blank" rel="noopener noreferrer"
-              style={{
-                display: 'block', width: '100%', padding: '0.82rem',
-                borderRadius: 12, textAlign: 'center',
-                fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none',
-                background: tier.popular
-                  ? 'linear-gradient(135deg,#b8860b,#f5c842)'
-                  : 'rgba(212,160,23,0.08)',
-                color: tier.popular ? '#0a1628' : '#f5c842',
-                border: tier.popular ? 'none' : '1px solid rgba(212,160,23,0.25)',
-                transition: 'all 0.18s ease',
-                boxSizing: 'border-box',
-              }}
-              onMouseEnter={e => {
-                const el = e.currentTarget as HTMLElement;
-                if (tier.popular) {
-                  el.style.boxShadow = '0 6px 22px rgba(212,160,23,0.45)';
-                  el.style.transform = 'translateY(-1px)';
-                } else {
-                  el.style.background = 'rgba(212,160,23,0.16)';
-                  el.style.borderColor = 'rgba(212,160,23,0.45)';
-                }
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLElement;
-                if (tier.popular) {
-                  el.style.boxShadow = 'none';
-                  el.style.transform = 'none';
-                } else {
-                  el.style.background = 'rgba(212,160,23,0.08)';
-                  el.style.borderColor = 'rgba(212,160,23,0.25)';
-                }
-              }}
-            >
-              {tier.cta}
-            </a>
-
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '2.2rem',
+            filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))',
+          }}>
+            {tier.icon}
           </div>
+        </div>
+
+        {/* ── card__content ── */}
+        <div style={{ padding: '1.5rem 1.75rem 1.75rem', position: 'relative', zIndex: 2 }}>
+
+          {/* ── card__badge ── */}
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            marginBottom: '0.9rem',
+          }}>
+            <span style={{
+              background: tier.popular
+                ? 'linear-gradient(135deg,#b8860b,#f5c842)'
+                : 'rgba(212,160,23,0.15)',
+              color: tier.popular ? '#0a1628' : '#f5c842',
+              fontSize: '0.65rem', fontWeight: 800,
+              padding: '0.22rem 0.65rem', borderRadius: 999,
+              letterSpacing: '.08em', textTransform: 'uppercase',
+              border: tier.popular ? 'none' : '1px solid rgba(212,160,23,0.3)',
+              boxShadow: tier.popular ? '0 2px 8px rgba(212,160,23,0.35)' : 'none',
+            }}>
+              {tier.popular ? 'Más popular' : tier.name}
+            </span>
+          </div>
+
+          {/* precio */}
+          <div style={{ marginBottom: '1.25rem' }}>
+            <span style={{
+              fontFamily: 'var(--font-playfair, Georgia, serif)',
+              fontSize: '2.2rem', fontWeight: 700, color: '#fff', lineHeight: 1,
+            }}>
+              {tier.price}
+            </span>
+            <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', marginLeft: 5 }}>
+              {tier.period}
+            </span>
+          </div>
+
+          {/* features */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            {tier.features.map((f, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 9,
+                padding: '0.42rem 0',
+                borderBottom: i < tier.features.length - 1
+                  ? '1px solid rgba(255,255,255,0.05)' : 'none',
+              }}>
+                <span style={{
+                  width: 17, height: 17, borderRadius: '50%', flexShrink: 0, marginTop: 2,
+                  background: tier.popular
+                    ? 'linear-gradient(135deg,#b8860b,#f5c842)'
+                    : 'rgba(212,160,23,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '0.55rem',
+                  color: tier.popular ? '#0a1628' : '#f5c842',
+                }}>✓</span>
+                <span style={{ color: 'rgba(255,255,255,0.68)', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                  {f}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <a
+            href="https://wa.me/51902508499?text=Hola%2C%20me%20interesa%20anunciar%20con%20ustedes"
+            target="_blank" rel="noopener noreferrer"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              width: '100%', padding: '0.8rem 1rem',
+              borderRadius: 12, textDecoration: 'none',
+              fontWeight: 700, fontSize: '0.875rem',
+              background: tier.popular
+                ? 'linear-gradient(135deg,#b8860b,#f5c842)'
+                : 'rgba(212,160,23,0.08)',
+              color: tier.popular ? '#0a1628' : '#f5c842',
+              border: tier.popular ? 'none' : '1px solid rgba(212,160,23,0.22)',
+              transition: 'all 0.18s ease',
+              boxSizing: 'border-box',
+            }}
+            onMouseEnter={e => {
+              const el = e.currentTarget as HTMLElement;
+              if (tier.popular) { el.style.boxShadow = '0 6px 22px rgba(212,160,23,0.45)'; el.style.transform = 'translateY(-1px)'; }
+              else { el.style.background = 'rgba(212,160,23,0.16)'; }
+            }}
+            onMouseLeave={e => {
+              const el = e.currentTarget as HTMLElement;
+              if (tier.popular) { el.style.boxShadow = 'none'; el.style.transform = 'none'; }
+              else { el.style.background = 'rgba(212,160,23,0.08)'; }
+            }}
+          >
+            <span>{tier.cta}</span>
+            <span style={{
+              width: 28, height: 28, borderRadius: '50%',
+              background: tier.popular ? 'rgba(0,0,0,0.15)' : 'rgba(212,160,23,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.85rem', flexShrink: 0,
+            }}>→</span>
+          </a>
         </div>
       </div>
     </div>
@@ -328,30 +333,36 @@ export default function AnunciaConNosotros() {
       name: 'Básico',
       price: 'S/. 150',
       period: '/mes',
+      color: 'linear-gradient(135deg,#1e3a5f 0%,#2d5986 100%)',
+      icon: '🏷️',
       features: [
         'Logo en el footer del sitio',
         'Mención mensual en redes sociales',
         'Enlace a tu negocio',
       ],
-      cta: 'Empezar →',
+      cta: 'Empezar',
     },
     {
       name: 'Destacado',
       price: 'S/. 350',
       period: '/mes',
       popular: true,
+      color: 'linear-gradient(135deg,#7a5800 0%,#c49000 50%,#f5c842 100%)',
+      icon: '⭐',
       features: [
         'Banner en la página principal',
         'Mención en sección de galería',
         'Badge "Partner Verificado"',
         'Logo en footer + redes sociales',
       ],
-      cta: 'Elegir Destacado →',
+      cta: 'Elegir Destacado',
     },
     {
       name: 'Premium',
       price: 'S/. 750',
       period: '/mes',
+      color: 'linear-gradient(135deg,#3b1a6e 0%,#6b32b8 60%,#9b59e8 100%)',
+      icon: '👑',
       features: [
         'Todo lo del plan Destacado',
         'Página propia de partner',
@@ -359,7 +370,7 @@ export default function AnunciaConNosotros() {
         'Reportes mensuales de alcance',
         'Soporte prioritario',
       ],
-      cta: 'Contactar →',
+      cta: 'Contactar',
     },
   ];
 
