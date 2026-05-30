@@ -5,6 +5,7 @@ import Footer        from '@/components/layout/Footer';
 import MotionProvider from '@/components/ui/MotionProvider';
 import CookieBanner  from '@/components/ui/CookieBanner';
 import Script        from 'next/script';
+import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 import '../styles/animations.css';
 
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main>{children}</main>
           <Footer />
           <CookieBanner />
+          <Analytics />
           <Script id="whatsbox" strategy="afterInteractive">{`
 (function (w, d, s, bu, cv) {
   w.wbwacw = {
