@@ -19,7 +19,9 @@ const COLORS = [
 
 function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
   const [flipped, setFlipped] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const fp = `${(t.focalX??0.5)*100}% ${(t.focalY??0.5)*100}%`;
+  const hasAvatar = !!(t.avatar && !imgError);
   const initials = t.name.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase();
   const col = COLORS[idx % COLORS.length];
 
@@ -63,9 +65,9 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
             overflow:'hidden',
           }}>
             {/* Foto o avatar con círculos flotantes */}
-            {t.avatar ? (
+            {hasAvatar ? (
               <>
-                <img src={t.avatar} alt={t.name}
+                <img src={t.avatar} alt={t.name} onError={() => setImgError(true)}
                      style={{ position:'absolute', width:'100%', height:'100%',
                                objectFit:'cover', objectPosition:fp, opacity:.7 }}/>
                 {/* Overlay degradado */}
@@ -95,9 +97,9 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
                            display:'flex', alignItems:'center', justifyContent:'center',
                            fontFamily:'var(--font-playfair)', fontSize:'1.5rem',
                            fontWeight:700, color:'#fff',
-                           overflow: t.avatar ? 'hidden' : 'visible' }}>
-              {t.avatar
-                ? <img src={t.avatar} alt={t.name} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:fp }}/>
+                           overflow: hasAvatar ? 'hidden' : 'visible' }}>
+              {hasAvatar
+                ? <img src={t.avatar} alt={t.name} onError={() => setImgError(true)} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:fp }}/>
                 : initials}
             </div>
 
@@ -122,8 +124,8 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
           color:'#fff',
         }}>
           {/* Imagen de fondo tenue */}
-          {t.avatar && (
-            <img src={t.avatar} alt={t.name}
+          {hasAvatar && (
+            <img src={t.avatar} alt={t.name} onError={() => setImgError(true)}
                  style={{ position:'absolute', width:'100%', height:'100%',
                            objectFit:'cover', objectPosition:fp, opacity:.18 }}/>
           )}
@@ -172,8 +174,9 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
                 </p>
               </div>
 
-              <p style={{ color:'rgba(255,255,255,0.6)', marginTop:5, fontSize:'0.8rem', lineHeight:1.5 }}>
-                "{t.text?.slice(0,100)}{(t.text?.length||0)>100?'…':'"'}"
+              <p style={{ color:'rgba(255,255,255,0.6)', marginTop:5, fontSize:'0.8rem', lineHeight:1.5,
+                           maxHeight:150, overflowY:'auto' }}>
+                "{t.text}"
               </p>
             </div>
           </div>
