@@ -73,13 +73,6 @@ export default function HomeClient() {
           testimonials:testimonialsS.status==='fulfilled'? testimonialsS.value.docs.map(d=>toPlain({id:d.id,...d.data()})) : [],
           loaded:true,
         });
-        // scroll to hash after data loads (element exists now)
-        const hash = window.location.hash.slice(1);
-        if (hash) {
-          setTimeout(() => {
-            document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 100);
-        }
       } catch(e) {
         console.error('[HomeClient]',e);
         setData((p:any)=>({...p,loaded:true}));
@@ -111,9 +104,7 @@ export default function HomeClient() {
 
       {/* About / Quiénes somos */}
       <Section>
-        <div id="nosotros">
-          <AboutSection data={data.about} />
-        </div>
+        <AboutSection data={data.about} />
       </Section>
 
       {/* Servicios */}

@@ -63,7 +63,7 @@ export default function Navbar() {
 
   const NAV = [
     { href: '/',               label: 'Inicio' },
-    { href: '/#nosotros', label: 'Nosotros' },
+    { href: '/sobre-nosotros', label: 'Nosotros' },
     { href: '/galeria',        label: 'Galería' },
     { href: '/contacto',       label: 'Contacto' },
   ];
