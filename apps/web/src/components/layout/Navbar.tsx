@@ -68,6 +68,9 @@ export default function Navbar() {
     { href: '/contacto',       label: 'Contacto' },
   ];
 
+  const anunciaHref = '/anuncia-con-nosotros';
+  const anunciaActive = pathname === anunciaHref;
+
   return (
     <>
       <header style={{
@@ -123,6 +126,27 @@ export default function Navbar() {
                   )}
                 </Link>
               ))}
+
+              {/* Anuncia con Nosotros */}
+              <Link href={anunciaHref} style={{
+                position: 'relative', padding: '0.5rem 0.9rem', borderRadius: 8,
+                fontSize: '0.875rem', fontWeight: 600, textDecoration: 'none',
+                color: anunciaActive ? '#f5c842' : 'rgba(245,200,66,0.65)',
+                transition: 'color 0.15s',
+                letterSpacing: '.01em',
+              }}
+                onMouseEnter={(e: { currentTarget: HTMLElement }) => { if (!anunciaActive) e.currentTarget.style.color = '#f5c842'; }}
+                onMouseLeave={(e: { currentTarget: HTMLElement }) => { if (!anunciaActive) e.currentTarget.style.color = 'rgba(245,200,66,0.65)'; }}
+              >
+                Anuncia con nosotros
+                {anunciaActive && (
+                  <span style={{
+                    position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)',
+                    width: 18, height: 2, borderRadius: 2,
+                    background: 'linear-gradient(90deg,#b8860b,#f5c842)',
+                  }} />
+                )}
+              </Link>
 
               {/* Servicios dropdown — hover */}
               <div ref={dropRef} style={{ position: 'relative' }}
@@ -321,6 +345,18 @@ export default function Navbar() {
                 </Link>
               );
             })}
+
+            <Link href={anunciaHref} style={{
+              display: 'block', padding: '0.875rem 1rem',
+              fontSize: '1.05rem', fontWeight: 700,
+              color: anunciaActive ? '#f5c842' : 'rgba(245,200,66,0.8)',
+              textDecoration: 'none',
+              borderBottom: '1px solid rgba(255,255,255,0.05)',
+              borderTop: '1px solid rgba(212,160,23,0.12)',
+              marginTop: '0.5rem',
+            }}>
+              📣 Anuncia con nosotros
+            </Link>
 
             <a href="https://wa.me/51945203708" target="_blank" rel="noopener noreferrer" style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
