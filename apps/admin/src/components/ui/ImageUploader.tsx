@@ -6,7 +6,7 @@
  *
  * Para imágenes: muestra un modal de recorte nativo (sin librerías externas).
  */
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 
 const CLOUD  = 'dvcmazqtp';
@@ -27,6 +27,15 @@ interface Props {
   acceptVideo?:  boolean;
   /** Relación de aspecto fija para el crop. undefined = libre */
   cropAspect?:   number;
+  /**
+   * Relación de aspecto (ancho/alto) del bloque en la web pública donde
+   * se mostrará esta imagen. Controla la forma del previsualizador de
+   * punto de enfoque. Ejemplos: 16/9, 1, 3/4, 3/1.
+   * Por defecto: 16/9.
+   */
+  previewAspect?: number;
+  /** Etiqueta corta que describe el bloque destino, p.ej. "Banner hero" */
+  previewLabel?:  string;
 }
 
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
@@ -34,7 +43,7 @@ const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 /* ─── canvas crop ─── */
 async function applyCropToFile(
   img: HTMLImageElement,
-  box: CropBox,           // en píxeles del elemento renderizado
+  box: CropBox,
   displayW: number,
   displayH: number,
   fileName: string,
@@ -51,10 +60,15 @@ async function applyCropToFile(
     canvas.width, canvas.height,
     0, 0, canvas.width, canvas.height,
   );
-  const blob = await new Promise<Blob>((res, rej) =>
-    canvas.toBlob(b => b ? res(b) : rej(new Error('toBlob failed')), 'image/webp', 0.92),
-  );
-  return new File([blob], fileName.replace(/\.\w+$/, '.webp'), { type: 'image/webp' });
+  // try WebP first, fall back to PNG (some browsers block WebP toBlob on certain origins)
+  const blob = await new Promise<Blob>((res, rej) => {
+    canvas.toBlob(b => {
+      if (b) { res(b); return; }
+      canvas.toBlob(b2 => b2 ? res(b2) : rej(new Error('toBlob failed')), 'image/png');
+    }, 'image/webp', 0.92);
+  });
+  const ext  = blob.type === 'image/webp' ? '.webp' : '.png';
+  return new File([blob], fileName.replace(/\.\w+$/, ext), { type: blob.type });
 }
 
 /* ─── crop modal ─── */
@@ -66,15 +80,18 @@ function CropModal({
   onApply,
   onSkip,
 }: {
-  src: string;
+  src:     string;
   aspect?: number;
-  onApply: (box: CropBox, displayW: number, displayH: number, img: HTMLImageElement) => void;
-  onSkip: () => void;
+  /** Debe retornar Promise<void>; rechaza con Error en caso de fallo. */
+  onApply: (box: CropBox, displayW: number, displayH: number, img: HTMLImageElement) => Promise<void>;
+  onSkip:  () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef       = useRef<HTMLImageElement>(null);
-  const [imgSize, setImgSize]   = useState({ w: 0, h: 0 });
-  const [box, setBox]           = useState<CropBox>({ x: 0, y: 0, w: 0, h: 0 });
+  const [imgSize,   setImgSize]   = useState({ w: 0, h: 0 });
+  const [box,       setBox]       = useState<CropBox>({ x: 0, y: 0, w: 0, h: 0 });
+  const [applying,  setApplying]  = useState(false);
+  const [applyErr,  setApplyErr]  = useState('');
   const dragRef = useRef<{
     handle: Handle;
     startX: number; startY: number;
@@ -100,7 +117,6 @@ function CropModal({
     initBox(img.offsetWidth, img.offsetHeight);
   };
 
-  /* pointer down — determine handle */
   const onPointerDown = (e: React.PointerEvent, handle: Handle) => {
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -111,7 +127,6 @@ function CropModal({
     };
   };
 
-  /* pointer move */
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragRef.current) return;
     const { handle, startX, startY, origBox } = dragRef.current;
@@ -120,7 +135,7 @@ function CropModal({
     const { w: iw, h: ih } = imgSize;
     const MIN = 20;
 
-    setBox(prev => {
+    setBox(() => {
       let { x, y, w, h } = origBox;
       const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
@@ -138,7 +153,6 @@ function CropModal({
           const nh = clamp(h - dy, MIN, y + h);
           y = y + h - nh; h = nh;
         }
-        // keep aspect ratio
         if (aspect) {
           if (handle?.includes('e') || handle?.includes('w')) {
             h = clamp(w / aspect, MIN, ih - y);
@@ -153,7 +167,6 @@ function CropModal({
 
   const onPointerUp = () => { dragRef.current = null; };
 
-  /* overlay click to reposition box center */
   const onOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (dragRef.current) return;
     const r = e.currentTarget.getBoundingClientRect();
@@ -166,9 +179,17 @@ function CropModal({
     });
   };
 
-  const handleApply = () => {
-    if (!imgRef.current) return;
-    onApply(box, imgSize.w, imgSize.h, imgRef.current);
+  const handleApply = async () => {
+    if (!imgRef.current || applying) return;
+    setApplyErr('');
+    setApplying(true);
+    try {
+      await onApply(box, imgSize.w, imgSize.h, imgRef.current);
+      // Si llegamos aquí sin error el padre ya llamó setCropSrc('') → modal se cierra
+    } catch (e: any) {
+      setApplyErr(e?.message || 'Error al recortar. Intenta de nuevo.');
+      setApplying(false);
+    }
   };
 
   const handles: { id: Handle; cursor: string; style: React.CSSProperties }[] = [
@@ -204,7 +225,7 @@ function CropModal({
               Arrastra las esquinas o bordes para recortar · Mueve el área para reposicionar
             </p>
           </div>
-          <button onClick={onSkip} type="button" style={{
+          <button onClick={onSkip} type="button" disabled={applying} style={{
             background:'none', border:'none', cursor:'pointer',
             fontSize:'1.3rem', color:'#94a3b8', lineHeight:1, padding:4,
           }}>✕</button>
@@ -235,7 +256,6 @@ function CropModal({
 
             {imgSize.w > 0 && (
               <>
-                {/* dark overlay — 4 rects around the crop box */}
                 {[
                   { top:0, left:0, width:'100%', height:box.y },
                   { top:box.y+box.h, left:0, width:'100%', bottom:0 },
@@ -246,7 +266,6 @@ function CropModal({
                                          pointerEvents:'none', ...s as React.CSSProperties }} />
                 ))}
 
-                {/* crop box */}
                 <div
                   onPointerDown={e => onPointerDown(e, 'move')}
                   style={{
@@ -257,7 +276,6 @@ function CropModal({
                     cursor:'move', boxSizing:'border-box',
                   }}
                 >
-                  {/* rule-of-thirds grid */}
                   {[1,2].map(n => (
                     <div key={`v${n}`} style={{ position:'absolute', top:0, bottom:0, width:1,
                                                  left:`${n*33.33}%`, background:'rgba(255,255,255,0.3)' }}/>
@@ -267,7 +285,6 @@ function CropModal({
                                                  top:`${n*33.33}%`, background:'rgba(255,255,255,0.3)' }}/>
                   ))}
 
-                  {/* resize handles */}
                   {handles.map(({ id, cursor, style }) => (
                     <div
                       key={id}
@@ -282,7 +299,6 @@ function CropModal({
                   ))}
                 </div>
 
-                {/* size badge */}
                 <div style={{
                   position:'absolute',
                   left: box.x + box.w / 2,
@@ -312,24 +328,47 @@ function CropModal({
 
         {/* footer */}
         <div style={{ padding:'1rem 1.5rem', borderTop:'1px solid #e2e8f0',
-                      display:'flex', gap:10, justifyContent:'flex-end', flexShrink:0 }}>
-          <button onClick={onSkip} type="button" style={{
+                      display:'flex', gap:10, alignItems:'center', justifyContent:'flex-end', flexShrink:0, flexWrap:'wrap' }}>
+          {applyErr && (
+            <p style={{ flex:1, margin:0, fontSize:'0.78rem', color:'#ef4444',
+                        background:'#fff1f2', border:'1px solid #fecaca',
+                        borderRadius:8, padding:'4px 10px' }}>
+              ❌ {applyErr}
+            </p>
+          )}
+          <button onClick={onSkip} type="button" disabled={applying} style={{
             padding:'0.6rem 1.2rem', borderRadius:10, border:'1.5px solid #e2e8f0',
-            background:'#fff', cursor:'pointer', fontSize:'0.85rem', color:'#475569',
-            fontFamily:'inherit', fontWeight:600,
+            background:'#fff', cursor: applying ? 'not-allowed' : 'pointer',
+            fontSize:'0.85rem', color:'#475569',
+            fontFamily:'inherit', fontWeight:600, opacity: applying ? 0.5 : 1,
           }}>
             Usar sin recortar
           </button>
-          <button onClick={handleApply} type="button" style={{
+          <button onClick={handleApply} type="button" disabled={applying} style={{
             padding:'0.6rem 1.4rem', borderRadius:10, border:'none',
-            background:'linear-gradient(135deg,#1e3a5f,#2563eb)',
-            color:'#fff', cursor:'pointer', fontSize:'0.85rem',
-            fontFamily:'inherit', fontWeight:700,
+            background: applying
+              ? 'linear-gradient(135deg,#4b6a8f,#6b93d6)'
+              : 'linear-gradient(135deg,#1e3a5f,#2563eb)',
+            color:'#fff', cursor: applying ? 'not-allowed' : 'pointer',
+            fontSize:'0.85rem', fontFamily:'inherit', fontWeight:700,
+            display:'flex', alignItems:'center', gap:8,
           }}>
-            ✓ Aplicar recorte
+            {applying ? (
+              <>
+                <span style={{
+                  width:14, height:14, borderRadius:'50%',
+                  border:'2px solid rgba(255,255,255,0.3)',
+                  borderTopColor:'#fff',
+                  animation:'spin .7s linear infinite',
+                  display:'inline-block', flexShrink:0,
+                }}/>
+                Aplicando…
+              </>
+            ) : '✓ Aplicar recorte'}
           </button>
         </div>
       </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
@@ -339,6 +378,8 @@ export default function ImageUploader({
   value, focal = { x:.5, y:.5 }, folder = 'jym',
   label = 'Imagen', onComplete, onSound, soundEnabled = false,
   className, acceptVideo = true, cropAspect,
+  previewAspect = 16 / 9,
+  previewLabel,
 }: Props) {
   const [preview,     setPreview]     = useState(value || '');
   const [previewType, setPreviewType] = useState<'image'|'video'>(
@@ -349,7 +390,6 @@ export default function ImageUploader({
   const [uploading, setUploading] = useState(false);
   const [error,     setError]     = useState('');
 
-  /* crop state */
   const [cropSrc,  setCropSrc]  = useState('');
   const [cropFile, setCropFile] = useState<File | null>(null);
 
@@ -451,25 +491,21 @@ export default function ImageUploader({
     if (preview) onComplete(preview, nfp, previewType);
   };
 
-  /* ── crop apply ── */
+  /* ── crop apply — no try/catch: errores los maneja CropModal ── */
   const handleCropApply = useCallback(async (
     box: CropBox, displayW: number, displayH: number, img: HTMLImageElement,
-  ) => {
-    try {
-      const newFp: FP = {
-        x: parseFloat(((box.x + box.w / 2) / displayW).toFixed(3)),
-        y: parseFloat(((box.y + box.h / 2) / displayH).toFixed(3)),
-      };
-      setFp(newFp);
-      const cropped = await applyCropToFile(img, box, displayW, displayH,
-        cropFile?.name ?? 'image.webp');
-      setPreview(URL.createObjectURL(cropped));
-      setPreviewType('image');
-      setCropSrc('');
-      upload(cropped, newFp);
-    } catch (e: any) {
-      setError(e?.message || 'Error al recortar.');
-    }
+  ): Promise<void> => {
+    const newFp: FP = {
+      x: parseFloat(((box.x + box.w / 2) / displayW).toFixed(3)),
+      y: parseFloat(((box.y + box.h / 2) / displayH).toFixed(3)),
+    };
+    setFp(newFp);
+    const cropped = await applyCropToFile(img, box, displayW, displayH,
+      cropFile?.name ?? 'image.webp');
+    setPreview(URL.createObjectURL(cropped));
+    setPreviewType('image');
+    setCropSrc('');   // cierra el modal
+    upload(cropped, newFp);
   }, [cropFile, upload]);
 
   const handleCropSkip = () => {
@@ -484,6 +520,9 @@ export default function ImageUploader({
   const sizeLabel = acceptVideo
     ? 'JPEG · PNG · WebP · HEIC (se comprimen) · MP4 · WebM · MOV — Máx 100 MB'
     : 'JPEG · PNG · WebP · HEIC — se comprimen automáticamente';
+
+  /* paddingTop trick para mantener aspect ratio */
+  const previewPadding = `${(1 / previewAspect) * 100}%`;
 
   return (
     <div className={className}>
@@ -522,17 +561,34 @@ export default function ImageUploader({
 
           {previewType === 'image' ? (
             <div>
-              <p style={{ fontSize:'0.72rem', color:'#94a3b8', marginBottom:6 }}>
-                📍 Toca para ajustar el <strong>punto de enfoque</strong>
-              </p>
+              {/* hint row */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
+                            marginBottom:6, gap:8, flexWrap:'wrap' }}>
+                <p style={{ fontSize:'0.72rem', color:'#94a3b8', margin:0 }}>
+                  📍 Toca para ajustar el <strong>punto de enfoque</strong>
+                </p>
+                {previewLabel && (
+                  <span style={{
+                    fontSize:'0.65rem', fontWeight:600, color:'#1e3a5f',
+                    background:'rgba(30,58,95,0.08)', border:'1px solid rgba(30,58,95,0.15)',
+                    borderRadius:6, padding:'2px 8px', whiteSpace:'nowrap',
+                  }}>
+                    Vista previa · {previewLabel}
+                  </span>
+                )}
+              </div>
+
+              {/* preview container — usa previewAspect para coincidir con el bloque real */}
               <div onClick={handleFocalClick} style={{
                 position:'relative', borderRadius:12, overflow:'hidden',
-                cursor:'crosshair', paddingTop:'56.25%', background:'#e2e8f0',
+                cursor:'crosshair', paddingTop: previewPadding, background:'#e2e8f0',
               }}>
                 <img src={preview} alt="" style={{
                   position:'absolute', inset:0, width:'100%',
                   height:'100%', objectFit:'cover', objectPosition:op,
                 }} />
+
+                {/* punto de enfoque */}
                 <div style={{
                   position:'absolute', width:24, height:24, borderRadius:'50%',
                   border:'3px solid #fff', background:'rgba(212,160,23,0.85)',
@@ -540,6 +596,7 @@ export default function ImageUploader({
                   transform:'translate(-50%,-50%)', pointerEvents:'none',
                   left:`${fp.x*100}%`, top:`${fp.y*100}%`,
                 }} />
+                {/* crosshairs */}
                 <div style={{
                   position:'absolute', top:0, bottom:0, width:1,
                   background:'rgba(255,255,255,0.4)', pointerEvents:'none',
@@ -550,6 +607,7 @@ export default function ImageUploader({
                   background:'rgba(255,255,255,0.4)', pointerEvents:'none',
                   top:`${fp.y*100}%`,
                 }} />
+                {/* coords badge */}
                 <div style={{
                   position:'absolute', bottom:8, right:8, background:'rgba(0,0,0,0.6)',
                   color:'#fff', fontSize:'0.65rem', padding:'2px 8px', borderRadius:6,

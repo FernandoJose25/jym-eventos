@@ -212,6 +212,7 @@ export default function GaleriaPage() {
               acceptVideo={true}
               value={formData.url}
               focal={{ x: formData.focalX ?? 0.5, y: formData.focalY ?? 0.5 }}
+              previewAspect={4/3} previewLabel="Galería (paisaje 4:3)"
               onComplete={(url, fp, type) => setFormData((p:any) => ({ ...p, url, focalX:fp.x, focalY:fp.y, mediaType:type }))}
             />
 

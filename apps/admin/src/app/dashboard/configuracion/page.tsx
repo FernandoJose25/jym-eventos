@@ -359,6 +359,7 @@ export default function ConfiguracionPage() {
           </div>
           <ImageUploader label="Logo imagen (opcional)" folder="brands" acceptVideo={false}
             value={form.logoUrl}
+            previewAspect={1} previewLabel="Logo en tarjeta (cuadrado 40×40)"
             onComplete={(url) => setMF('logoUrl', url)}/>
           {mv()}
         </>);
@@ -480,6 +481,7 @@ export default function ConfiguracionPage() {
                   <ImageUploader label="Imagen/Video de fondo (máx 200MB)" folder="configuracion/hero"
                     value={data.bgImage} focal={{ x:data.bgFocalX??0.5, y:data.bgFocalY??0.4 }} acceptVideo={true}
                     soundEnabled={!!data.bgVideoSound} onSound={v=>set('bgVideoSound',v)}
+                    previewAspect={16/9} previewLabel="Banner hero (pantalla completa)"
                     onComplete={(url,fp,type)=>{ set('bgImage',url); set('bgFocalX',fp.x); set('bgFocalY',fp.y); set('bgMediaType',type||'image'); }}/>
                 </div>
               )}
@@ -516,10 +518,12 @@ export default function ConfiguracionPage() {
                     <ImageUploader label="Imagen / Video principal" folder="configuracion/about"
                       value={data.img1} focal={{ x:0.5, y:0.4 }} acceptVideo={true}
                       soundEnabled={!!data.img1Sound} onSound={v=>set('img1Sound',v)}
+                      previewAspect={3/4} previewLabel="Foto grande (retrato 3:4)"
                       onComplete={(url,fp,type)=>{ set('img1',url); set('img1Pos',`${fp.x*100}% ${fp.y*100}%`); set('img1Type',type||'image'); }}/>
                     <ImageUploader label="Imagen / Video secundaria" folder="configuracion/about"
                       value={data.img2} focal={{ x:0.5, y:0.4 }} acceptVideo={true}
                       soundEnabled={!!data.img2Sound} onSound={v=>set('img2Sound',v)}
+                      previewAspect={4/3} previewLabel="Foto flotante (paisaje 4:3)"
                       onComplete={(url,fp,type)=>{ set('img2',url); set('img2Pos',`${fp.x*100}% ${fp.y*100}%`); set('img2Type',type||'image'); }}/>
                   </div>
                 </div>
@@ -726,6 +730,7 @@ export default function ConfiguracionPage() {
                   <F label="Tagline" fieldKey="tagline" value={data.tagline||''} onChange={handleField} placeholder="Decoraciones y Eventos"/>
                   <ImageUploader label="Logo (se muestra en navbar y footer — máx 200MB)" folder="logos"
                     value={data.logo} focal={{ x:0.5, y:0.5 }} acceptVideo={false}
+                    previewAspect={3/1} previewLabel="Navbar / Footer (franja horizontal)"
                     onComplete={(url) => set('logo',url)}/>
                   {data.logo && (
                     <div style={{ background:'#0a1628', borderRadius:12, padding:'1rem 1.5rem', display:'flex', alignItems:'center', gap:12 }}>
@@ -894,6 +899,7 @@ export default function ConfiguracionPage() {
               label={testModal.id ? 'Cambiar foto del cliente (opcional)' : 'Foto del cliente (opcional)'}
               folder="testimonios" acceptVideo={false}
               value={testModal.form.avatar||undefined}
+              previewAspect={1} previewLabel="Avatar circular en testimonio"
               onComplete={(url,fp) => setTestModal(p=>p?{...p,form:{...p.form,avatar:url,focalX:fp.x,focalY:fp.y}}:null)}/>
           </div>
         )}

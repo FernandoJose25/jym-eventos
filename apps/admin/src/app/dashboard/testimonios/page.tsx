@@ -111,6 +111,7 @@ export default function TestimoniosPage() {
               label="Foto del cliente (opcional, máx 200MB)"
               folder="testimonios"
               acceptVideo={false}
+              previewAspect={1} previewLabel="Avatar circular en testimonio"
               onComplete={(url, fp) => setForm((p:any) => ({ ...p, avatar:url, focalX:fp.x, focalY:fp.y }))}
             />
           </div>

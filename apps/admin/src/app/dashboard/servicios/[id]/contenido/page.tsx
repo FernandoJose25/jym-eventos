@@ -276,6 +276,7 @@ export default function ServiceContentPage() {
           <ImageUploader label="Tarjeta inicio" folder={`servicios/${id}`}
             value={srvData.mediaSrc} focal={{ x:srvData.mediaFocalX??0.5, y:srvData.mediaFocalY??0.4 }}
             acceptVideo={true} soundEnabled={!!srvData.mediaSound} onSound={v=>set('mediaSound',v)}
+            previewAspect={4/3} previewLabel="Tarjeta de servicio (paisaje)"
             onComplete={(url,fp,type)=>{ set('mediaSrc',url); set('mediaFocalX',fp.x); set('mediaFocalY',fp.y); set('mediaType',type||'image'); }}/>
         </fieldset>
 
@@ -288,6 +289,7 @@ export default function ServiceContentPage() {
           <ImageUploader label="Hero página detalle" folder={`servicios/${id}/hero`}
             value={srvData.heroMediaSrc} focal={{ x:srvData.heroFocalX??0.5, y:srvData.heroFocalY??0.4 }}
             acceptVideo={true} soundEnabled={false}
+            previewAspect={2/3} previewLabel="Panel hero derecho (retrato)"
             onComplete={(url,fp,type)=>{ set('heroMediaSrc',url); set('heroFocalX',fp.x); set('heroFocalY',fp.y); set('heroMediaType',type||'image'); }}/>
         </fieldset>
 

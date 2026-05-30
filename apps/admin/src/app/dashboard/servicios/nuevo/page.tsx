@@ -180,6 +180,7 @@ export default function NuevoServicioPage() {
           acceptVideo={true}
           soundEnabled={form.mediaSound}
           onSound={v=>set('mediaSound',v)}
+          previewAspect={4/3} previewLabel="Tarjeta de servicio (paisaje)"
           onComplete={(url, _fp, type) => { set('mediaSrc', url); set('mediaType', type||'image'); }}
         />
 

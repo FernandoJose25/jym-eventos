@@ -147,6 +147,7 @@ export default function ServiciosPage() {
                         value={editData.mediaSrc||s.mediaSrc}
                         soundEnabled={!!(editData.mediaSound??s.mediaSound)}
                         onSound={v=>setEditData((p:any)=>({...p,mediaSound:v}))}
+                        previewAspect={4/3} previewLabel="Tarjeta de servicio (paisaje)"
                         onComplete={(url,_fp,type)=>{
                           setEditData((p:any)=>({...p,mediaSrc:url,mediaType:type||'image'}));
                         }}/>
