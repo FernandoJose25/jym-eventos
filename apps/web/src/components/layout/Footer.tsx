@@ -195,7 +195,7 @@ export default function Footer() {
         </div>
 
         {/* Línea separadora */}
-        <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', paddingTop:'1.5rem',
+        <div className="footer-bottom" style={{ borderTop:'1px solid rgba(255,255,255,0.06)', paddingTop:'1.5rem',
                        display:'flex', justifyContent:'space-between', alignItems:'center',
                        flexWrap:'wrap', gap:12 }}>
           <p style={{ fontSize:'0.78rem', color:'rgba(255,255,255,0.3)', margin:0 }}>
@@ -220,7 +220,11 @@ export default function Footer() {
 
       <style>{`
         @media(max-width:1023px){ .footer-grid{ grid-template-columns:1fr 1fr !important; gap:2rem !important; } }
-        @media(max-width:640px) { .footer-grid{ grid-template-columns:1fr !important; } }
+        @media(max-width:640px) {
+          .footer-grid{ grid-template-columns:1fr !important; }
+          .footer-bottom{ flex-direction:column; align-items:center; text-align:center; }
+          .footer-bottom > div { justify-content: center; }
+        }
         @keyframes footerFloat {
           0%,100% { transform: translateY(0px); }
           50%      { transform: translateY(-6px); }

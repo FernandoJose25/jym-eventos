@@ -202,40 +202,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main */}
       <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0 }}>
         {/* Topbar */}
-        <header style={{ height:'var(--jym-topbar-h)', background:'#fff', borderBottom:'1px solid #e2e8f0',
+        <header className="dash-topbar" style={{ height:'var(--jym-topbar-h)', background:'#fff', borderBottom:'1px solid #e2e8f0',
                            display:'flex', alignItems:'center', padding:'0 1.5rem', gap:12,
                            position:'sticky', top:0, zIndex:30, boxShadow:'0 1px 8px rgba(10,22,40,0.06)' }}>
           <button onClick={()=>setSideOpen(true)} className="hamburger-btn"
                   style={{ background:'none', border:'none', cursor:'pointer', color:'#64748b', padding:4 }}>
             <Menu size={20}/>
           </button>
-          <p style={{ flex:1, fontSize:'0.82rem', color:'#64748b', margin:0 }}>
+          <p className="topbar-label" style={{ flex:1, fontSize:'0.82rem', color:'#64748b', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
             {NAV.find(n => n.href===pathname||(n.href!=='/dashboard'&&pathname.startsWith(n.href)))?.label || 'Dashboard'}
           </p>
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
             {unread > 0 && (
               <Link href="/dashboard/mensajes"
-                    style={{ position:'relative', color:'#64748b', textDecoration:'none', display:'flex', alignItems:'center', padding:6 }}>
+                    style={{ position:'relative', color:'#64748b', textDecoration:'none', display:'flex', alignItems:'center', padding:6, minWidth:32, minHeight:32 }}>
                 <Bell size={17}/>
                 <span style={{ position:'absolute', top:3, right:3, width:7, height:7, borderRadius:'50%', background:'#ef4444' }}/>
               </Link>
             )}
             <a href="https://jym-eventos-web.vercel.app" target="_blank" rel="noopener noreferrer"
+               className="topbar-web-btn"
                style={{ display:'flex', alignItems:'center', gap:5, padding:'0.4rem 0.875rem',
                          background:'linear-gradient(135deg,#b8860b,#f5c842)', borderRadius:8,
                          color:'#0a1628', fontSize:'0.78rem', fontWeight:700, textDecoration:'none',
-                         boxShadow:'0 2px 8px rgba(212,160,23,.3)' }}>
+                         boxShadow:'0 2px 8px rgba(212,160,23,.3)', whiteSpace:'nowrap' }}>
               ↗ Ver web
             </a>
             <div style={{ width:34, height:34, borderRadius:9, background:'linear-gradient(135deg,#1e3a5f,#2563eb)',
                            display:'flex', alignItems:'center', justifyContent:'center', color:'#fff',
-                           fontWeight:700, fontSize:'0.88rem', boxShadow:'0 2px 8px rgba(30,58,95,.3)' }}>
+                           fontWeight:700, fontSize:'0.88rem', boxShadow:'0 2px 8px rgba(30,58,95,.3)', flexShrink:0 }}>
               {profile?.nombre?.charAt(0).toUpperCase() || '?'}
             </div>
           </div>
         </header>
 
-        <main style={{ flex:1, padding:'1.5rem', maxWidth:1400, width:'100%', margin:'0 auto', boxSizing:'border-box' }}>
+        <main className="dash-main" style={{ flex:1, padding:'1.5rem', maxWidth:1400, width:'100%', margin:'0 auto', boxSizing:'border-box' }}>
           {children}
         </main>
       </div>
@@ -247,8 +248,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .sidebar-mobile{display:none}
         @media(max-width:1023px){
           .sidebar-desktop{display:none!important}
-          .hamburger-btn{display:flex!important}
+          .hamburger-btn{display:flex!important;min-width:44px;min-height:44px}
           .sidebar-mobile{display:block!important}
+          .dash-main{padding:1rem!important}
+          .dash-topbar{padding:0 1rem!important}
+        }
+        @media(max-width:640px){
+          .dash-main{padding:0.75rem!important}
+          .dash-topbar{padding:0 0.75rem!important;gap:8px!important}
+          .topbar-label{display:none!important}
+          .topbar-web-btn{padding:0.4rem 0.6rem!important;font-size:0.72rem!important}
         }
       `}</style>
     </div>

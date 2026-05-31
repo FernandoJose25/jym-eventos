@@ -154,7 +154,7 @@ export default function HeroSection({ data }: { data: HeroData }) {
       {/* CONTENT */}
       <div
         ref={ref}
-        className="container"
+        className="container hero-content"
         style={{
           position: 'relative',
           zIndex: 10,
@@ -253,17 +253,14 @@ export default function HeroSection({ data }: { data: HeroData }) {
 
         {/* BUTTON */}
         <div
+          className="hero-btns"
           style={{
             display: 'flex',
-
             justifyContent: 'center',
             alignItems: 'center',
-
             gap: '1.2rem',
-
             marginBottom: '3rem',
-
-            flexWrap: 'nowrap',
+            flexWrap: 'wrap',
           }}
         >
           {/* BOTÓN PRINCIPAL */}
@@ -386,6 +383,13 @@ export default function HeroSection({ data }: { data: HeroData }) {
           </a>
         </div>
       </div>
+      <style>{`
+        @media (max-width: 480px) {
+          .hero-content { padding-top: 5.5rem !important; padding-bottom: 3.5rem !important; }
+          .hero-btn { width: 100%; justify-content: center !important; }
+          .hero-btns { gap: 0.75rem !important; }
+        }
+      `}</style>
     </section>
   );
 }

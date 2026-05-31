@@ -21,16 +21,8 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [servOpen,   setServOpen]   = useState(false);
   const [scrolled,   setScrolled]   = useState(false);
-  const [isMobile,   setIsMobile]   = useState(false);
   const dropRef    = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
 
   useEffect(() => onSnapshot(
     query(collection(db, 'services'), where('visible', '==', true), orderBy('order', 'asc')),
@@ -103,9 +95,8 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop nav */}
-          {!isMobile && (
-            <nav style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, justifyContent: 'center' }}>
+          {/* Desktop nav — CSS controls visibility */}
+          <nav className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, justifyContent: 'center' }}>
               {NAV.map(({ href, label }) => (
                 <Link key={href} href={href} style={{
                   position: 'relative', padding: '0.5rem 0.9rem', borderRadius: 8,
@@ -260,57 +251,55 @@ export default function Navbar() {
             </nav>
           )}
 
-          {/* CTA — desktop */}
-          {!isMobile && (
-            <a href="https://wa.me/51945203708?text=Hola%2C%20quiero%20cotizar%20un%20evento"
-               target="_blank" rel="noopener noreferrer"
-               style={{
-                 display: 'flex', alignItems: 'center', gap: 6,
-                 padding: '0.55rem 1.25rem', flexShrink: 0,
-                 background: 'linear-gradient(135deg,#b8860b,#f5c842)',
-                 borderRadius: 9999, color: '#0a1628',
-                 fontWeight: 700, fontSize: '0.85rem', textDecoration: 'none',
-                 boxShadow: '0 4px 14px rgba(212,160,23,0.4)',
-                 transition: 'box-shadow 0.15s, transform 0.15s',
-               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 22px rgba(212,160,23,0.6)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 14px rgba(212,160,23,0.4)'; (e.currentTarget as HTMLElement).style.transform = 'none'; }}
-            >
-              💬 Cotizar
-            </a>
-          )}
+          {/* CTA — desktop only via CSS */}
+          <a href="https://wa.me/51945203708?text=Hola%2C%20quiero%20cotizar%20un%20evento"
+             target="_blank" rel="noopener noreferrer"
+             className="nav-cta-desktop"
+             style={{
+               display: 'flex', alignItems: 'center', gap: 6,
+               padding: '0.55rem 1.25rem', flexShrink: 0,
+               background: 'linear-gradient(135deg,#b8860b,#f5c842)',
+               borderRadius: 9999, color: '#0a1628',
+               fontWeight: 700, fontSize: '0.85rem', textDecoration: 'none',
+               boxShadow: '0 4px 14px rgba(212,160,23,0.4)',
+               transition: 'box-shadow 0.15s, transform 0.15s',
+             }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 22px rgba(212,160,23,0.6)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 14px rgba(212,160,23,0.4)'; (e.currentTarget as HTMLElement).style.transform = 'none'; }}
+          >
+            💬 Cotizar
+          </a>
 
-          {/* Hamburger — mobile */}
-          {isMobile && (
-            <button onClick={() => setMobileOpen(v => !v)} style={{
-              background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: 10, width: 40, height: 40,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: '#fff', marginLeft: 'auto',
-              fontSize: '1.1rem', transition: 'background 0.15s',
-            }}>
-              {mobileOpen ? '✕' : '☰'}
-            </button>
-          )}
+          {/* Hamburger — mobile only via CSS */}
+          <button onClick={() => setMobileOpen(v => !v)} className="nav-hamburger" style={{
+            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 10, width: 44, height: 44,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', color: '#fff', marginLeft: 'auto',
+            fontSize: '1.1rem', transition: 'background 0.15s', flexShrink: 0,
+          }}>
+            {mobileOpen ? '✕' : '☰'}
+          </button>
         </div>
       </header>
 
-      {/* Mobile menu */}
-      {isMobile && (
+      {/* Mobile menu — always rendered, CSS + state controls visibility */}
+      <div className="nav-mobile-overlay" style={{
+        position: 'fixed', inset: 0, zIndex: 99,
+        pointerEvents: mobileOpen ? 'auto' : 'none',
+      }}>
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 99,
-          pointerEvents: mobileOpen ? 'auto' : 'none',
+          position: 'absolute', inset: 0,
+          background: 'rgba(8,17,32,0.96)', backdropFilter: 'blur(20px)',
+          opacity: mobileOpen ? 1 : 0, transition: 'opacity 0.25s',
+        }} onClick={() => setMobileOpen(false)} />
+        <nav style={{
+          position: 'relative', zIndex: 100, marginTop: 72,
+          maxHeight: 'calc(100vh - 72px)', overflowY: 'auto',
+          padding: '1.25rem 1rem 2.5rem',
+          transform: mobileOpen ? 'translateY(0)' : 'translateY(-12px)',
+          opacity: mobileOpen ? 1 : 0, transition: 'transform 0.25s ease, opacity 0.25s ease',
         }}>
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'rgba(8,17,32,0.96)', backdropFilter: 'blur(20px)',
-            opacity: mobileOpen ? 1 : 0, transition: 'opacity 0.25s',
-          }} onClick={() => setMobileOpen(false)} />
-          <nav style={{
-            position: 'relative', zIndex: 100, marginTop: 72, padding: '1.25rem 1rem',
-            transform: mobileOpen ? 'translateY(0)' : 'translateY(-12px)',
-            opacity: mobileOpen ? 1 : 0, transition: 'transform 0.25s ease, opacity 0.25s ease',
-          }}>
             {NAV.map(({ href, label }) => (
               <Link key={href} href={href} style={{
                 display: 'block', padding: '0.875rem 1rem',
@@ -366,9 +355,23 @@ export default function Navbar() {
             }}>
               💬 Cotizar por WhatsApp
             </a>
-          </nav>
-        </div>
-      )}
+        </nav>
+      </div>
+
+      <style>{`
+        /* Show desktop nav, hide hamburger by default */
+        .nav-desktop       { display: flex !important; }
+        .nav-cta-desktop   { display: flex !important; }
+        .nav-hamburger     { display: none !important; }
+        .nav-mobile-overlay{ display: none !important; }
+
+        @media (max-width: 767px) {
+          .nav-desktop       { display: none !important; }
+          .nav-cta-desktop   { display: none !important; }
+          .nav-hamburger     { display: flex !important; }
+          .nav-mobile-overlay{ display: block !important; }
+        }
+      `}</style>
     </>
   );
 }
