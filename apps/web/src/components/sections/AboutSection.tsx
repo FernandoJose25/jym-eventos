@@ -104,6 +104,7 @@ export default function AboutSection({ data }: AboutProps) {
           <div
             onMouseMove={onMouseMove}
             onMouseLeave={onMouseLeave}
+            className="about-img-col"
             style={{
               opacity: revealed ? 1 : 0,
               transform: revealed ? 'translateX(0)' : 'translateX(-50px)',
@@ -180,6 +181,7 @@ export default function AboutSection({ data }: AboutProps) {
                 <div
                   onMouseEnter={() => setImgHover2(true)}
                   onMouseLeave={() => setImgHover2(false)}
+                  className="about-img2"
                   style={{
                     position:'absolute', bottom:'10%', right:'-12%',
                     width:'52%', aspectRatio:'4/3',
@@ -211,7 +213,7 @@ export default function AboutSection({ data }: AboutProps) {
               )}
 
               {/* Badge años — flota */}
-              <div style={{
+              <div className="about-badge" style={{
                 position:'absolute', bottom:'5%', left:'-8%',
                 background:'linear-gradient(135deg,#b8860b,#f5c842)',
                 borderRadius:20, padding:'1.25rem 1.5rem', textAlign:'center',
@@ -421,6 +423,14 @@ export default function AboutSection({ data }: AboutProps) {
         }
         @media(max-width:1023px){
           .about-premium-grid{ grid-template-columns:1fr !important; gap:3rem !important; }
+          .about-img-col{ overflow:visible; padding-bottom:3rem; }
+          .about-img2{ right:-5% !important; width:44% !important; }
+          .about-badge{ left:0 !important; bottom:-2% !important; }
+        }
+        @media(max-width:640px){
+          .about-img2{ display:none !important; }
+          .about-badge{ left:1rem !important; padding:0.875rem 1.1rem !important; }
+          .about-badge p:first-child{ font-size:1.75rem !important; }
         }
       `}</style>
     </section>

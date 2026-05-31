@@ -249,7 +249,6 @@ export default function Navbar() {
                 </div>
               </div>
             </nav>
-          )}
 
           {/* CTA — desktop only via CSS */}
           <a href="https://wa.me/51945203708?text=Hola%2C%20quiero%20cotizar%20un%20evento"

@@ -385,9 +385,9 @@ export default function HeroSection({ data }: { data: HeroData }) {
       </div>
       <style>{`
         @media (max-width: 480px) {
-          .hero-content { padding-top: 5.5rem !important; padding-bottom: 3.5rem !important; }
-          .hero-btn { width: 100%; justify-content: center !important; }
-          .hero-btns { gap: 0.75rem !important; }
+          .hero-content { padding-top: 5.5rem !important; padding-bottom: 3rem !important; }
+          .hero-btns { gap: 0.75rem !important; flex-direction: column !important; align-items: stretch !important; padding: 0 1rem; }
+          .hero-btns a { padding: 0.875rem 1.5rem !important; font-size: 0.95rem !important; justify-content: center; text-align: center; }
         }
       `}</style>
     </section>

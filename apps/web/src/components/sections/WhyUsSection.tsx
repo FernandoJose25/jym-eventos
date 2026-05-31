@@ -13,36 +13,38 @@ const DEFAULT_ITEMS = [
 function WhyCard({ item, i }: { item: typeof DEFAULT_ITEMS[0]; i: number }) {
   const [hovered, setHovered] = useState(false);
 
-  // Colores dorado/oscuro del diseño original adaptados a J&M
   const ACCENT = '#d4a017';
   const BG     = '#0a1628';
+  const active = hovered;
 
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => setHovered(h => !h)}
+      className="why-card"
       style={{
         width: '100%', height: 200,
         background: BG,
         position: 'relative',
         display: 'grid', placeContent: 'center',
-        borderRadius: hovered ? 0 : 10,
+        borderRadius: active ? 0 : 10,
         overflow: 'hidden',
-        transform: hovered ? 'scale(1.07)' : 'scale(1)',
+        transform: active ? 'scale(1.07)' : 'scale(1)',
         transition: 'all 0.5s ease-in-out',
-        cursor: 'default',
-        zIndex: hovered ? 10 : 1,
-        boxShadow: hovered
+        cursor: 'pointer',
+        zIndex: active ? 10 : 1,
+        boxShadow: active
           ? '0 20px 60px rgba(0,0,0,0.5)'
           : '0 4px 20px rgba(0,0,0,0.25)',
       }}
     >
       {/* ── Borde animado ── */}
       <div style={{
-        position: 'absolute', inset: hovered ? 15 : 0,
+        position: 'absolute', inset: active ? 15 : 0,
         border: `2px solid ${ACCENT}`,
-        opacity: hovered ? 1 : 0,
-        transform: hovered ? 'rotate(0deg)' : 'rotate(10deg)',
+        opacity: active ? 1 : 0,
+        transform: active ? 'rotate(0deg)' : 'rotate(10deg)',
         transition: 'all 0.5s ease-in-out',
         borderRadius: 4,
         pointerEvents: 'none',
@@ -55,8 +57,8 @@ function WhyCard({ item, i }: { item: typeof DEFAULT_ITEMS[0]; i: number }) {
         transform: 'translateX(-50%)',
         fontSize: '0.55rem', textTransform: 'uppercase',
         padding: '0 5px 0 8px', color: ACCENT,
-        background: BG, opacity: hovered ? 1 : 0,
-        letterSpacing: hovered ? '3px' : '7px',
+        background: BG, opacity: active ? 1 : 0,
+        letterSpacing: active ? '3px' : '7px',
         transition: 'all 0.5s ease-in-out',
         whiteSpace: 'nowrap', zIndex: 6,
       }}>
@@ -92,20 +94,20 @@ function WhyCard({ item, i }: { item: typeof DEFAULT_ITEMS[0]; i: number }) {
           fontFamily: 'var(--font-playfair)', fontWeight: 700,
           fontSize: '0.9rem', color: ACCENT,
           margin: '0 0 6px', padding: '0 1rem',
-          letterSpacing: hovered ? '0.5px' : '0',
+          letterSpacing: active ? '0.5px' : '0',
           transition: 'all 0.5s ease-in-out',
         }}>
           {item.title}
         </h3>
 
-        {/* Descripción — aparece al hover */}
-        <p style={{
+        {/* Descripción — hover en desktop, siempre visible en mobile */}
+        <p className="why-desc" style={{
           color: 'rgba(255,255,255,0.65)', fontSize: '0.75rem',
           lineHeight: 1.55, margin: 0, padding: '0 1.25rem',
-          opacity: hovered ? 1 : 0,
-          transform: hovered ? 'translateY(0)' : 'translateY(8px)',
+          opacity: active ? 1 : 0,
+          transform: active ? 'translateY(0)' : 'translateY(8px)',
           transition: 'all 0.45s ease-in-out 0.15s',
-          maxHeight: hovered ? 80 : 0,
+          maxHeight: active ? 80 : 0,
         }}>
           {item.desc}
         </p>
@@ -116,7 +118,7 @@ function WhyCard({ item, i }: { item: typeof DEFAULT_ITEMS[0]; i: number }) {
         position: 'absolute', bottom: -10, right: 10,
         fontFamily: 'var(--font-playfair)', fontWeight: 900,
         fontSize: '5rem', lineHeight: 1,
-        color: hovered ? `rgba(212,160,23,0.06)` : 'rgba(255,255,255,0.03)',
+        color: active ? `rgba(212,160,23,0.06)` : 'rgba(255,255,255,0.03)',
         userSelect: 'none', pointerEvents: 'none', zIndex: 1,
         transition: 'color 0.5s ease-in-out',
       }}>
@@ -179,7 +181,11 @@ export default function WhyUsSection({ data }: { data: any }) {
 
       <style>{`
         @media(max-width:900px){ .why-grid{ grid-template-columns:1fr 1fr !important; } }
-        @media(max-width:600px){ .why-grid{ grid-template-columns:1fr !important; } }
+        @media(max-width:600px){ .why-grid{ grid-template-columns:1fr 1fr !important; } }
+        @media(max-width:767px){
+          .why-card{ height:auto !important; min-height:160px; padding:1.25rem 0.5rem 1.5rem !important; }
+          .why-desc{ opacity:1 !important; transform:none !important; max-height:none !important; }
+        }
       `}</style>
     </section>
   );

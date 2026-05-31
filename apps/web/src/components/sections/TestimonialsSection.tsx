@@ -20,6 +20,7 @@ const COLORS = [
 function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
   const [flipped, setFlipped] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const toggleFlip = () => setFlipped(f => !f);
   const fp = `${(t.focalX??0.5)*100}% ${(t.focalY??0.5)*100}%`;
   const hasAvatar = !!(t.avatar && !imgError);
   const initials = t.name.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase();
@@ -29,6 +30,7 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
     <div
       onMouseEnter={() => setFlipped(true)}
       onMouseLeave={() => setFlipped(false)}
+      onClick={toggleFlip}
       style={{ width:240, height:320, overflow:'visible', flexShrink:0, cursor:'pointer' }}
     >
       {/* Content wrapper — gira en Y */}
@@ -111,7 +113,7 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
 
             <strong style={{ position:'relative', zIndex:2, color:'rgba(255,255,255,0.5)',
                                fontSize:'0.72rem', letterSpacing:'.1em', textTransform:'uppercase' }}>
-              Hover Me
+              Ver →
             </strong>
           </div>
         </div>
@@ -231,7 +233,7 @@ export default function TestimonialsSection({ items: propItems }: { items?: Test
           <em style={{ color:'#d4a017', fontStyle:'italic' }}>clientes</em>
         </h2>
         <p style={{ color:'rgba(255,255,255,0.45)', fontSize:'0.95rem', maxWidth:460, margin:'0 auto' }}>
-          Pasa el cursor sobre cada tarjeta para ver el testimonio
+          Toca o pasa el cursor sobre cada tarjeta
         </p>
       </div>
 
@@ -252,7 +254,7 @@ export default function TestimonialsSection({ items: propItems }: { items?: Test
       <div style={{ textAlign:'center', marginTop:'1.5rem' }}>
         <p style={{ color:'rgba(255,255,255,0.2)', fontSize:'0.7rem',
                      letterSpacing:'.14em', textTransform:'uppercase' }}>
-          ✦ Hover sobre cada tarjeta para revelar ✦
+          ✦ Toca cada tarjeta para revelar ✦
         </p>
       </div>
 
