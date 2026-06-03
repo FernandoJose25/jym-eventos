@@ -462,10 +462,10 @@ export default function SobreNosotrosPage() {
       {/* ═══════════════════════════════════════════════════════
           MISIÓN — DIAGONAL FLUIDA (SVG CURVE + FEATURES)
       ════════════════════════════════════════════════════════ */}
-      <section style={{ 
-        padding:'8rem 0', 
-        background:'#f8fafc', 
-        position:'relative', 
+      <section className="sn3-mision-section" style={{
+        padding:'8rem 0',
+        background:'#f8fafc',
+        position:'relative',
         overflow:'hidden',
         minHeight:'85vh',
         display:'flex',
@@ -474,11 +474,11 @@ export default function SobreNosotrosPage() {
         <StarField count={8} light/>
 
         {/* Capa de Fondo: Capa con Curva S-Curve Orgánica y Fluida */}
-        <div style={{ position:'absolute', top:0, right:0, width:'100%', height:'100%', zIndex:1, pointerEvents:'none' }}>
+        <div className="sn3-mision-bg" style={{ position:'absolute', top:0, right:0, width:'100%', height:'100%', zIndex:1, pointerEvents:'none' }}>
           <svg viewBox="0 0 1440 900" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
-            <path 
-              d="M 820,0 C 690,260 880,590 540,900 L 1440,900 L 1440,0 Z" 
-              fill="#0a1628" 
+            <path
+              d="M 820,0 C 690,260 880,590 540,900 L 1440,900 L 1440,0 Z"
+              fill="#0a1628"
             />
           </svg>
           <FloatingOrb size={300} x={75} y={20} color="rgba(212,160,23,0.12)" dur={8} delay={0}/>
@@ -523,7 +523,7 @@ export default function SobreNosotrosPage() {
             </div>
 
             {/* Columna Derecha: Tarjetas sobre la Curva Oscura (Glassmorphism) */}
-            <div style={{ display:'flex', flexDirection:'column', gap:'1rem', paddingLeft: '1.5rem' }}>
+            <div className="sn3-mision-cards" style={{ display:'flex', flexDirection:'column', gap:'1rem', paddingLeft: '1.5rem' }}>
               {MISION_CARDS.map((card: any, i: number) => (
                 <div key={i} className={`sn3-reveal stg-${i+2}`}
                      style={{ 
@@ -639,6 +639,25 @@ export default function SobreNosotrosPage() {
           /* Timeline: remove sticky on mobile */
           .sn3-hist-grid > div:first-child { position:static!important; }
           .sn3-timeline-section { padding:5rem 0!important; }
+          /* Misión: hide diagonal SVG bg + orbs — use clean dark section on mobile */
+          .sn3-mision-bg { display:none!important; }
+          .sn3-mision-section {
+            background: linear-gradient(160deg,#0a1628 0%,#0f2040 60%,#1a3a6b 100%)!important;
+            min-height:unset!important;
+            padding:4rem 0!important;
+          }
+          /* Left col text: switch to white on dark bg */
+          .sn3-mission-grid > div:first-child p,
+          .sn3-mission-grid > div:first-child h2 { color:#fff!important; }
+          .sn3-mission-grid > div:first-child p:first-child { color:#d4a017!important; }
+          .sn3-mission-grid > div:first-child p:not(:first-child) { color:rgba(255,255,255,0.72)!important; }
+          /* Cards: lighter glass on dark */
+          .sn3-mision-cards { padding-left:0!important; }
+          .sn3-mision-cards > div {
+            background:rgba(255,255,255,0.06)!important;
+            border-color:rgba(255,255,255,0.12)!important;
+            animation:none!important;
+          }
         }
         @media(max-width:768px){
           /* Timeline mobile — cleaner card layout */
@@ -656,6 +675,14 @@ export default function SobreNosotrosPage() {
           .sn3-mission-grid > div:last-child { padding-left:0!important; }
           /* Timeline items: tighter spacing */
           .sn3-timeline-col > div { margin-bottom:1.5rem!important; }
+          /* Misión CTAs: full width on small mobile */
+          .sn3-mission-grid > div:first-child > div:last-child {
+            flex-direction:column!important;
+          }
+          .sn3-mission-grid > div:first-child > div:last-child a {
+            justify-content:center!important;
+            text-align:center!important;
+          }
         }
         @media(max-width:480px){
           .sn3-hero-grid > div:last-child { grid-template-columns:1fr 1fr!important; gap:0.75rem!important; }
