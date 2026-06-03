@@ -179,25 +179,40 @@ function StatCard({ num, label, secondary, index, onEdit }: {
 /* ─────────────────────────────────────────────────────
    Section types
 ───────────────────────────────────────────────────── */
-type Section = 'hero' | 'stats' | 'about' | 'nosotros' | 'why-us' | 'brands' | 'contacto' | 'navbar' | 'testimonios';
+type Section = 'hero' | 'stats' | 'about' | 'nosotros' | 'why-us' | 'brands' | 'contacto' | 'navbar' | 'testimonios' | 'footer' | 'whatsapp' | 'anuncia' | 'legal';
 
-const SECTIONS: { id:Section; icon:string; label:string }[] = [
-  { id:'hero',        icon:'🖼️',  label:'Hero / Portada' },
-  { id:'stats',       icon:'📊',  label:'Estadísticas' },
-  { id:'about',       icon:'👥',  label:'Quiénes Somos' },
-  { id:'nosotros',    icon:'🏠',  label:'Nosotros' },
-  { id:'why-us',      icon:'✨',  label:'¿Por qué elegirnos?' },
-  { id:'brands',      icon:'🏢',  label:'Empresas / Marcas' },
-  { id:'contacto',    icon:'📞',  label:'Contacto y Redes' },
-  { id:'navbar',      icon:'🧭',  label:'Navbar / Logo' },
-  { id:'testimonios', icon:'⭐',  label:'Testimonios' },
+const SECTIONS: { id:Section; icon:string; label:string; group?:string }[] = [
+  /* ── Página principal ── */
+  { id:'hero',        icon:'🖼️',  label:'Hero / Portada',       group:'Inicio' },
+  { id:'stats',       icon:'📊',  label:'Estadísticas',          group:'Inicio' },
+  { id:'why-us',      icon:'✨',  label:'¿Por qué elegirnos?',  group:'Inicio' },
+  { id:'brands',      icon:'🏢',  label:'Empresas / Marcas',    group:'Inicio' },
+  { id:'about',       icon:'👥',  label:'Quiénes Somos',        group:'Inicio' },
+  /* ── Páginas ── */
+  { id:'nosotros',    icon:'🏠',  label:'Sobre Nosotros',        group:'Páginas' },
+  { id:'anuncia',     icon:'📢',  label:'Anuncia con Nosotros', group:'Páginas' },
+  /* ── Globales ── */
+  { id:'navbar',      icon:'🧭',  label:'Navbar / Logo',        group:'Global' },
+  { id:'footer',      icon:'🦶',  label:'Footer',               group:'Global' },
+  { id:'contacto',    icon:'📞',  label:'Contacto y Redes',     group:'Global' },
+  { id:'whatsapp',    icon:'💬',  label:'WhatsApp Widget',      group:'Global' },
+  /* ── Contenido ── */
+  { id:'testimonios', icon:'⭐',  label:'Testimonios',          group:'Contenido' },
+  /* ── Legal ── */
+  { id:'legal',       icon:'⚖️',  label:'Páginas Legales',      group:'Legal' },
 ];
 
 /* ─────────────────────────────────────────────────────
    MAIN PAGE
 ───────────────────────────────────────────────────── */
 export default function ConfiguracionPage() {
-  const [section, setSection] = useState<Section>('hero');
+  const [section, setSection] = useState<Section>(() => {
+    if (typeof window !== 'undefined') {
+      const q = new URLSearchParams(window.location.search).get('s');
+      if (q && SECTIONS.some(s => s.id === q)) return q as Section;
+    }
+    return 'hero';
+  });
   const [data,    setData]    = useState<Record<string,any>>({});
   const [loading, setLoading] = useState(true);
   const [saving,  setSaving]  = useState(false);
@@ -219,6 +234,9 @@ export default function ConfiguracionPage() {
   const [testimonios, setTestimonios] = useState<any[]>([]);
   const [testLoading, setTestLoading] = useState(false);
   const [testModal,   setTestModal]   = useState<{ id:string|null; form:any } | null>(null);
+
+  /* Legal sub-tab */
+  const [legalTab, setLegalTab] = useState<'privacidad'|'terminos'|'cookies'>('privacidad');
 
   /* Generic list modal (why-us items, hitos, valores, misionCards, brands) */
   const [editModal, setEditModal] = useState<{
@@ -299,9 +317,15 @@ export default function ConfiguracionPage() {
   const saveFromModal = () => {
     if (!editModal) return;
     const { listKey, index, form } = editModal;
-    const items = [...getList(listKey)];
-    if (index === null) items.push(form); else items[index] = form;
-    set(listKey, items);
+    if (listKey === 'legalSections') {
+      const items = [...(data[legalTab]||[])];
+      if (index === null) items.push(form); else items[index] = form;
+      set(legalTab, items);
+    } else {
+      const items = [...getList(listKey)];
+      if (index === null) items.push(form); else items[index] = form;
+      set(listKey, items);
+    }
     setEditModal(null);
   };
 
@@ -434,6 +458,62 @@ export default function ConfiguracionPage() {
             onComplete={(url) => setMF('logoUrl', url)}/>
           {mv()}
         </>);
+      case 'anunciaStats':
+        return (<>
+          <div style={{ display:'flex', gap:12, alignItems:'flex-end' }}>
+            {mi('Ícono','icon','👁️',true)}
+            <div style={{ flex:1 }}>
+              {lbl('Valor numérico')}
+              <input type="number" value={form.value||''} onChange={e=>setMF('value',Number(e.target.value))}
+                     placeholder="10000" className="admin-input"/>
+            </div>
+            <div style={{ width:80 }}>{mi('Sufijo','suffix','+')}</div>
+          </div>
+          {mi('Etiqueta','label','Visitas por mes')}
+          {mv()}
+        </>);
+      case 'anunciaBenefits':
+        return (<>
+          <div style={{ display:'flex', gap:12, alignItems:'flex-end' }}>
+            {mi('Ícono','icon','🎯',true)}
+            <div style={{ flex:1 }}>{mi('Título','title','Audiencia segmentada')}</div>
+          </div>
+          {mt('Descripción','desc','Llegás directamente a personas...',3)}
+          {mv()}
+        </>);
+      case 'anunciaTiers':
+        return (<>
+          <div style={{ display:'grid', gridTemplateColumns:'60px 1fr 1fr', gap:12, alignItems:'end' }}>
+            {mi('Ícono','icon','⭐',true)}
+            {mi('Nombre','name','Destacado')}
+            {mi('CTA botón','cta','Elegir')}
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            {mi('Precio','price','S/. 350')}
+            {mi('Período','period','/mes')}
+          </div>
+          <div>
+            {lbl('Características (una por línea)')}
+            <textarea rows={5} value={(form.features||[]).join('\n')} className="admin-input" style={{ resize:'vertical' }}
+                      onChange={e=>setMF('features',e.target.value.split('\n'))}
+                      placeholder={'Logo en footer\nMención en redes\nEnlace a tu negocio'}/>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:12, padding:'0.75rem 1rem', background:'#f8fafc', borderRadius:10, border:'1px solid #e2e8f0' }}>
+            <span style={{ fontSize:'0.84rem', color:'#475569', flex:1 }}>¿Plan más popular? (badge dorado)</span>
+            <button type="button" onClick={() => setMF('popular', !form.popular)}
+                    style={{ width:44, height:24, borderRadius:12, border:'none', cursor:'pointer', position:'relative',
+                              background: form.popular ? '#f59e0b' : '#e2e8f0', transition:'background .2s' }}>
+              <div style={{ width:20, height:20, borderRadius:10, background:'#fff', position:'absolute', top:2,
+                             left: form.popular ? 22 : 2, transition:'left .2s' }}/>
+            </button>
+          </div>
+          {mv()}
+        </>);
+      case 'legalSections':
+        return (<>
+          {mi('Título','title','1. Responsable del Tratamiento')}
+          {mt('Contenido','content','Descripción de esta sección...',6)}
+        </>);
       default:
         return null;
     }
@@ -493,13 +573,13 @@ export default function ConfiguracionPage() {
   ───────────────────────────────────────────────────── */
   const SideBtn = ({ s }: { s:typeof SECTIONS[0] }) => (
     <button onClick={() => setSection(s.id)}
-            style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'0.65rem 0.875rem',
-                      borderRadius:10, border: section===s.id ? '1px solid rgba(30,58,95,.2)' : '1px solid transparent',
-                      cursor:'pointer', marginBottom:3, textAlign:'left', fontFamily:'var(--font-jakarta)',
-                      fontSize:'0.82rem', fontWeight: section===s.id ? 600 : 400,
+            style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'0.55rem 0.75rem',
+                      borderRadius:9, border: section===s.id ? '1px solid rgba(30,58,95,.2)' : '1px solid transparent',
+                      cursor:'pointer', marginBottom:2, textAlign:'left', fontFamily:'var(--font-jakarta)',
+                      fontSize:'0.8rem', fontWeight: section===s.id ? 600 : 400,
                       background: section===s.id ? 'rgba(30,58,95,.08)' : 'transparent',
                       color: section===s.id ? '#1e3a5f' : '#64748b' }}>
-      <span>{s.icon}</span><span>{s.label}</span>
+      <span style={{ fontSize:'0.9rem' }}>{s.icon}</span><span>{s.label}</span>
     </button>
   );
 
@@ -525,8 +605,19 @@ export default function ConfiguracionPage() {
       <div style={{ display:'flex', gap:20 }}>
 
         {/* Left sidebar */}
-        <div style={{ width:200, flexShrink:0 }}>
-          {SECTIONS.map(s => <SideBtn key={s.id} s={s}/>)}
+        <div style={{ width:210, flexShrink:0 }}>
+          {(() => {
+            const groups = [...new Set(SECTIONS.map(s => s.group||''))];
+            return groups.map(g => (
+              <div key={g} style={{ marginBottom:'0.75rem' }}>
+                <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.12em',
+                             color:'#94a3b8', padding:'0 0.5rem', marginBottom:'0.2rem', margin:'0 0 4px 8px' }}>
+                  {g}
+                </p>
+                {SECTIONS.filter(s => (s.group||'')=== g).map(s => <SideBtn key={s.id} s={s}/>)}
+              </div>
+            ));
+          })()}
         </div>
 
         {/* Content panel */}
@@ -895,6 +986,255 @@ export default function ConfiguracionPage() {
                 </div>
               )}
 
+              {/* ══════════ FOOTER ══════════ */}
+              {section === 'footer' && (
+                <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+                  <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:10, padding:'0.75rem 1rem' }}>
+                    <p style={{ fontSize:'0.8rem', color:'#1e40af', margin:0 }}>
+                      🦶 El footer muestra logo, servicios y contacto automáticamente desde las secciones Navbar y Contacto. Aquí configuras el texto estático del footer.
+                    </p>
+                  </div>
+                  <F label="Descripción de la empresa (columna izquierda)" fieldKey="desc" type="textarea" rows={3}
+                     value={data.desc||''} onChange={handleField}
+                     placeholder="En cada evento, cuidamos cada detalle para que tú solo te encargues de disfrutar..."/>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                    <F label="Localidad (ej: Sechura)" fieldKey="tagline" value={data.tagline||''} onChange={handleField} placeholder="Sechura"/>
+                    <F label="Año de fundación" fieldKey="foundedYear" value={data.foundedYear||''} onChange={handleField} placeholder="2018"/>
+                  </div>
+                  <F label="Nombre legal completo en footer" fieldKey="legalName" value={data.legalName||''} onChange={handleField} placeholder="J&M Eventos y Decoraciones"/>
+                  <F label="Cita / Frase en cursiva" fieldKey="quote" value={data.quote||''} onChange={handleField} placeholder="J&M Eventos y Decoraciones"/>
+                  <div style={{ background:'#f8fafc', borderRadius:12, padding:'1rem 1.25rem', border:'1px solid #e2e8f0' }}>
+                    <p style={{ fontSize:'0.78rem', color:'#64748b', margin:'0 0 8px', fontWeight:600 }}>Vista previa del copyright:</p>
+                    <p style={{ fontSize:'0.85rem', color:'#475569', margin:0 }}>
+                      © {data.foundedYear||'2018'} – {new Date().getFullYear()} {data.legalName||'J&M Eventos y Decoraciones'} | Todos los derechos reservados.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* ══════════ WHATSAPP WIDGET ══════════ */}
+              {section === 'whatsapp' && (
+                <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+                  <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:10, padding:'0.75rem 1rem' }}>
+                    <p style={{ fontSize:'0.8rem', color:'#166534', margin:0 }}>
+                      💬 Configura el widget de WhatsApp que aparece en todas las páginas de la web. Los cambios se reflejan al redesplegar.
+                    </p>
+                  </div>
+
+                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
+                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Marca</legend>
+                    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                        <F label="Número WhatsApp (con código país)" fieldKey="phoneNumber" value={data.phoneNumber||''} onChange={handleField} placeholder="51945203708"/>
+                        <div>
+                          {lbl('Color primario de la marca')}
+                          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                            <label style={{ position:'relative', cursor:'pointer' }}>
+                              <div style={{ width:38, height:38, borderRadius:10, background:data.primaryColor||'#085E54', border:'2px solid #fff', boxShadow:'0 2px 8px rgba(0,0,0,0.15)' }}/>
+                              <input type="color" value={data.primaryColor||'#085E54'} onChange={e=>handleField('primaryColor',e.target.value)}
+                                     style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer', width:'100%', height:'100%' }}/>
+                            </label>
+                            <input type="text" value={data.primaryColor||''} onChange={e=>handleField('primaryColor',e.target.value)}
+                                   className="admin-input" style={{ width:100, fontFamily:'monospace', fontSize:'0.82rem' }} placeholder="#085E54"/>
+                          </div>
+                        </div>
+                      </div>
+                      <ImageUploader label="Logo del widget (URL de Cloudinary)" folder="logos" acceptVideo={false}
+                        value={data.logoUrl} previewAspect={1} previewLabel="Logo cuadrado"
+                        onComplete={(url) => set('logoUrl',url)}/>
+                    </div>
+                  </fieldset>
+
+                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
+                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Botón flotante</legend>
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                      <div>
+                        {lbl('Color del botón')}
+                        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                          <label style={{ position:'relative', cursor:'pointer' }}>
+                            <div style={{ width:38, height:38, borderRadius:10, background:data.buttonColor||'#1c9247', border:'2px solid #fff', boxShadow:'0 2px 8px rgba(0,0,0,0.15)' }}/>
+                            <input type="color" value={data.buttonColor||'#1c9247'} onChange={e=>handleField('buttonColor',e.target.value)}
+                                   style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer', width:'100%', height:'100%' }}/>
+                          </label>
+                          <input type="text" value={data.buttonColor||''} onChange={e=>handleField('buttonColor',e.target.value)}
+                                 className="admin-input" style={{ width:100, fontFamily:'monospace', fontSize:'0.82rem' }} placeholder="#1c9247"/>
+                        </div>
+                      </div>
+                    </div>
+                  </fieldset>
+
+                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
+                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Notificación emergente</legend>
+                    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 80px', gap:12 }}>
+                        <F label="Texto del aviso emergente" fieldKey="promptText" value={data.promptText||''} onChange={handleField} placeholder="👋 Hola, resuelve la duda que tengas"/>
+                        <div>
+                          {lbl('Delay (seg)')}
+                          <input type="number" value={data.promptDelay??5} onChange={e=>set('promptDelay',Number(e.target.value))}
+                                 className="admin-input" placeholder="5"/>
+                        </div>
+                      </div>
+                    </div>
+                  </fieldset>
+
+                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
+                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Ventana del chat</legend>
+                    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                      <F label="Título del popup" fieldKey="popupTitle" value={data.popupTitle||''} onChange={handleField} placeholder="J&M Eventos y Decoraciones"/>
+                      <F label="Subtítulo (tiempo de respuesta)" fieldKey="popupSubtitle" value={data.popupSubtitle||''} onChange={handleField} placeholder="Usualmente responde en 1 hora"/>
+                      <F label="Mensaje de bienvenida" fieldKey="welcomeText" value={data.welcomeText||''} onChange={handleField} placeholder="👋 Hola, ¿en qué podemos ayudarte?"/>
+                      <F label="Texto predeterminado del cliente" fieldKey="customerText" value={data.customerText||''} onChange={handleField} placeholder="Hola, quiero cotizar un evento"/>
+                    </div>
+                  </fieldset>
+                </div>
+              )}
+
+              {/* ══════════ ANUNCIA CON NOSOTROS ══════════ */}
+              {section === 'anuncia' && (
+                <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
+
+                  {/* Hero */}
+                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
+                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Hero</legend>
+                    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                      <F label="Badge (texto etiqueta dorada)" fieldKey="heroBadge" value={data.heroBadge||''} onChange={handleField} placeholder="Publicidad &amp; Patrocinios"/>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                        <F label="Título línea 1" fieldKey="heroTitle1" value={data.heroTitle1||''} onChange={handleField} placeholder="Llega a miles de familias"/>
+                        <F label="Título dorado (línea 2)" fieldKey="heroTitleGold" value={data.heroTitleGold||''} onChange={handleField} placeholder="que celebran"/>
+                      </div>
+                      <F label="Descripción" fieldKey="heroDesc" value={data.heroDesc||''} onChange={handleField} type="textarea" rows={2} placeholder="Conecta tu marca con una audiencia local comprometida..."/>
+                      <F label="Texto del botón CTA" fieldKey="heroCta" value={data.heroCta||''} onChange={handleField} placeholder="Ver planes de publicidad ↓"/>
+                    </div>
+                  </fieldset>
+
+                  {/* Stats */}
+                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
+                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Estadísticas de audiencia</legend>
+                    <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                      <F label="Título sección" fieldKey="statsTitle" value={data.statsTitle||''} onChange={handleField} placeholder="Nuestra audiencia en números"/>
+                      <ListHeader lb="Estadísticas" count={(data.anunciaStats||[]).length} listKey="anunciaStats" def={{ icon:'👁️', value:10000, suffix:'+', label:'Visitas por mes' }}/>
+                      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                        {(data.anunciaStats||[]).map((s:any,i:number) => (
+                          <ItemCard key={i} item={{ ...s, title:`${s.value}${s.suffix}`, desc:s.label }}
+                            onEdit={() => openEdit('anunciaStats',i)}
+                            onToggle={() => toggleVisible('anunciaStats',i)}
+                            onDelete={() => deleteItem('anunciaStats',i)}/>
+                        ))}
+                      </div>
+                    </div>
+                  </fieldset>
+
+                  {/* Benefits */}
+                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
+                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Por qué anunciar aquí</legend>
+                    <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                        <F label="Badge texto" fieldKey="benefitsBadge" value={data.benefitsBadge||''} onChange={handleField} placeholder="Por qué anunciar aquí"/>
+                        <F label="Título sección" fieldKey="benefitsTitle" value={data.benefitsTitle||''} onChange={handleField} placeholder="Tu marca, en el momento exacto"/>
+                      </div>
+                      <ListHeader lb="Beneficios" count={(data.anunciaBenefits||[]).length} listKey="anunciaBenefits" def={{ icon:'🎯', title:'', desc:'' }}/>
+                      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                        {(data.anunciaBenefits||[]).map((b:any,i:number) => (
+                          <ItemCard key={i} item={b}
+                            onEdit={() => openEdit('anunciaBenefits',i)}
+                            onToggle={() => toggleVisible('anunciaBenefits',i)}
+                            onDelete={() => deleteItem('anunciaBenefits',i)}/>
+                        ))}
+                      </div>
+                    </div>
+                  </fieldset>
+
+                  {/* Plans/Tiers */}
+                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
+                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Planes de publicidad</legend>
+                    <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                      <F label="Título sección planes" fieldKey="tiersTitle" value={data.tiersTitle||''} onChange={handleField} placeholder="Planes de publicidad"/>
+                      <ListHeader lb="Planes" count={(data.anunciaTiers||[]).length} listKey="anunciaTiers" def={{ name:'Nuevo Plan', price:'S/. 200', period:'/mes', icon:'🏷️', cta:'Contratar', features:[], popular:false }}/>
+                      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                        {(data.anunciaTiers||[]).map((t:any,i:number) => (
+                          <ItemCard key={i} item={{ ...t, title:t.name, desc:`${t.price}${t.period} · ${(t.features||[]).length} características${t.popular?' · ⭐ Popular':''}` }}
+                            onEdit={() => openEdit('anunciaTiers',i)}
+                            onToggle={() => toggleVisible('anunciaTiers',i)}
+                            onDelete={() => deleteItem('anunciaTiers',i)}/>
+                        ))}
+                      </div>
+                    </div>
+                  </fieldset>
+
+                  {/* CTA final */}
+                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
+                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>CTA Final</legend>
+                    <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                      <F label="Título" fieldKey="ctaTitle" value={data.ctaTitle||''} onChange={handleField} placeholder="¿Listo para crecer con J&M?"/>
+                      <F label="Descripción" fieldKey="ctaDesc" value={data.ctaDesc||''} onChange={handleField} type="textarea" rows={2} placeholder="Contáctanos y diseñemos juntos el plan perfecto..."/>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                        <F label="Botón 1 texto" fieldKey="ctaBtn1" value={data.ctaBtn1||''} onChange={handleField} placeholder="✉️ Enviar propuesta"/>
+                        <F label="Botón 1 URL" fieldKey="ctaBtn1Url" value={data.ctaBtn1Url||''} onChange={handleField} placeholder="/contacto"/>
+                        <F label="Botón 2 texto" fieldKey="ctaBtn2" value={data.ctaBtn2||''} onChange={handleField} placeholder="💬 WhatsApp"/>
+                        <F label="Botón 2 URL" fieldKey="ctaBtn2Url" value={data.ctaBtn2Url||''} onChange={handleField} placeholder="https://wa.me/51945203708"/>
+                      </div>
+                    </div>
+                  </fieldset>
+                </div>
+              )}
+
+              {/* ══════════ LEGAL ══════════ */}
+              {section === 'legal' && (
+                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+                  <div style={{ background:'#fffbeb', border:'1px solid #fde68a', borderRadius:10, padding:'0.75rem 1rem' }}>
+                    <p style={{ fontSize:'0.8rem', color:'#92400e', margin:0 }}>
+                      ⚖️ Edita el contenido de las páginas legales (Privacidad, Términos y Cookies). Los cambios son inmediatos en la web.
+                    </p>
+                  </div>
+
+                  {/* Sub-tabs */}
+                  <div style={{ display:'flex', gap:8 }}>
+                    {(['privacidad','terminos','cookies'] as const).map(tab => (
+                      <button key={tab} onClick={() => setLegalTab(tab)}
+                              style={{ padding:'0.55rem 1rem', borderRadius:9, border: legalTab===tab ? '1px solid rgba(30,58,95,.3)' : '1px solid #e2e8f0',
+                                        cursor:'pointer', fontFamily:'var(--font-jakarta)', fontSize:'0.82rem',
+                                        fontWeight: legalTab===tab ? 700 : 400,
+                                        background: legalTab===tab ? '#1e3a5f' : '#f8fafc',
+                                        color: legalTab===tab ? '#fff' : '#64748b' }}>
+                        {tab === 'privacidad' ? '🔒 Privacidad' : tab === 'terminos' ? '📋 Términos' : '🍪 Cookies'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Sections list */}
+                  <div>
+                    <ListHeader lb={`Secciones — ${legalTab}`}
+                      count={(data[legalTab]||[]).length}
+                      listKey="legalSections"
+                      def={{ title:'Nueva sección', content:'' }}/>
+                    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                      {(data[legalTab]||[]).map((s:any,i:number) => (
+                        <div key={i} style={{ display:'flex', alignItems:'center', gap:12, background:'#f8fafc', borderRadius:10, padding:'0.75rem 1rem', border:'1px solid #e2e8f0' }}>
+                          <div style={{ flex:1 }}>
+                            <p style={{ fontWeight:600, fontSize:'0.88rem', color:'#0a1628', margin:'0 0 2px' }}>{s.title}</p>
+                            <p style={{ fontSize:'0.75rem', color:'#64748b', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.content?.slice(0,80)}…</p>
+                          </div>
+                          <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                            <button onClick={() => setEditModal({ listKey:'legalSections', index:i, form:{ ...s } })}
+                              style={{ background:'none', border:'1px solid #bfdbfe', borderRadius:8, padding:'6px', cursor:'pointer', color:'#2563eb', display:'flex', alignItems:'center' }}>
+                              <Edit2 size={14}/>
+                            </button>
+                            <button onClick={() => {
+                                const items = [...(data[legalTab]||[])];
+                                items.splice(i,1);
+                                set(legalTab, items);
+                              }}
+                              style={{ background:'none', border:'1px solid #fecaca', borderRadius:8, padding:'6px', cursor:'pointer', color:'#ef4444', display:'flex', alignItems:'center' }}>
+                              <Trash2 size={14}/>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* ══════════ TESTIMONIOS ══════════ */}
               {section === 'testimonios' && (
                 <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
@@ -955,11 +1295,15 @@ export default function ConfiguracionPage() {
         open={!!editModal}
         title={
           editModal?.index === null ? 'Agregar elemento'
-          : editModal?.listKey === 'items'      ? 'Editar tarjeta'
-          : editModal?.listKey === 'hitos'      ? 'Editar hito'
-          : editModal?.listKey === 'valores'    ? 'Editar valor'
-          : editModal?.listKey === 'misionCards'? 'Editar card de misión'
-          : editModal?.listKey === 'brands'     ? 'Editar marca'
+          : editModal?.listKey === 'items'          ? 'Editar tarjeta'
+          : editModal?.listKey === 'hitos'          ? 'Editar hito'
+          : editModal?.listKey === 'valores'        ? 'Editar valor'
+          : editModal?.listKey === 'misionCards'    ? 'Editar card de misión'
+          : editModal?.listKey === 'brands'         ? 'Editar marca'
+          : editModal?.listKey === 'anunciaStats'   ? 'Editar estadística'
+          : editModal?.listKey === 'anunciaBenefits'? 'Editar beneficio'
+          : editModal?.listKey === 'anunciaTiers'   ? 'Editar plan'
+          : editModal?.listKey === 'legalSections'  ? 'Editar sección legal'
           : 'Editar'
         }
         onSave={saveFromModal}

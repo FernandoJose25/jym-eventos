@@ -13,10 +13,12 @@ export default function Footer() {
   const [contacto,  setContacto]  = useState<any>({});
   const [servicios, setServicios] = useState<FooterService[]>([]);
   const [logo,      setLogo]      = useState('');
+  const [footer,    setFooter]    = useState<any>({});
 
   useEffect(() => {
     getDoc(doc(db, 'site_config', 'contacto')).then(s => { if (s.exists()) setContacto(s.data()); });
     getDoc(doc(db, 'site_config', 'navbar')).then(s => { if (s.exists()) setLogo(s.data().logo || ''); });
+    getDoc(doc(db, 'site_config', 'footer')).then(s => { if (s.exists()) setFooter(s.data()); });
   }, []);
 
   useEffect(() => onSnapshot(
@@ -53,18 +55,18 @@ export default function Footer() {
               </div>
               <div>
                 <p style={{ color:'#fff', fontFamily:'var(--font-playfair)', fontWeight:700, fontSize:'1.1rem', margin:0, lineHeight:1.2 }}>
-                  J&M Eventos y<br/>Decoraciones
+                  {footer.legalName || 'J&M Eventos y Decoraciones'}
                 </p>
                 <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.65rem', margin:0, textTransform:'uppercase', letterSpacing:'.1em' }}>
-                  Sechura
+                  {footer.tagline || 'Sechura'}
                 </p>
               </div>
             </div>
             <p style={{ fontSize:'0.85rem', lineHeight:1.7, color:'rgba(255,255,255,0.55)', marginBottom:16 }}>
-              En cada evento, cuidamos cada detalle para que tú solo te encargues de disfrutar. Ofrecemos una gama completa de servicios para hacer de tu celebración una experiencia única.
+              {footer.desc || 'En cada evento, cuidamos cada detalle para que tú solo te encargues de disfrutar. Ofrecemos una gama completa de servicios para hacer de tu celebración una experiencia única.'}
             </p>
             <p style={{ fontFamily:'var(--font-playfair)', fontStyle:'italic', color:'rgba(255,255,255,0.3)', fontSize:'0.88rem' }}>
-              J&M Eventos y Decoraciones
+              {footer.quote || 'J&M Eventos y Decoraciones'}
             </p>
           </div>
 
@@ -199,7 +201,7 @@ export default function Footer() {
                        display:'flex', justifyContent:'space-between', alignItems:'center',
                        flexWrap:'wrap', gap:12 }}>
           <p style={{ fontSize:'0.78rem', color:'rgba(255,255,255,0.3)', margin:0 }}>
-            © 2018 – {year} J&M Eventos y Decoraciones | Todos los derechos reservados.
+            © {footer.foundedYear || '2018'} – {year} {footer.legalName || 'J&M Eventos y Decoraciones'} | Todos los derechos reservados.
           </p>
           <div style={{ display:'flex', gap:20 }}>
             {[
