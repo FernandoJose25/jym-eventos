@@ -489,9 +489,11 @@ export default function ConfiguracionPage() {
   /* ── Save section ── */
   const handleSave = async () => {
     setSaving(true);
-    const saveData = section === 'stats' && servicesCount !== null
-      ? { ...data, s4num: String(servicesCount) }
-      : data;
+    let saveData = { ...data };
+    if (servicesCount !== null) {
+      if (section === 'stats')    saveData = { ...saveData, s4num:  String(servicesCount) };
+      if (section === 'nosotros') saveData = { ...saveData, sn4num: String(servicesCount) };
+    }
     await setDoc(doc(db, COL.CONFIGURACION, section), saveData, { merge:true });
     setSaving(false);
     setIsDefaults(false);
@@ -980,13 +982,32 @@ export default function ConfiguracionPage() {
                   <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
                     <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Estadísticas (4 cards)</legend>
                     <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                      {[1,2,3,4].map(n => (
+                      {[1,2,3].map(n => (
                         <StatCard key={n} index={n}
                           num={data[`sn${n}num`]||''}
                           label={data[`sn${n}label`]||''}
                           secondary={data[`sn${n}icon`]||''}
                           onEdit={() => openStatsEdit('nosotros', n)}/>
                       ))}
+                      {/* Stat #4: Servicios — auto-calculado igual que en sección Estadísticas */}
+                      <div style={{ display:'flex', alignItems:'center', gap:12, background:'#eff6ff', borderRadius:10,
+                                    padding:'0.75rem 1rem', border:'1px solid #bfdbfe' }}>
+                        <div style={{ width:52, height:52, borderRadius:12, background:'linear-gradient(135deg,#1e3a5f,#2563eb)', display:'flex', alignItems:'center', justifyContent:'center', color:'#f5c842', fontWeight:800, fontSize:'1rem', flexShrink:0, textAlign:'center', padding:'0 4px' }}>
+                          {servicesCount ?? data.sn4num ?? '?'}
+                        </div>
+                        <div style={{ flex:1 }}>
+                          <p style={{ fontWeight:600, fontSize:'0.9rem', color:'#0a1628', margin:'0 0 2px' }}>
+                            {data.sn4label || 'Servicios únicos'}
+                          </p>
+                          <p style={{ fontSize:'0.72rem', color:'#3b82f6', margin:0 }}>
+                            🔄 Se actualiza automáticamente según los servicios activos
+                          </p>
+                        </div>
+                        <span style={{ fontSize:'0.65rem', background:'#dbeafe', color:'#1d4ed8',
+                                       borderRadius:6, padding:'3px 8px', fontWeight:700 }}>
+                          AUTO
+                        </span>
+                      </div>
                     </div>
                   </fieldset>
 
