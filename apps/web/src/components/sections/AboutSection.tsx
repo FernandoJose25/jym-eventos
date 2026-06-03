@@ -302,7 +302,7 @@ export default function AboutSection({ data }: AboutProps) {
             }}/>
 
             {/* Textos */}
-            {[p1, p2, p3].filter(Boolean).map((p:string, i:number) => (
+            {[p1, p2].filter(Boolean).map((p:string, i:number) => (
               <p key={i}
                  style={{ color:'#475569', fontSize:'1.03rem', lineHeight:1.85,
                            marginBottom:'1rem', fontFamily:'var(--font-jakarta)',
@@ -310,24 +310,33 @@ export default function AboutSection({ data }: AboutProps) {
                  dangerouslySetInnerHTML={{ __html: p }}/>
             ))}
 
+            {/* p3 */}
+            {p3 && (
+              <p className="about-p3"
+                 style={{ color:'#475569', fontSize:'1.03rem', lineHeight:1.85,
+                           marginBottom:'1rem', fontFamily:'var(--font-jakarta)',
+                           animation: revealed ? 'slideInRight .6s ease .8s both' : 'none' }}
+                 dangerouslySetInnerHTML={{ __html: p3 }}/>
+            )}
+
             {/* Features chips */}
-            <div style={{
+            <div className="about-features-wrap" style={{
               display:'flex', flexWrap:'wrap', gap:8, margin:'1.5rem 0',
               animation: revealed ? 'slideInRight .6s ease .9s both' : 'none',
             }}>
-              {FEATURES.map(({ icon, text }) => (
-                <div key={text}
+              {FEATURES.map(({ icon, text }, idx) => (
+                <div key={text} className="about-feature-chip"
                      style={{
                        display:'inline-flex', alignItems:'center', gap:6,
                        padding:'6px 14px', borderRadius:9999,
                        background:'rgba(30,58,95,0.06)', border:'1px solid rgba(30,58,95,0.12)',
                        color:'#334155', fontSize:'0.78rem', fontWeight:600,
-                       transition:'all .25s',
-                       cursor:'default',
+                       transition:'all .25s', cursor:'default',
                      }}
                      onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.background='rgba(212,160,23,0.1)';el.style.borderColor='rgba(212,160,23,0.35)';el.style.transform='translateY(-2px)';}}
                      onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.background='rgba(30,58,95,0.06)';el.style.borderColor='rgba(30,58,95,0.12)';el.style.transform='';}}>
-                  <span>{icon}</span><span>{text}</span>
+                  <span className="about-feature-icon">{icon}</span>
+                  <span>{text}</span>
                 </div>
               ))}
             </div>
@@ -341,8 +350,8 @@ export default function AboutSection({ data }: AboutProps) {
               animation: revealed ? 'slideInRight .6s ease 1s both' : 'none',
             }}>
               {STATS.map(({ n, l, icon }) => (
-                <div key={l} style={{ textAlign:'center', flex:1 }}>
-                  <div style={{ fontSize:'1.25rem', marginBottom:4 }}>{icon}</div>
+                <div key={l} className="about-stat-item" style={{ textAlign:'center', flex:1 }}>
+                  <div className="about-stat-icon" style={{ fontSize:'1.25rem', marginBottom:4 }}>{icon}</div>
                   <p style={{ fontFamily:'var(--font-playfair)', fontSize:'1.6rem', fontWeight:700,
                                color:'#d4a017', margin:'0 0 2px', lineHeight:1 }}>{n}</p>
                   <p style={{ color:'#94a3b8', fontSize:'0.68rem', margin:0,
@@ -356,7 +365,7 @@ export default function AboutSection({ data }: AboutProps) {
               display:'flex', gap:'1rem', flexWrap:'wrap',
               animation: revealed ? 'slideInRight .6s ease 1.1s both' : 'none',
             }}>
-              <a href="/contacto" style={{
+              <a href="/contacto" className="about-cta-primary" style={{
                 display:'inline-flex', alignItems:'center', gap:8,
                 padding:'0.9rem 2rem', borderRadius:9999,
                 background:'linear-gradient(135deg,#0a1628,#1e3a5f)',
@@ -368,7 +377,23 @@ export default function AboutSection({ data }: AboutProps) {
               onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.transform='';el.style.boxShadow='0 4px 20px rgba(10,22,40,0.25)';}}>
                 ✨ Cotizar Ahora
               </a>
-              <a href="/sobre-nosotros" style={{
+              <a href="https://wa.me/51945203708?text=Hola!%20Quiero%20saber%20m%C3%A1s"
+                 target="_blank" rel="noopener noreferrer"
+                 className="about-cta-wa"
+                 style={{
+                   display:'none', alignItems:'center', gap:8,
+                   padding:'0.9rem 2rem', borderRadius:9999,
+                   background:'#25d366', color:'#fff',
+                   fontWeight:700, fontSize:'0.9rem', textDecoration:'none',
+                   boxShadow:'0 4px 20px rgba(37,211,102,0.3)',
+                   transition:'all .35s cubic-bezier(0.23,1,0.32,1)',
+                 }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" style={{flexShrink:0}}>
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                Contáctanos
+              </a>
+              <a href="/sobre-nosotros" className="about-cta-secondary" style={{
                 display:'inline-flex', alignItems:'center', gap:8,
                 padding:'0.9rem 1.75rem', borderRadius:9999,
                 border:'2px solid rgba(30,58,95,0.2)', color:'#1e3a5f',
@@ -421,6 +446,14 @@ export default function AboutSection({ data }: AboutProps) {
           from{ transform:scaleX(0); opacity:0; }
           to  { transform:scaleX(1); opacity:1; }
         }
+        @keyframes featureIn {
+          from{ opacity:0; transform:translateY(12px); }
+          to  { opacity:1; transform:translateY(0); }
+        }
+
+        /* ── DESKTOP: sin cambios ── */
+
+        /* ── MOBILE: todos los cambios visuales ── */
         @media(max-width:1023px){
           .about-premium-grid{ grid-template-columns:1fr !important; gap:3rem !important; }
           .about-img-col{ overflow:hidden; padding-bottom:3rem; }
@@ -428,16 +461,89 @@ export default function AboutSection({ data }: AboutProps) {
           .about-badge{ left:0 !important; bottom:-2% !important; }
           .about-deco-dot{ display:none !important; }
         }
+
+        @media(max-width:768px){
+          /* Fondo warm cream */
+          #nosotros { background: #faf9f6 !important; }
+
+          /* Features: pill → dark grid cards */
+          .about-features-wrap {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 0.55rem !important;
+            flex-wrap: unset !important;
+          }
+          .about-feature-chip {
+            background: #0a1628 !important;
+            border: 1px solid rgba(212,160,23,0.18) !important;
+            color: rgba(255,255,255,0.9) !important;
+            border-radius: 14px !important;
+            padding: 0.7rem 0.875rem !important;
+            gap: 10px !important;
+            font-size: 0.79rem !important;
+          }
+          .about-feature-icon {
+            width: 32px; height: 32px;
+            background: rgba(212,160,23,0.12);
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.05rem; flex-shrink: 0;
+          }
+
+          /* Stats: strip → 3 tarjetas con borde dorado */
+          .about-stats-strip {
+            gap: 0.55rem !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: none !important;
+          }
+          .about-stat-item {
+            background: linear-gradient(135deg,rgba(212,160,23,0.09),rgba(184,134,11,0.04)) !important;
+            border: 1px solid rgba(212,160,23,0.25) !important;
+            border-radius: 14px !important;
+            padding: 0.9rem 0.5rem !important;
+          }
+          .about-stat-icon { font-size: 1.4rem !important; }
+
+          /* p3: plain → box con borde dorado */
+          .about-p3 {
+            background: linear-gradient(135deg,rgba(10,22,40,0.04),rgba(10,22,40,0.02)) !important;
+            border: 1px solid rgba(10,22,40,0.09) !important;
+            border-left: 3px solid #d4a017 !important;
+            border-radius: 0 12px 12px 0 !important;
+            padding: 0.875rem 1.1rem !important;
+            font-style: italic !important;
+            font-size: 0.92rem !important;
+            color: #334155 !important;
+            margin-bottom: 1.25rem !important;
+          }
+
+          /* CTAs: mostrar WhatsApp, ocultar "Historia", full-width en mobile */
+          .about-ctas { flex-direction: column !important; gap: 0.65rem !important; }
+          .about-cta-primary {
+            order: 2 !important;
+            justify-content: center !important;
+            background: #0a1628 !important;
+            color: #f5c842 !important;
+            border: 1px solid rgba(212,160,23,0.35) !important;
+            box-shadow: none !important;
+          }
+          .about-cta-wa {
+            display: inline-flex !important;
+            order: 1 !important;
+            justify-content: center !important;
+          }
+          .about-cta-secondary { display: none !important; }
+        }
+
         @media(max-width:640px){
           .about-img2{ display:none !important; }
           .about-badge{ left:1rem !important; padding:0.875rem 1.1rem !important; }
           .about-badge p:first-child{ font-size:1.75rem !important; }
           .about-img-col{ padding-bottom:2rem; }
-          .about-stats-strip{ flex-direction:column !important; gap:1rem !important; }
         }
-        @media(max-width:480px){
-          .about-ctas{ flex-direction:column !important; }
-          .about-ctas a{ justify-content:center; text-align:center; }
+        @media(max-width:380px){
+          .about-features-wrap { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </section>
