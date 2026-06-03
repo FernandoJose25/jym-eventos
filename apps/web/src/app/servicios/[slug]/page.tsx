@@ -327,6 +327,7 @@ export default function ServicioPage() {
   const [visibleCards, setVisibleCards] = useState<Set<string>>(new Set());
   const [galeria, setGaleria] = useState<any[]>([]);
   const [lightbox, setLightbox] = useState<number | null>(null);
+  const [otrosServicios, setOtrosServicios] = useState<any[]>([]);
   const statsRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -346,6 +347,25 @@ export default function ServicioPage() {
         });
         if (match) setServicio(toPlain({ id: match.id, ...match.data() }));
         else setServicio(null);
+
+        /* Otros servicios — usar imágenes reales de Firestore */
+        const otros = snap.docs
+          .filter(d => {
+            const dLink = (d.data().link || '').replace('servicios/', '').replace('.html', '');
+            return dLink !== rawSlug && d.id !== match?.id;
+          })
+          .map(d => ({
+            id:    d.id,
+            title: d.data().title || '',
+            icon:  d.data().icon  || '🎉',
+            link:  d.data().link  || '',
+            img:   d.data().heroMediaType === 'image' ? (d.data().heroMediaSrc || '') : '',
+            order: d.data().order ?? 99,
+          }))
+          .filter((s: any) => s.title)
+          .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
+          .slice(0, 3);
+        setOtrosServicios(otros);
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     };
@@ -1220,7 +1240,7 @@ export default function ServicioPage() {
       {/* ═══════════════════════════════════════════
           RELACIONADOS — dark premium cards
       ═══════════════════════════════════════════ */}
-      {sd.relacionados?.length > 0 && (
+      {otrosServicios.length > 0 && (
         <section style={{ padding: 'clamp(4rem,8vw,7rem) 0', background: 'linear-gradient(160deg,#050d1a 0%,#0a1628 60%,#0d1f3c 100%)', position: 'relative', overflow: 'hidden' }}>
           {/* Background dot grid */}
           <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(rgba(212,160,23,0.05) 1px,transparent 1px)`, backgroundSize: '28px 28px', pointerEvents: 'none' }} />
@@ -1249,14 +1269,14 @@ export default function ServicioPage() {
             </div>
 
             {/* Cards grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(sd.relacionados.length, 3)},1fr)`, gap: '1.25rem' }} className="srv-rel-grid">
-              {sd.relacionados.map((r: any, i: number) => {
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(otrosServicios.length, 3)},1fr)`, gap: '1.25rem' }} className="srv-rel-grid">
+              {otrosServicios.map((r: any, i: number) => {
                 const rid = `rel-${i}`;
-                const relSlug = r.href?.split('/').pop() ?? '';
-                const relImg = SERVICIOS_DATA[relSlug]?.img ?? r.img ?? '';
-                const relColor = SERVICIOS_DATA[relSlug]?.color ?? accentColor;
+                const relSlug = (r.link || '').replace('servicios/', '').replace('.html', '');
+                const relImg  = r.img ?? '';
+                const relColor = accentColor;
                 return (
-                  <a key={i} href={r.href} style={{ textDecoration: 'none', display: 'block' }} data-reveal={rid}>
+                  <a key={i} href={`/servicios/${relSlug}`} style={{ textDecoration: 'none', display: 'block' }} data-reveal={rid}>
                     <div style={{
                       borderRadius: 22, overflow: 'hidden', position: 'relative',
                       height: 300,
