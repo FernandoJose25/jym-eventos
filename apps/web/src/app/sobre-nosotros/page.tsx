@@ -363,7 +363,7 @@ export default function SobreNosotrosPage() {
       {/* ═══════════════════════════════════════════════════════
           TIMELINE — HISTORIA
       ════════════════════════════════════════════════════════ */}
-      <section style={{ padding:'8rem 0', background:'#fff', position:'relative', overflow:'hidden' }}>
+      <section className="sn3-timeline-section" style={{ padding:'8rem 0', background:'#fff', position:'relative', overflow:'hidden' }}>
         <StarField count={12} light/>
 
         <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%) rotate(-8deg)',
@@ -388,7 +388,7 @@ export default function SobreNosotrosPage() {
               </p>
             </div>
 
-            <div style={{ position:'relative', paddingLeft:'2.5rem' }}>
+            <div className="sn3-timeline-col" style={{ position:'relative', paddingLeft:'2.5rem' }}>
               <div style={{ position:'absolute', left:0, top:'1.5rem', bottom:'1.5rem', width:2,
                              background:'linear-gradient(to bottom,#d4a017,rgba(212,160,23,0.1))', borderRadius:9999,
                              animation:'lineGlow 3s ease-in-out infinite' }}/>
@@ -636,15 +636,34 @@ export default function SobreNosotrosPage() {
           .sn3-hero-grid,.sn3-hist-grid,.sn3-mission-grid{grid-template-columns:1fr!important;gap:2.5rem!important;}
           .sn3-vals-grid{grid-template-columns:1fr 1fr!important;}
           section div[style*="polygon"]{display:none!important;}
+          /* Timeline: remove sticky on mobile */
+          .sn3-hist-grid > div:first-child { position:static!important; }
+          .sn3-timeline-section { padding:5rem 0!important; }
+        }
+        @media(max-width:768px){
+          /* Timeline mobile — cleaner card layout */
+          .sn3-timeline-section { padding:4rem 0!important; }
+          .sn3-hist-grid { gap:1.5rem!important; }
+          /* Timeline left sticky heading: compact */
+          .sn3-hist-grid > div:first-child { margin-bottom:0.5rem!important; }
+          .sn3-hist-grid > div:first-child h2 { font-size:clamp(2rem,7vw,2.8rem)!important; margin-bottom:0.75rem!important; }
+          .sn3-hist-grid > div:first-child p:last-child { display:none!important; }
+          /* Timeline right column: tighten padding */
+          .sn3-timeline-col { padding-left:2rem!important; }
         }
         @media(max-width:640px){
           .sn3-vals-grid{grid-template-columns:1fr!important;}
           .sn3-mission-grid > div:last-child { padding-left:0!important; }
+          /* Timeline items: tighter spacing */
+          .sn3-timeline-col > div { margin-bottom:1.5rem!important; }
         }
         @media(max-width:480px){
           .sn3-hero-grid > div:last-child { grid-template-columns:1fr 1fr!important; gap:0.75rem!important; }
           .sn3-cta-btns { flex-direction:column; align-items:stretch; }
           .sn3-cta-btns a { justify-content:center; text-align:center; }
+          /* Timeline: ultra compact */
+          .sn3-timeline-section { padding:3rem 0!important; }
+          .sn3-timeline-col { padding-left:1.75rem!important; }
         }
       `}</style>
     </>

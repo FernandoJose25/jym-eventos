@@ -64,7 +64,8 @@ export default function AboutSection({ data }: AboutProps) {
 
   return (
     <section ref={sectionRef} id="nosotros"
-      style={{ padding:'7rem 0', background:'#fff', position:'relative', overflow:'hidden' }}>
+      style={{ padding:'7rem 0', background:'#fff', position:'relative', overflow:'hidden' }}
+      className="about-section">
 
       {/* ── Fondo atmosférico ── */}
       <div style={{ position:'absolute', inset:0, pointerEvents:'none', overflow:'hidden' }}>
@@ -460,6 +461,8 @@ export default function AboutSection({ data }: AboutProps) {
           .about-img2{ right:2% !important; width:44% !important; }
           .about-badge{ left:0 !important; bottom:-2% !important; }
           .about-deco-dot{ display:none !important; }
+          /* Hide atmospheric background decorations completely on mobile */
+          .about-section > div:first-child { display:none !important; }
         }
 
         @media(max-width:768px){
