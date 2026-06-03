@@ -383,109 +383,115 @@ export default function AnaliticasPage() {
             </p>
           </div>
 
-        ) : (
-          /* ── Datos de Vercel ── */
+        ) : (() => {
+          /* ── Helpers para extraer data de múltiples formatos de respuesta Vercel ── */
+          const extract = (obj: any) =>
+            Array.isArray(obj?.data) ? obj.data :
+            Array.isArray(obj)       ? obj       : [];
+
+          const val = (d: any) =>
+            d.total ?? d.value ?? d.count ?? d.visitors ?? d.pageViews ?? 0;
+
+          const pvData   = extract(vercel.pageViews).map((d: any) => ({ key: d.key ?? d.date ?? d.period ?? '', value: val(d) }));
+          const pvTotal  = vercel.pageViews?.total ?? pvData.reduce((s: number, d: any) => s + d.value, 0);
+          const visTotal = vercel.visitors?.total  ?? extract(vercel.visitors).reduce((s: number, d: any) => s + val(d), 0);
+
+          const pathData    = extract(vercel.topPaths).map((d: any) => ({ name: d.key ?? d.path ?? d.page ?? '/', value: val(d) }));
+          const deviceData  = extract(vercel.devices).map((d: any)  => ({ name: d.key ?? d.device  ?? '?', value: val(d) }));
+          const browserData = extract(vercel.browsers).map((d: any) => ({ name: d.key ?? d.browser ?? '?', value: val(d) }));
+          const countryData = extract(vercel.countries).map((d: any)=> ({ name: d.key ?? d.country ?? '?', value: val(d) }));
+          const osData      = extract(vercel.os).map((d: any)        => ({ name: d.key ?? d.os      ?? '?', value: val(d) }));
+
+          const allZero = pvTotal === 0 && visTotal === 0;
+
+          return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-            {/* Top stats row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
-              {vercel.pageViews && (
-                <div className="admin-card" style={{ padding: '1.25rem' }}>
-                  <p style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 600, margin: '0 0 6px' }}>Vistas de página</p>
-                  <p style={{ fontSize: '1.7rem', fontWeight: 800, color: '#0a1628', margin: 0, lineHeight: 1 }}>
-                    {typeof vercel.pageViews?.total === 'number'
-                      ? vercel.pageViews.total.toLocaleString('es-PE')
-                      : Array.isArray(vercel.pageViews?.data)
-                        ? vercel.pageViews.data.reduce((s: number, d: any) => s + (d.value || 0), 0).toLocaleString('es-PE')
-                        : '—'}
+            {/* KPI row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14 }}>
+              {[
+                { label: 'Vistas de página', value: pvTotal,  color: '#6366f1' },
+                { label: 'Visitantes únicos', value: visTotal, color: '#0ea5e9' },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="admin-card" style={{ padding: '1.25rem', borderTop: `3px solid ${color}` }}>
+                  <p style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700, margin: '0 0 8px' }}>{label}</p>
+                  <p style={{ fontSize: '2rem', fontWeight: 800, color: '#0a1628', margin: 0, lineHeight: 1 }}>
+                    {typeof value === 'number' ? value.toLocaleString('es-PE') : '—'}
                   </p>
                 </div>
-              )}
-              {vercel.visitors && (
-                <div className="admin-card" style={{ padding: '1.25rem' }}>
-                  <p style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 600, margin: '0 0 6px' }}>Visitantes únicos</p>
-                  <p style={{ fontSize: '1.7rem', fontWeight: 800, color: '#0a1628', margin: 0, lineHeight: 1 }}>
-                    {typeof vercel.visitors?.total === 'number'
-                      ? vercel.visitors.total.toLocaleString('es-PE')
-                      : Array.isArray(vercel.visitors?.data)
-                        ? vercel.visitors.data.reduce((s: number, d: any) => s + (d.value || 0), 0).toLocaleString('es-PE')
-                        : '—'}
-                  </p>
-                </div>
-              )}
+              ))}
             </div>
 
-            {/* Page views chart */}
-            {Array.isArray(vercel.pageViews?.data) && vercel.pageViews.data.length > 0 && (
+            {/* Diagnóstico: si todo es 0, mostrar respuesta cruda para depuración */}
+            {allZero && vercel._raw && (
+              <details className="admin-card" style={{ padding: '1rem', cursor: 'pointer' }}>
+                <summary style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, userSelect: 'none' }}>
+                  ⚠️ Los datos muestran 0 — ver respuesta cruda de la API (diagnóstico)
+                </summary>
+                <pre style={{ marginTop: 10, fontSize: '0.7rem', color: '#475569', overflow: 'auto', maxHeight: 200, background: '#f8fafc', borderRadius: 8, padding: '0.75rem' }}>
+                  {JSON.stringify(vercel._raw, null, 2)}
+                </pre>
+                <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 8, marginBottom: 0 }}>
+                  Copia este JSON y compártelo para ajustar el parser.
+                </p>
+              </details>
+            )}
+
+            {/* Gráfico vistas por día */}
+            {pvData.length > 0 && pvData.some((d: any) => d.value > 0) && (
               <ChartCard title="Vistas de página por día">
                 <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={vercel.pageViews.data} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
+                  <BarChart data={pvData} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                     <XAxis dataKey="key" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                    <Tooltip
-                      contentStyle={{ background: '#0a1628', border: 'none', borderRadius: 10, color: '#fff', fontSize: '0.78rem' }}
-                      formatter={(v: any) => [v, 'Vistas']} />
+                    <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip contentStyle={{ background: '#0a1628', border: 'none', borderRadius: 10, color: '#fff', fontSize: '0.78rem' }}
+                             formatter={(v: any) => [v, 'Vistas']} />
                     <Bar dataKey="value" fill="#6366f1" radius={[5, 5, 0, 0]} maxBarSize={36} />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartCard>
             )}
 
-            {/* Bottom row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-
-              {/* Top pages */}
-              {Array.isArray(vercel.topPaths?.data) && vercel.topPaths.data.length > 0 && (
+            {/* Grid de stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
+              {pathData.length > 0 && (
                 <ChartCard title="Páginas más visitadas">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {vercel.topPaths.data.slice(0, 8).map((p: any, i: number) => (
+                    {pathData.slice(0, 8).map((p: any, i: number) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 700, width: 16, flexShrink: 0 }}>{i + 1}</span>
-                        <span style={{ fontSize: '0.78rem', color: '#475569', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {p.key || p.path || p.name || '/'}
-                        </span>
-                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#2563eb', flexShrink: 0 }}>
-                          {(p.value || p.count || 0).toLocaleString()}
-                        </span>
+                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 700, width: 18, flexShrink: 0 }}>{i + 1}</span>
+                        <span style={{ fontSize: '0.78rem', color: '#475569', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#2563eb', flexShrink: 0 }}>{p.value.toLocaleString()}</span>
                       </div>
                     ))}
                   </div>
                 </ChartCard>
               )}
-
-              {/* Devices */}
-              {Array.isArray(vercel.devices?.data) && vercel.devices.data.length > 0 && (
+              {deviceData.length > 0 && (
                 <ChartCard title="Dispositivos">
-                  <HBarList
-                    data={vercel.devices.data.map((d: any) => ({ name: d.key || d.device || '?', value: d.value || d.count || 0 }))}
-                    color="#8b5cf6"
-                  />
+                  <HBarList data={deviceData} color="#8b5cf6" />
                 </ChartCard>
               )}
-
-              {/* Browsers */}
-              {Array.isArray(vercel.browsers?.data) && vercel.browsers.data.length > 0 && (
+              {browserData.length > 0 && (
                 <ChartCard title="Navegadores">
-                  <HBarList
-                    data={vercel.browsers.data.slice(0, 6).map((d: any) => ({ name: d.key || d.browser || '?', value: d.value || d.count || 0 }))}
-                    color="#f59e0b"
-                  />
+                  <HBarList data={browserData.slice(0, 6)} color="#f59e0b" />
                 </ChartCard>
               )}
-
-              {/* Countries */}
-              {Array.isArray(vercel.countries?.data) && vercel.countries.data.length > 0 && (
+              {countryData.length > 0 && (
                 <ChartCard title="Países">
-                  <HBarList
-                    data={vercel.countries.data.slice(0, 6).map((d: any) => ({ name: d.key || d.country || '?', value: d.value || d.count || 0 }))}
-                    color="#10b981"
-                  />
+                  <HBarList data={countryData.slice(0, 6)} color="#10b981" />
+                </ChartCard>
+              )}
+              {osData.length > 0 && (
+                <ChartCard title="Sistemas operativos">
+                  <HBarList data={osData.slice(0, 6)} color="#0ea5e9" />
                 </ChartCard>
               )}
             </div>
           </div>
-        )}
+          );
+        })()}
       </div>
 
     </div>
