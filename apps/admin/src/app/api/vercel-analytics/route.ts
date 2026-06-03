@@ -10,14 +10,18 @@ function periodToRange(period: string) {
   return { from: now - days * 86_400_000, to: now };
 }
 
-async function vFetch(path: string, qs: URLSearchParams, token: string) {
-  const url = `https://vercel.com/api${path}?${qs}`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: 'no-store',
-  });
-  if (!res.ok) return { _error: res.status, _url: url };
-  return res.json();
+async function tryFetch(url: string, token: string) {
+  try {
+    const r = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      cache: 'no-store',
+    });
+    const text = await r.text();
+    try { return { status: r.status, data: JSON.parse(text) }; }
+    catch { return { status: r.status, data: text }; }
+  } catch (e) {
+    return { status: 0, data: String(e) };
+  }
 }
 
 export async function GET(req: Request) {
@@ -27,49 +31,87 @@ export async function GET(req: Request) {
   const period = searchParams.get('period') || '7d';
   const { from, to } = periodToRange(period);
 
-  const base = new URLSearchParams({
-    projectId:   PROJ_ID,
-    from:        String(from),
-    to:          String(to),
-    filter:      '{}',
-    environment: 'production',
-    ...(TEAM_ID ? { teamId: TEAM_ID } : {}),
-  });
+  const teamQs = TEAM_ID ? `&teamId=${TEAM_ID}` : '';
 
-  const [timeseries, paths, devices, browsers, countries, os] = await Promise.allSettled([
-    vFetch('/web/insights/timeseries',  base, TOKEN),
-    vFetch('/web/insights/stats/path',  new URLSearchParams({ ...Object.fromEntries(base), limit: '10' }), TOKEN),
-    vFetch('/web/insights/stats/device',  base, TOKEN),
-    vFetch('/web/insights/stats/browser', base, TOKEN),
-    vFetch('/web/insights/stats/country', base, TOKEN),
-    vFetch('/web/insights/stats/os',      base, TOKEN),
+  /* Probar múltiples variantes del endpoint — devolvemos la que funcione */
+  const candidates = [
+    /* Variante 1: api.vercel.com v6 (Analytics General) */
+    `https://api.vercel.com/v6/analytics?projectId=${PROJ_ID}&from=${from}&to=${to}${teamQs}`,
+    /* Variante 2: api.vercel.com Web Analytics */
+    `https://api.vercel.com/v1/web/analytics?projectId=${PROJ_ID}&from=${from}&to=${to}${teamQs}`,
+    /* Variante 3: vercel.com API v2 insights */
+    `https://vercel.com/api/v2/insights?projectId=${PROJ_ID}&from=${from}&to=${to}${teamQs}`,
+    /* Variante 4: vercel.com API web insights sin versión */
+    `https://vercel.com/api/web/insights?projectId=${PROJ_ID}&from=${from}&to=${to}${teamQs}`,
+  ];
+
+  const probe: Record<string, any> = {};
+  let found: any = null;
+
+  for (const url of candidates) {
+    const res = await tryFetch(url, TOKEN);
+    const key = url.replace(`https://`, '').split('?')[0];
+    probe[key] = { status: res.status, preview: typeof res.data === 'object' ? JSON.stringify(res.data).slice(0, 200) : String(res.data).slice(0, 200) };
+    if (res.status === 200 && typeof res.data === 'object' && !res.data.error) {
+      found = { url, data: res.data };
+      break;
+    }
+  }
+
+  if (!found) {
+    /* Ningún endpoint funcionó — devolver diagnóstico completo */
+    return NextResponse.json({
+      configured: true,
+      pageViews:  { total: 0, data: [] },
+      visitors:   { total: 0, data: [] },
+      topPaths:   null, devices: null, browsers: null, countries: null, os: null,
+      _debug: { message: 'Ningún endpoint devolvió 200. Verifica el plan o el Project ID.', probe },
+    });
+  }
+
+  /* Parsear la respuesta encontrada */
+  const d = found.data;
+
+  const extract = (obj: any): any[] =>
+    Array.isArray(obj?.data) ? obj.data :
+    Array.isArray(obj?.events) ? obj.events :
+    Array.isArray(obj) ? obj : [];
+
+  const val = (item: any) =>
+    item.total ?? item.value ?? item.count ?? item.visitors ?? item.pageViews ?? item.events ?? 0;
+
+  const ts   = d.timeseries ?? d.series ?? d;
+  const rows = extract(ts);
+
+  const pvTotal  = d.pageViews ?? d.totalPageViews ?? rows.reduce((s: number, r: any) => s + (r.pageViews ?? r.total ?? r.value ?? 0), 0);
+  const visTotal = d.visitors  ?? d.totalVisitors  ?? rows.reduce((s: number, r: any) => s + (r.visitors ?? r.uniques ?? 0), 0);
+
+  const pvChart  = rows.map((r: any) => ({ key: r.key ?? r.date ?? r.day ?? '', value: r.pageViews ?? r.total ?? r.value ?? 0 }));
+
+  /* Stats separadas */
+  const fetchStat = async (path: string) => {
+    const url = `https://api.vercel.com${path}?projectId=${PROJ_ID}&from=${from}&to=${to}${teamQs}`;
+    const r = await tryFetch(url, TOKEN);
+    return r.status === 200 ? r.data : null;
+  };
+
+  const [paths, devices, browsers, countries, os] = await Promise.all([
+    fetchStat('/v1/web/analytics/path'),
+    fetchStat('/v1/web/analytics/device'),
+    fetchStat('/v1/web/analytics/browser'),
+    fetchStat('/v1/web/analytics/country'),
+    fetchStat('/v1/web/analytics/os'),
   ]);
 
-  const ts     = timeseries.status === 'fulfilled' ? timeseries.value : null;
-  const tsData: any[] = Array.isArray(ts?.data) ? ts.data : [];
-
-  /* Vercel timeseries: cada item tiene { key: "YYYY-MM-DD", total: N, devices?: {...} } */
-  const totalPageViews = tsData.reduce((s: number, d: any) => s + (d.total ?? d.pageViews ?? 0), 0);
-
-  /* Visitantes únicos: Vercel puede devolverlos en un campo "visitors" o no devolverlos */
-  const totalVisitors  = tsData.reduce((s: number, d: any) => s + (d.visitors ?? d.uniques ?? 0), 0);
-
-  const pvChart  = tsData.map((d: any) => ({ key: d.key, value: d.total ?? d.pageViews ?? 0 }));
-  const visChart = tsData.map((d: any) => ({ key: d.key, value: d.visitors ?? d.uniques ?? 0 }));
-
-  const pick = (r: PromiseSettledResult<any>) =>
-    r.status === 'fulfilled' ? r.value : null;
-
   return NextResponse.json({
-    configured:  true,
-    pageViews:   { total: totalPageViews, data: pvChart  },
-    visitors:    { total: totalVisitors,  data: visChart },
-    topPaths:    pick(paths),
-    devices:     pick(devices),
-    browsers:    pick(browsers),
-    countries:   pick(countries),
-    os:          pick(os),
-    /* incluir raw para diagnóstico */
-    _raw: { timeseries: ts },
+    configured: true,
+    pageViews:  { total: pvTotal, data: pvChart },
+    visitors:   { total: visTotal, data: [] },
+    topPaths:   paths,
+    devices,
+    browsers,
+    countries,
+    os,
+    _debug: { foundUrl: found.url, probe },
   });
 }
