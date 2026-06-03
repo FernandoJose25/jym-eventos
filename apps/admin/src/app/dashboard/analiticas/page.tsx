@@ -218,10 +218,10 @@ export default function AnaliticasPage() {
 
       {/* Summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14 }}>
-        <SummaryCard icon={MessageSquare} label="Mensajes totales"  value={msgsLoad ? '…' : totalMsgs}    sub={`últimos ${days} días`}        color="#2563eb" />
-        <SummaryCard icon={Bell}          label="Sin leer"           value={msgsLoad ? '…' : unreadMsgs}   sub="requieren atención"            color="#ef4444" />
-        <SummaryCard icon={TrendingUp}    label="Mensajes hoy"       value={msgsLoad ? '…' : todayMsgs}    sub="recibidos hoy"                 color="#10b981" />
-        <SummaryCard icon={BarChart2}     label="Tasa de gestión"    value={msgsLoad ? '…' : `${tasa}%`}   sub={`${cotizados} cotizados/cerrados`} color="#f59e0b" />
+        <SummaryCard icon={MessageSquare} label="Mensajes totales"  value={msgsLoad ? '…' : totalMsgs}    sub={`últimos ${days} días`}        color="#1e3a5f" />
+        <SummaryCard icon={Bell}          label="Sin leer"           value={msgsLoad ? '…' : unreadMsgs}   sub="requieren atención"            color="#dc2626" />
+        <SummaryCard icon={TrendingUp}    label="Mensajes hoy"       value={msgsLoad ? '…' : todayMsgs}    sub="recibidos hoy"                 color="#059669" />
+        <SummaryCard icon={BarChart2}     label="Tasa de gestión"    value={msgsLoad ? '…' : `${tasa}%`}   sub={`${cotizados} cotizados/cerrados`} color="#d97706" />
       </div>
 
       {/* Charts row 1 */}
