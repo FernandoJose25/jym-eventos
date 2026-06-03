@@ -84,8 +84,9 @@ export default function StatsSection({ data }: { data: Record<string,any> }) {
       </div>
 
       <style>{`
-        @media(max-width:768px){ .stats-grid{ grid-template-columns:1fr 1fr !important; row-gap:2.5rem !important; } }
-        @media(max-width:480px){ .stats-grid{ grid-template-columns:1fr 1fr !important; } }
+        @media(max-width:768px){ .stats-grid{ grid-template-columns:1fr 1fr !important; row-gap:2rem !important; } }
+        @media(max-width:380px){ .stats-grid{ grid-template-columns:1fr 1fr !important; gap:1.25rem !important; } }
+        @media(max-width:380px){ .stat-number{ font-size:2rem !important; } }
       `}</style>
     </section>
   );

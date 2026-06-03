@@ -233,14 +233,14 @@ export default function AboutSection({ data }: AboutProps) {
               </div>
 
               {/* Partícula decorativa */}
-              <div style={{
+              <div className="about-deco-dot" style={{
                 position:'absolute', top:'15%', right:'-6%',
                 width:14, height:14, borderRadius:'50%',
                 background:'linear-gradient(135deg,#b8860b,#f5c842)',
                 boxShadow:'0 4px 12px rgba(212,160,23,0.5)',
                 animation:'dotFloat 3s ease-in-out infinite .5s',
               }}/>
-              <div style={{
+              <div className="about-deco-dot" style={{
                 position:'absolute', top:'35%', right:'-10%',
                 width:8, height:8, borderRadius:'50%',
                 background:'rgba(30,58,95,0.4)',
@@ -333,7 +333,7 @@ export default function AboutSection({ data }: AboutProps) {
             </div>
 
             {/* Stats strip */}
-            <div style={{
+            <div className="about-stats-strip" style={{
               display:'flex', gap:'2rem',
               padding:'1.25rem 1.5rem', borderRadius:16, marginBottom:'2rem',
               background:'linear-gradient(135deg,rgba(10,22,40,0.04),rgba(30,58,95,0.06))',
@@ -352,7 +352,7 @@ export default function AboutSection({ data }: AboutProps) {
             </div>
 
             {/* CTAs */}
-            <div style={{
+            <div className="about-ctas" style={{
               display:'flex', gap:'1rem', flexWrap:'wrap',
               animation: revealed ? 'slideInRight .6s ease 1.1s both' : 'none',
             }}>
@@ -423,14 +423,21 @@ export default function AboutSection({ data }: AboutProps) {
         }
         @media(max-width:1023px){
           .about-premium-grid{ grid-template-columns:1fr !important; gap:3rem !important; }
-          .about-img-col{ overflow:visible; padding-bottom:3rem; }
-          .about-img2{ right:-5% !important; width:44% !important; }
+          .about-img-col{ overflow:hidden; padding-bottom:3rem; }
+          .about-img2{ right:2% !important; width:44% !important; }
           .about-badge{ left:0 !important; bottom:-2% !important; }
+          .about-deco-dot{ display:none !important; }
         }
         @media(max-width:640px){
           .about-img2{ display:none !important; }
           .about-badge{ left:1rem !important; padding:0.875rem 1.1rem !important; }
           .about-badge p:first-child{ font-size:1.75rem !important; }
+          .about-img-col{ padding-bottom:2rem; }
+          .about-stats-strip{ flex-direction:column !important; gap:1rem !important; }
+        }
+        @media(max-width:480px){
+          .about-ctas{ flex-direction:column !important; }
+          .about-ctas a{ justify-content:center; text-align:center; }
         }
       `}</style>
     </section>

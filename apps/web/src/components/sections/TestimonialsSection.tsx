@@ -239,9 +239,9 @@ export default function TestimonialsSection({ items: propItems }: { items?: Test
 
       {/* Carrusel */}
       <div style={{ overflow:'hidden', padding:'2rem 0', position:'relative' }}>
-        <div style={{ position:'absolute', left:0, top:0, bottom:0, width:100, zIndex:10,
+        <div className="testi-fade-left" style={{ position:'absolute', left:0, top:0, bottom:0, width:80, zIndex:10,
                        background:'linear-gradient(to right,#0a1628,transparent)', pointerEvents:'none' }}/>
-        <div style={{ position:'absolute', right:0, top:0, bottom:0, width:100, zIndex:10,
+        <div className="testi-fade-right" style={{ position:'absolute', right:0, top:0, bottom:0, width:80, zIndex:10,
                        background:'linear-gradient(to left,#0a1628,transparent)', pointerEvents:'none' }}/>
 
         <div className="books-track">
@@ -266,6 +266,13 @@ export default function TestimonialsSection({ items: propItems }: { items?: Test
         @keyframes floating {
           0%,100% { transform: translateY(0px); }
           50%      { transform: translateY(10px); }
+        }
+        @media(max-width:640px){
+          .testi-fade-left, .testi-fade-right { width:40px !important; }
+          .books-track { gap:1.25rem !important; }
+        }
+        @media(max-width:480px){
+          .testi-fade-left, .testi-fade-right { width:24px !important; }
         }
       `}</style>
     </section>

@@ -181,9 +181,10 @@ export default function WhyUsSection({ data }: { data: any }) {
 
       <style>{`
         @media(max-width:900px){ .why-grid{ grid-template-columns:1fr 1fr !important; } }
-        @media(max-width:600px){ .why-grid{ grid-template-columns:1fr 1fr !important; } }
+        @media(max-width:600px){ .why-grid{ grid-template-columns:1fr 1fr !important; gap:1rem !important; } }
+        @media(max-width:400px){ .why-grid{ grid-template-columns:1fr !important; } }
         @media(max-width:767px){
-          .why-card{ height:auto !important; min-height:160px; padding:1.25rem 0.5rem 1.5rem !important; }
+          .why-card{ height:auto !important; min-height:180px; padding:1.5rem 1rem 1.75rem !important; border-radius:10px !important; }
           .why-desc{ opacity:1 !important; transform:none !important; max-height:none !important; }
         }
       `}</style>

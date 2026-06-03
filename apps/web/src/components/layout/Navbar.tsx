@@ -364,7 +364,7 @@ export default function Navbar() {
         .nav-hamburger     { display: none !important; }
         .nav-mobile-overlay{ display: none !important; }
 
-        @media (max-width: 767px) {
+        @media (max-width: 900px) {
           .nav-desktop       { display: none !important; }
           .nav-cta-desktop   { display: none !important; }
           .nav-hamburger     { display: flex !important; }

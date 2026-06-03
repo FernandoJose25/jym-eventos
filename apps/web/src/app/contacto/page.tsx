@@ -328,7 +328,7 @@ export default function ContactoPage() {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:14 }} noValidate>
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                    <div className="cp-form-row" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
                       <div>
                         <label style={lbl}>Nombre *</label>
                         <input type="text" placeholder="Tu nombre completo" style={inp} required
@@ -421,6 +421,10 @@ export default function ContactoPage() {
 
       <style>{`
         @media(max-width:1023px){ .cp-grid{ grid-template-columns:1fr !important; } }
+        @media(max-width:480px){
+          .cp-form-row{ grid-template-columns:1fr !important; }
+          .cp-form-row > [style*="span 2"]{ grid-column: span 1 !important; }
+        }
         @keyframes cpSpin  { to{ transform:rotate(360deg) } }
         @keyframes ringRot { from{transform:translate(-50%,-50%) rotate(0deg)} to{transform:translate(-50%,-50%) rotate(360deg)} }
         @keyframes shimmer { from{background-position:0% center} to{background-position:200% center} }

@@ -281,8 +281,8 @@ export default function SobreNosotrosPage() {
               </div>
 
               <h1 className="sn3-reveal stg-2" style={{
-                fontFamily:'var(--font-playfair)', fontSize:'clamp(3rem,6vw,5.5rem)',
-                color:'#fff', lineHeight:1.0, fontWeight:700, margin:'1.5rem 0',
+                fontFamily:'var(--font-playfair)', fontSize:'clamp(2.2rem,6vw,5.5rem)',
+                color:'#fff', lineHeight:1.05, fontWeight:700, margin:'1.5rem 0',
               }}>
                 {heroTitle1}<br/>
                 <span style={{
@@ -298,7 +298,7 @@ export default function SobreNosotrosPage() {
                 {heroDesc}
               </p>
 
-              <div className="sn3-reveal stg-4" style={{ display:'flex', gap:'1rem', flexWrap:'wrap' }}>
+              <div className="sn3-reveal stg-4 sn3-cta-btns" style={{ display:'flex', gap:'1rem', flexWrap:'wrap' }}>
                 {[
                   { label:'✨ Cotizar mi evento', href:'/contacto', bg:'linear-gradient(135deg,#b8860b,#f5c842)', color:'#0a1628', shadow:'rgba(212,160,23,0.45)' },
                   { label:'Ver galería →',        href:'/galeria',  bg:'rgba(255,255,255,0.06)',                                  color:'rgba(255,255,255,0.85)', shadow:'transparent', border:'1.5px solid rgba(255,255,255,0.2)' },
@@ -637,7 +637,15 @@ export default function SobreNosotrosPage() {
           .sn3-vals-grid{grid-template-columns:1fr 1fr!important;}
           section div[style*="polygon"]{display:none!important;}
         }
-        @media(max-width:640px){.sn3-vals-grid{grid-template-columns:1fr!important;}}
+        @media(max-width:640px){
+          .sn3-vals-grid{grid-template-columns:1fr!important;}
+          .sn3-mission-grid > div:last-child { padding-left:0!important; }
+        }
+        @media(max-width:480px){
+          .sn3-hero-grid > div:last-child { grid-template-columns:1fr 1fr!important; gap:0.75rem!important; }
+          .sn3-cta-btns { flex-direction:column; align-items:stretch; }
+          .sn3-cta-btns a { justify-content:center; text-align:center; }
+        }
       `}</style>
     </>
   );

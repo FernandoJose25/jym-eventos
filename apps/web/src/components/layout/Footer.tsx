@@ -136,10 +136,10 @@ export default function Footer() {
                   <span style={{ fontSize:'1rem', flexShrink:0, marginTop:1 }}>{icon}</span>
                   <div>
                     {href
-                      ? <a href={href} style={{ color:'rgba(255,255,255,0.7)', fontSize:'0.82rem', textDecoration:'none', transition:'color .2s' }}
+                      ? <a href={href} className="footer-contact-value" style={{ color:'rgba(255,255,255,0.7)', fontSize:'0.82rem', textDecoration:'none', transition:'color .2s', wordBreak:'break-word' }}
                            onMouseEnter={e=>(e.currentTarget as HTMLElement).style.color='#f5c842'}
                            onMouseLeave={e=>(e.currentTarget as HTMLElement).style.color='rgba(255,255,255,0.7)'}>{label}</a>
-                      : <p style={{ color:'rgba(255,255,255,0.7)', fontSize:'0.82rem', margin:0 }}>{label}</p>
+                      : <p className="footer-contact-value" style={{ color:'rgba(255,255,255,0.7)', fontSize:'0.82rem', margin:0, wordBreak:'break-word' }}>{label}</p>
                     }
                     {sub && <p style={{ color:'rgba(255,255,255,0.35)', fontSize:'0.72rem', margin:'2px 0 0' }}>{sub}</p>}
                   </div>
@@ -224,6 +224,9 @@ export default function Footer() {
           .footer-grid{ grid-template-columns:1fr !important; }
           .footer-bottom{ flex-direction:column; align-items:center; text-align:center; }
           .footer-bottom > div { justify-content: center; }
+        }
+        @media(max-width:480px) {
+          .footer-contact-value{ font-size:0.75rem !important; word-break:break-all; }
         }
         @keyframes footerFloat {
           0%,100% { transform: translateY(0px); }

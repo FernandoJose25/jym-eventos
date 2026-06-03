@@ -376,9 +376,17 @@ export default function AnunciaConNosotros() {
 
   return (
     <div style={{ background: '#08111f', minHeight: '100vh', paddingTop: 72, color: '#fff' }}>
+      <style>{`
+        @media(max-width:640px){
+          .anuncia-hero-section{ padding:4rem 1rem 3.5rem !important; }
+          .anuncia-cta-box{ padding:2.5rem 1.25rem !important; border-radius:20px !important; }
+          .anuncia-cta-btns{ flex-direction:column; align-items:stretch; }
+          .anuncia-cta-btns a{ text-align:center; justify-content:center; }
+        }
+      `}</style>
 
       {/* ── HERO ── */}
-      <section style={{
+      <section className="anuncia-hero-section" style={{
         position: 'relative', overflow: 'hidden',
         padding: '6rem 1.5rem 5rem',
         textAlign: 'center',
@@ -535,6 +543,7 @@ export default function AnunciaConNosotros() {
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
           <div
             ref={ctaSection.ref}
+            className="anuncia-cta-box"
             style={{
               borderRadius: 28, padding: '3.5rem 2.5rem', textAlign: 'center',
               background: 'linear-gradient(135deg,rgba(184,134,11,0.12),rgba(245,200,66,0.06))',
@@ -558,7 +567,7 @@ export default function AnunciaConNosotros() {
               Sin compromisos — solo una charla rápida.
             </p>
 
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div className="anuncia-cta-btns" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <a
                 href="https://wa.me/51902508499?text=Hola%2C%20me%20interesa%20anunciar%20con%20ustedes%20en%20J%26M%20Eventos"
                 target="_blank" rel="noopener noreferrer"

@@ -517,7 +517,12 @@ export default function GaleriaPage() {
       <style>{`
         .gal-overlay.visible { opacity: 1 !important; }
         @keyframes lbIn { from{opacity:0;transform:scale(0.92)} to{opacity:1;transform:scale(1)} }
-        @media(max-width:640px){ div[style*="columns:3"] { columns: 2 220px !important; } }
+        @media(max-width:768px){ div[style*="columns:3"] { columns: 2 180px !important; gap:0.875rem !important; } }
+        @media(max-width:480px){ div[style*="columns:3"], div[style*="columns:2"] { columns: 1 !important; } }
+        @media(max-width:640px){
+          .gal-filters-scroll{ -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+          .gal-filters-scroll::-webkit-scrollbar{ display:none; }
+        }
       `}</style>
     </>
   );

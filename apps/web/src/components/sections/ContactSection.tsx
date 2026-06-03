@@ -318,7 +318,7 @@ export default function ContactSection({ data }: Props) {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:14 }} noValidate>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                  <div className="cs-form-row" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
                     <div>
                       <label style={lbl}>Nombre *</label>
                       <input type="text" placeholder="Tu nombre" style={inp} required
@@ -405,6 +405,10 @@ export default function ContactSection({ data }: Props) {
 
       <style>{`
         @media(max-width:1023px){ .cs-grid{ grid-template-columns:1fr !important; } }
+        @media(max-width:480px){
+          .cs-form-row{ grid-template-columns:1fr !important; }
+          .cs-form-row > [style*="span 2"]{ grid-column: span 1 !important; }
+        }
         @keyframes csSpin { to { transform:rotate(360deg) } }
         @keyframes shimmer { from{background-position:0% center} to{background-position:200% center} }
         @keyframes ctaOrb0 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-30px)} }

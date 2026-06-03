@@ -213,7 +213,7 @@ export default function HeroSection({ data }: { data: HeroData }) {
           style={{
             color: '#fff',
 
-            fontSize: 'clamp(3.5rem, 9vw, 7rem)',
+            fontSize: 'clamp(2.4rem, 9vw, 7rem)',
 
             lineHeight: 0.95,
 
@@ -384,10 +384,13 @@ export default function HeroSection({ data }: { data: HeroData }) {
         </div>
       </div>
       <style>{`
-        @media (max-width: 480px) {
+        @media (max-width: 640px) {
           .hero-content { padding-top: 5.5rem !important; padding-bottom: 3rem !important; }
-          .hero-btns { gap: 0.75rem !important; flex-direction: column !important; align-items: stretch !important; padding: 0 1rem; }
+          .hero-btns { gap: 0.75rem !important; flex-direction: column !important; align-items: stretch !important; padding: 0 0.5rem; }
           .hero-btns a { padding: 0.875rem 1.5rem !important; font-size: 0.95rem !important; justify-content: center; text-align: center; }
+        }
+        @media (max-width: 380px) {
+          .hero-content { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
         }
       `}</style>
     </section>

@@ -204,7 +204,7 @@ export default function ServicesSection({ services }: { services: Service[] }) {
   if (!services?.length) return null;
 
   return (
-    <section id="servicios" style={{ padding:'6rem 0', background:'#0a1628', position:'relative', overflow:'hidden' }}>
+    <section id="servicios" className="services-section" style={{ padding:'6rem 0', background:'#0a1628', position:'relative', overflow:'hidden' }}>
       {/* Fondo decorativo */}
       <div style={{ position:'absolute', top:-200, right:-200, width:600, height:600, borderRadius:'50%',
                      background:'radial-gradient(circle,rgba(212,160,23,0.06) 0%,transparent 70%)', pointerEvents:'none' }}/>
@@ -246,8 +246,11 @@ export default function ServicesSection({ services }: { services: Service[] }) {
         .atvImg-container.over {
           box-shadow: 0 45px 100px rgba(14,21,47,0.4), 0 16px 40px rgba(14,21,47,0.4);
         }
-        @media(max-width:900px){ .srv-grid{ grid-template-columns:1fr 1fr !important; } }
+        @media(max-width:900px){ .srv-grid{ grid-template-columns:1fr 1fr !important; gap:1.25rem !important; } }
         @media(max-width:600px){ .srv-grid{ grid-template-columns:1fr !important; } }
+        @media(max-width:480px){
+          .services-section{ padding:4rem 0 !important; }
+        }
       `}</style>
     </section>
   );
