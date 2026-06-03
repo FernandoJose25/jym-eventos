@@ -1218,56 +1218,142 @@ export default function ServicioPage() {
       )}
 
       {/* ═══════════════════════════════════════════
-          RELACIONADOS — cards with parallax hover
+          RELACIONADOS — dark premium cards
       ═══════════════════════════════════════════ */}
       {sd.relacionados?.length > 0 && (
-        <section style={{ padding: 'clamp(5rem,9vw,8rem) 0', background: '#fafaf8' }}>
-          <div className="container">
-            <div data-reveal="rel-header" style={{ textAlign: 'center', marginBottom: 'clamp(2.5rem,5vw,4rem)', opacity: isVisible('rel-header') ? 1 : 0, transform: isVisible('rel-header') ? 'none' : 'translateY(24px)', transition: 'all .7s ease' }}>
-              <p style={{ color: accentColor, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Otros Servicios</p>
-              <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#0c1e30', margin: 0, letterSpacing: '-.03em' }}>También Te Puede Interesar</h2>
+        <section style={{ padding: 'clamp(4rem,8vw,7rem) 0', background: 'linear-gradient(160deg,#050d1a 0%,#0a1628 60%,#0d1f3c 100%)', position: 'relative', overflow: 'hidden' }}>
+          {/* Background dot grid */}
+          <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(rgba(212,160,23,0.05) 1px,transparent 1px)`, backgroundSize: '28px 28px', pointerEvents: 'none' }} />
+          {/* Glow orb */}
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 700, height: 400, borderRadius: '50%', background: `radial-gradient(ellipse,${accentColor}0a 0%,transparent 65%)`, pointerEvents: 'none' }} />
+
+          <div className="container" style={{ position: 'relative', zIndex: 2 }}>
+            {/* Header */}
+            <div data-reveal="rel-header" style={{
+              textAlign: 'center', marginBottom: 'clamp(2.5rem,5vw,4rem)',
+              opacity: isVisible('rel-header') ? 1 : 0,
+              transform: isVisible('rel-header') ? 'none' : 'translateY(24px)',
+              transition: 'all .7s ease',
+            }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: '1rem',
+                padding: '0.35rem 1.1rem', borderRadius: 9999,
+                background: `${accentColor}15`, border: `1px solid ${accentColor}35`,
+                color: '#f5c842', fontSize: '0.62rem', fontWeight: 700,
+                textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)' }}>
+                <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#f5c842', display: 'inline-block' }} />
+                Otros Servicios
+              </div>
+              <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.8rem,2.8vw,2.75rem)', color: '#fff', margin: 0, letterSpacing: '-.03em', lineHeight: 1.1 }}>
+                También Te Puede <em style={{ color: '#d4a017', fontStyle: 'italic' }}>Interesar</em>
+              </h2>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.25rem' }}>
+
+            {/* Cards grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(sd.relacionados.length, 3)},1fr)`, gap: '1.25rem' }} className="srv-rel-grid">
               {sd.relacionados.map((r: any, i: number) => {
                 const rid = `rel-${i}`;
                 const relSlug = r.href?.split('/').pop() ?? '';
                 const relImg = SERVICIOS_DATA[relSlug]?.img ?? r.img ?? '';
+                const relColor = SERVICIOS_DATA[relSlug]?.color ?? accentColor;
                 return (
-                  <a key={i} href={r.href} style={{ textDecoration: 'none', display: 'block' }}
-                     data-reveal={rid}>
+                  <a key={i} href={r.href} style={{ textDecoration: 'none', display: 'block' }} data-reveal={rid}>
                     <div style={{
-                      borderRadius: 20, overflow: 'hidden', background: '#fff',
-                      boxShadow: '0 1px 8px rgba(12,30,48,0.06)',
+                      borderRadius: 22, overflow: 'hidden', position: 'relative',
+                      height: 300,
+                      border: `1px solid rgba(255,255,255,0.08)`,
                       opacity: isVisible(rid) ? 1 : 0,
-                      transform: isVisible(rid) ? 'none' : 'translateY(24px)',
-                      transition: `all .65s ${i * 0.1}s ease`,
+                      transform: isVisible(rid) ? 'none' : 'translateY(32px)',
+                      transition: `opacity .65s ${i * 0.12}s ease, transform .65s ${i * 0.12}s ease, box-shadow .3s ease`,
+                      boxShadow: `0 4px 24px rgba(0,0,0,0.35)`,
+                      cursor: 'pointer',
                     }}
-                      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-8px)'; el.style.boxShadow = '0 24px 50px rgba(12,30,48,0.15)'; }}
-                      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 1px 8px rgba(12,30,48,0.06)'; }}>
-                      <div style={{ height: 220, overflow: 'hidden', position: 'relative' }}>
-                        <img src={cxCard(relImg)} alt={r.title} loading="lazy" decoding="async"
-                             style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .6s cubic-bezier(.25,.46,.45,.94)' }}
-                             onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.08)'}
-                             onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'} />
-                        {/* Gradient */}
-                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(12,30,48,0.5) 0%,transparent 50%)' }} />
-                        {/* Icon badge */}
-                        <div style={{ position: 'absolute', top: 14, left: 14, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)', borderRadius: 10, padding: '0.4rem 0.7rem', fontSize: '1.1rem' }}>
-                          {r.icon}
-                        </div>
+                      onMouseEnter={e => {
+                        const el = e.currentTarget as HTMLElement;
+                        el.style.boxShadow = `0 20px 56px rgba(0,0,0,0.5), 0 0 0 1px ${relColor}50`;
+                        const img = el.querySelector('.rel-img') as HTMLElement | null;
+                        if (img) img.style.transform = 'scale(1.08)';
+                        const overlay = el.querySelector('.rel-overlay') as HTMLElement | null;
+                        if (overlay) overlay.style.opacity = '1';
+                        const cta = el.querySelector('.rel-cta') as HTMLElement | null;
+                        if (cta) { cta.style.opacity = '1'; cta.style.transform = 'translateY(0)'; }
+                        const line = el.querySelector('.rel-topline') as HTMLElement | null;
+                        if (line) line.style.transform = 'scaleX(1)';
+                      }}
+                      onMouseLeave={e => {
+                        const el = e.currentTarget as HTMLElement;
+                        el.style.boxShadow = '0 4px 24px rgba(0,0,0,0.35)';
+                        const img = el.querySelector('.rel-img') as HTMLElement | null;
+                        if (img) img.style.transform = 'scale(1)';
+                        const overlay = el.querySelector('.rel-overlay') as HTMLElement | null;
+                        if (overlay) overlay.style.opacity = '0';
+                        const cta = el.querySelector('.rel-cta') as HTMLElement | null;
+                        if (cta) { cta.style.opacity = '0'; cta.style.transform = 'translateY(8px)'; }
+                        const line = el.querySelector('.rel-topline') as HTMLElement | null;
+                        if (line) line.style.transform = 'scaleX(0)';
+                      }}>
+
+                      {/* Gold top accent line */}
+                      <div className="rel-topline" style={{
+                        position: 'absolute', top: 0, left: 0, right: 0, height: 3, zIndex: 10,
+                        background: `linear-gradient(90deg,${relColor},#f5c842,${relColor})`,
+                        transform: 'scaleX(0)', transformOrigin: 'left',
+                        transition: 'transform .4s ease',
+                      }} />
+
+                      {/* Background image */}
+                      {relImg ? (
+                        <img className="rel-img" src={cxCard(relImg)} alt={r.title} loading="lazy" decoding="async"
+                             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .6s cubic-bezier(.25,.46,.45,.94)' }} />
+                      ) : (
+                        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,#0c1e30,${relColor}30)` }} />
+                      )}
+
+                      {/* Dark gradient overlay — always */}
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top,rgba(5,13,26,0.95) 0%,rgba(5,13,26,0.55) 45%,rgba(5,13,26,0.15) 100%)' }} />
+
+                      {/* Hover color overlay */}
+                      <div className="rel-overlay" style={{
+                        position: 'absolute', inset: 0, opacity: 0, transition: 'opacity .4s',
+                        background: `linear-gradient(135deg,${relColor}20 0%,transparent 60%)`,
+                        pointerEvents: 'none',
+                      }} />
+
+                      {/* Icon badge — top right */}
+                      <div style={{
+                        position: 'absolute', top: 18, right: 18, zIndex: 5,
+                        width: 52, height: 52, borderRadius: '50%',
+                        background: 'rgba(8,17,32,0.7)', backdropFilter: 'blur(12px)',
+                        border: `1.5px solid ${relColor}40`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '1.6rem',
+                        boxShadow: `0 4px 16px rgba(0,0,0,0.4), 0 0 0 4px ${relColor}15`,
+                      }}>
+                        {r.icon}
                       </div>
-                      <div style={{ padding: '1.25rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <h3 style={{ color: '#0c1e30', fontSize: '0.92rem', fontFamily: 'var(--font-playfair)', fontWeight: 700, margin: 0 }}>{r.title}</h3>
-                        <div style={{
-                          width: 32, height: 32, borderRadius: '50%',
-                          background: `${accentColor}15`, border: `1px solid ${accentColor}30`,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: accentColor, fontSize: '0.85rem', fontWeight: 700,
-                          transition: 'all .3s',
-                          flexShrink: 0,
-                        }}
-                          className="srv-rel-arrow">
-                          →
+
+                      {/* Content — bottom */}
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1.5rem 1.5rem 1.25rem', zIndex: 5 }}>
+                        <h3 style={{
+                          fontFamily: 'var(--font-playfair)', color: '#fff',
+                          fontSize: '1.1rem', fontWeight: 700,
+                          margin: '0 0 0.75rem', lineHeight: 1.2,
+                          letterSpacing: '-.02em',
+                          textShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                        }}>{r.title}</h3>
+
+                        {/* CTA badge */}
+                        <div className="rel-cta" style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          padding: '0.4rem 0.9rem', borderRadius: 9999,
+                          background: `${relColor}25`, border: `1px solid ${relColor}55`,
+                          color: '#f5c842', fontSize: '0.72rem', fontWeight: 700,
+                          fontFamily: 'var(--font-jakarta)', letterSpacing: '.04em',
+                          opacity: 0, transform: 'translateY(8px)',
+                          transition: 'opacity .3s .05s ease, transform .3s .05s ease',
+                          backdropFilter: 'blur(8px)',
+                        }}>
+                          Ver servicio
+                          <span style={{ fontSize: '0.85rem', transition: 'transform .2s' }}>→</span>
                         </div>
                       </div>
                     </div>
@@ -1276,6 +1362,15 @@ export default function ServicioPage() {
               })}
             </div>
           </div>
+
+          <style>{`
+            @media (max-width: 768px) {
+              .srv-rel-grid { grid-template-columns: 1fr !important; }
+            }
+            @media (min-width: 769px) and (max-width: 1023px) {
+              .srv-rel-grid { grid-template-columns: repeat(2,1fr) !important; }
+            }
+          `}</style>
         </section>
       )}
 

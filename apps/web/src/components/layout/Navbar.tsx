@@ -18,11 +18,14 @@ export default function Navbar() {
   const pathname = usePathname();
   const [services,   setServices]   = useState<NavService[]>([]);
   const [navConfig,  setNavConfig]  = useState<NavConfig>({});
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [servOpen,   setServOpen]   = useState(false);
-  const [scrolled,   setScrolled]   = useState(false);
-  const dropRef    = useRef<HTMLDivElement>(null);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [mobileOpen,   setMobileOpen]   = useState(false);
+  const [servOpen,     setServOpen]     = useState(false);
+  const [nosotrosOpen, setNosotrosOpen] = useState(false);
+  const [scrolled,     setScrolled]     = useState(false);
+  const dropRef       = useRef<HTMLDivElement>(null);
+  const nosotrosRef   = useRef<HTMLDivElement>(null);
+  const closeTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nosotrosTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => onSnapshot(
     query(collection(db, 'services'), where('visible', '==', true), orderBy('order', 'asc')),
@@ -44,8 +47,10 @@ export default function Navbar() {
 
   useEffect(() => { setMobileOpen(false); setServOpen(false); }, [pathname]);
 
-  const openDrop  = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setServOpen(true); };
-  const closeDrop = () => { closeTimer.current = setTimeout(() => setServOpen(false), 120); };
+  const openDrop       = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setServOpen(true); };
+  const closeDrop      = () => { closeTimer.current = setTimeout(() => setServOpen(false), 120); };
+  const openNosotros   = () => { if (nosotrosTimer.current) clearTimeout(nosotrosTimer.current); setNosotrosOpen(true); };
+  const closeNosotros  = () => { nosotrosTimer.current = setTimeout(() => setNosotrosOpen(false), 120); };
 
   const isActive = (href: string) => href === '/' ? pathname === '/' : pathname.startsWith(href);
   const servActive = pathname.startsWith('/servicios');
@@ -97,26 +102,110 @@ export default function Navbar() {
 
           {/* Desktop nav — CSS controls visibility */}
           <nav className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, justifyContent: 'center' }}>
-              {NAV.map(({ href, label }) => (
-                <Link key={href} href={href} style={{
-                  position: 'relative', padding: '0.5rem 0.9rem', borderRadius: 8,
-                  fontSize: '0.875rem', fontWeight: 500, textDecoration: 'none',
-                  color: isActive(href) ? '#f5c842' : 'rgba(255,255,255,0.75)',
-                  transition: 'color 0.15s',
-                }}
-                  onMouseEnter={e => { if (!isActive(href)) (e.currentTarget as HTMLElement).style.color = '#fff'; }}
-                  onMouseLeave={e => { if (!isActive(href)) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.75)'; }}
-                >
-                  {label}
-                  {isActive(href) && (
-                    <span style={{
-                      position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)',
-                      width: 18, height: 2, borderRadius: 2,
-                      background: 'linear-gradient(90deg,#b8860b,#f5c842)',
-                    }} />
-                  )}
-                </Link>
-              ))}
+              {NAV.map(({ href, label }) => {
+                if (href === '/sobre-nosotros') {
+                  const active = isActive(href);
+                  return (
+                    <div key={href} ref={nosotrosRef} style={{ position: 'relative' }}
+                         onMouseEnter={openNosotros} onMouseLeave={closeNosotros}>
+                      <Link href={href} style={{
+                        position: 'relative', display: 'flex', alignItems: 'center', gap: 4,
+                        padding: '0.5rem 0.9rem', borderRadius: 8,
+                        fontSize: '0.875rem', fontWeight: 500, textDecoration: 'none',
+                        color: active ? '#f5c842' : 'rgba(255,255,255,0.75)',
+                        transition: 'color 0.15s',
+                      }}
+                        onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = '#fff'; }}
+                        onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.75)'; }}
+                      >
+                        {label}
+                        {active && (
+                          <span style={{
+                            position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)',
+                            width: 18, height: 2, borderRadius: 2,
+                            background: 'linear-gradient(90deg,#b8860b,#f5c842)',
+                          }} />
+                        )}
+                      </Link>
+
+                      {/* Nosotros mini-dropdown */}
+                      <div style={{
+                        position: 'absolute', top: 'calc(100% + 10px)', left: '50%',
+                        transform: nosotrosOpen ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(-6px)',
+                        background: 'rgba(8,17,32,0.97)', backdropFilter: 'blur(24px) saturate(160%)',
+                        WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+                        border: '1px solid rgba(212,160,23,0.2)', borderRadius: 18,
+                        padding: '1.25rem',
+                        minWidth: 260,
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03)',
+                        pointerEvents: nosotrosOpen ? 'auto' : 'none',
+                        opacity: nosotrosOpen ? 1 : 0,
+                        transition: 'opacity 0.2s ease, transform 0.2s ease',
+                        zIndex: 200,
+                      }}>
+                        {/* Arrow */}
+                        <div style={{ position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%)', width: 12, height: 6, overflow: 'hidden' }}>
+                          <div style={{ width: 12, height: 12, background: 'rgba(8,17,32,0.97)', border: '1px solid rgba(212,160,23,0.2)', transform: 'rotate(45deg)', marginTop: 3 }} />
+                        </div>
+
+                        {/* Stats row */}
+                        <div style={{ display: 'flex', gap: 8, marginBottom: '1rem' }}>
+                          {[{ val: '+500', lbl: 'Eventos' }, { val: '+10', lbl: 'Años' }, { val: '100%', lbl: 'Satisfacción' }].map(s => (
+                            <div key={s.lbl} style={{
+                              flex: 1, textAlign: 'center', padding: '0.6rem 0.4rem',
+                              background: 'rgba(212,160,23,0.08)', borderRadius: 10,
+                              border: '1px solid rgba(212,160,23,0.15)',
+                            }}>
+                              <p style={{ color: '#f5c842', fontFamily: 'var(--font-playfair)', fontSize: '1rem', fontWeight: 700, margin: '0 0 2px', lineHeight: 1 }}>{s.val}</p>
+                              <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.58rem', textTransform: 'uppercase', letterSpacing: '.1em', margin: 0 }}>{s.lbl}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Description */}
+                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem', lineHeight: 1.65, margin: '0 0 1rem', fontFamily: 'var(--font-jakarta)' }}>
+                          Creamos experiencias únicas e inolvidables en Sechura, Piura. Más de una década transformando sueños en realidad.
+                        </p>
+
+                        {/* CTA link */}
+                        <Link href="/sobre-nosotros" style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          padding: '0.55rem', borderRadius: 10,
+                          background: 'linear-gradient(135deg,rgba(184,134,11,0.25),rgba(245,200,66,0.15))',
+                          border: '1px solid rgba(212,160,23,0.25)',
+                          color: '#f5c842', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none',
+                          transition: 'background 0.15s',
+                        }}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg,rgba(184,134,11,0.4),rgba(245,200,66,0.25))'}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg,rgba(184,134,11,0.25),rgba(245,200,66,0.15))'}
+                        >
+                          Ver más sobre nosotros →
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <Link key={href} href={href} style={{
+                    position: 'relative', padding: '0.5rem 0.9rem', borderRadius: 8,
+                    fontSize: '0.875rem', fontWeight: 500, textDecoration: 'none',
+                    color: isActive(href) ? '#f5c842' : 'rgba(255,255,255,0.75)',
+                    transition: 'color 0.15s',
+                  }}
+                    onMouseEnter={e => { if (!isActive(href)) (e.currentTarget as HTMLElement).style.color = '#fff'; }}
+                    onMouseLeave={e => { if (!isActive(href)) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.75)'; }}
+                  >
+                    {label}
+                    {isActive(href) && (
+                      <span style={{
+                        position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)',
+                        width: 18, height: 2, borderRadius: 2,
+                        background: 'linear-gradient(90deg,#b8860b,#f5c842)',
+                      }} />
+                    )}
+                  </Link>
+                );
+              })}
 
               {/* Anuncia con Nosotros */}
               <Link href={anunciaHref} style={{
@@ -311,28 +400,34 @@ export default function Navbar() {
               </Link>
             ))}
 
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '.12em', padding: '1rem 1rem 0.5rem', margin: 0 }}>
+            <p style={{ color: 'rgba(212,160,23,0.5)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '.16em', padding: '1.25rem 1rem 0.6rem', margin: 0, fontWeight: 700 }}>
               Servicios
             </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', padding: '0 0 0.5rem' }}>
             {services.map(s => {
               const href = toSlugUrl(s.link);
+              const active = pathname === href;
               return (
                 <Link key={s.id} href={href} style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '0.75rem 1rem', fontSize: '0.95rem',
-                  color: pathname === href ? '#f5c842' : 'rgba(255,255,255,0.8)',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '0.75rem 0.875rem', fontSize: '0.82rem',
+                  color: active ? '#f5c842' : 'rgba(255,255,255,0.8)',
                   textDecoration: 'none',
-                  borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  background: active ? 'rgba(212,160,23,0.1)' : 'rgba(255,255,255,0.04)',
+                  borderRadius: 12,
+                  border: active ? '1px solid rgba(212,160,23,0.25)' : '1px solid rgba(255,255,255,0.06)',
+                  fontWeight: active ? 600 : 500,
                 }}>
                   <span style={{
-                    width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                    background: 'rgba(255,255,255,0.07)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.95rem',
+                    width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                    background: active ? 'rgba(212,160,23,0.2)' : 'rgba(255,255,255,0.08)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem',
                   }}>{s.icon}</span>
-                  <span>{s.title}</span>
+                  <span style={{ lineHeight: 1.3 }}>{s.title}</span>
                 </Link>
               );
             })}
+            </div>
 
             <Link href={anunciaHref} style={{
               display: 'block', padding: '0.875rem 1rem',
