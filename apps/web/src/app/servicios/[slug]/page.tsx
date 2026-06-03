@@ -348,24 +348,27 @@ export default function ServicioPage() {
         if (match) setServicio(toPlain({ id: match.id, ...match.data() }));
         else setServicio(null);
 
-        /* Otros servicios — usar imágenes reales de Firestore */
-        const otros = snap.docs
+        /* Otros servicios — imágenes reales de Firestore, orden aleatorio */
+        const pool = snap.docs
           .filter(d => {
             const dLink = (d.data().link || '').replace('servicios/', '').replace('.html', '');
             return dLink !== rawSlug && d.id !== match?.id;
           })
-          .map(d => ({
-            id:    d.id,
-            title: d.data().title || '',
-            icon:  d.data().icon  || '🎉',
-            link:  d.data().link  || '',
-            img:   d.data().heroMediaType === 'image' ? (d.data().heroMediaSrc || '') : '',
-            order: d.data().order ?? 99,
-          }))
-          .filter((s: any) => s.title)
-          .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
-          .slice(0, 3);
-        setOtrosServicios(otros);
+          .map(d => {
+            const dt = d.data();
+            const img =
+              (dt.mediaType    === 'image' && dt.mediaSrc)    ? dt.mediaSrc    :
+              (dt.heroMediaType === 'image' && dt.heroMediaSrc) ? dt.heroMediaSrc : '';
+            return { id: d.id, title: dt.title || '', icon: dt.icon || '🎉', link: dt.link || '', img };
+          })
+          .filter((s: any) => s.title);
+
+        /* Fisher-Yates shuffle → tomar 3 */
+        for (let i = pool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        setOtrosServicios(pool.slice(0, 3));
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     };
