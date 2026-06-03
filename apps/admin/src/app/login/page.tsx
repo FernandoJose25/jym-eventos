@@ -11,7 +11,6 @@ export default function LoginPage() {
   const [stage,  setStage]  = useState<Stage>('form');
   const [email,  setEmail]  = useState('');
   const [pass,   setPass]   = useState('');
-  const [showPw, setShowPw] = useState(false);
   const [error,  setError]  = useState('');
 
   useEffect(() => {
@@ -36,109 +35,150 @@ export default function LoginPage() {
 
   return (
     <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center',
-                   position:'relative', overflow:'hidden', padding:16,
-                   background:'linear-gradient(135deg,#050d1a 0%,#0a1628 30%,#1e3a5f 65%,#d4a017 100%)' }}>
+                   background:'#0d0d0d' }}>
 
-      {/* Rings */}
-      {[700,480,280].map(s=>(
-        <div key={s} style={{ position:'absolute', borderRadius:'50%', border:'1px solid rgba(255,255,255,0.06)',
-                               width:s, height:s, top:'50%', left:'50%', transform:'translate(-50%,-50%)',
-                               pointerEvents:'none', animation:'ring 4s ease-in-out infinite' }}/>
-      ))}
+      {stage === 'success' ? (
+        <form className="uv-form">
+          <p id="uv-heading" style={{ textAlign:'center', color:'#fff' }}>✅ ¡Acceso concedido!</p>
+          <p style={{ textAlign:'center', color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>Redirigiendo...</p>
+        </form>
+      ) : (
+        <form className="uv-form" onSubmit={handleSubmit}>
+          <p id="uv-heading">Login</p>
 
-      <div style={{ position:'relative', zIndex:10, width:'100%', maxWidth:420,
-                     animation:'cardIn .6s cubic-bezier(0.34,1.56,0.64,1)' }}>
-        <div style={{ background:'rgba(255,255,255,0.06)', backdropFilter:'blur(28px)',
-                       border:'1px solid rgba(255,255,255,0.12)', borderRadius:28,
-                       boxShadow:'0 32px 64px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15)',
-                       padding:'2.5rem 2rem 2rem' }}>
-
-          {/* Logo */}
-          <div style={{ textAlign:'center', marginBottom:'2rem' }}>
-            <div style={{ width:56, height:56, borderRadius:16, margin:'0 auto 12px',
-                           background:'linear-gradient(135deg,#1e3a5f,#d4a017)',
-                           display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.5rem',
-                           boxShadow:'0 4px 16px rgba(30,58,95,0.4)' }}>🎪</div>
-            <h2 style={{ fontFamily:'var(--font-playfair)', color:'#fff', fontSize:'1.35rem', fontWeight:700, margin:0 }}>
-              J&M Eventos
-            </h2>
-            <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.8rem', marginTop:4 }}>
-              Panel Administrativo
-            </p>
+          <div className="uv-field">
+            <svg className="uv-input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M13.106 7.222c0-2.967-2.249-5.032-5.482-5.032-3.35 0-5.646 2.318-5.646 5.702 0 3.493 2.235 5.708 5.762 5.708.862 0 1.689-.123 2.304-.335v-.862c-.43.199-1.354.328-2.29.328-2.926 0-4.813-1.88-4.813-4.798 0-2.844 1.921-4.881 4.594-4.881 2.735 0 4.608 1.688 4.608 4.156 0 1.682-.554 2.769-1.416 2.769-.492 0-.772-.28-.772-.76V5.206H8.923v.834h-.11c-.266-.595-.881-.964-1.6-.964-1.4 0-2.378 1.162-2.378 2.823 0 1.737.957 2.906 2.379 2.906.8 0 1.415-.39 1.709-1.087h.11c.081.67.703 1.148 1.503 1.148 1.572 0 2.57-1.415 2.57-3.643zm-7.177.704c0-1.197.54-1.907 1.456-1.907.93 0 1.524.738 1.524 1.907S8.308 9.84 7.371 9.84c-.895 0-1.442-.725-1.442-1.914z"/>
+            </svg>
+            <input
+              autoComplete="email"
+              placeholder="Correo electrónico"
+              className="uv-input-field"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+            />
           </div>
 
-          {stage === 'success' ? (
-            <div style={{ textAlign:'center', padding:'1rem 0' }}>
-              <div style={{ fontSize:'3rem', marginBottom:12 }}>✅</div>
-              <p style={{ color:'#fff', fontWeight:600 }}>¡Acceso concedido!</p>
-              <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>Redirigiendo...</p>
+          <div className="uv-field">
+            <svg className="uv-input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+            </svg>
+            <input
+              placeholder="Contraseña"
+              className="uv-input-field"
+              type="password"
+              value={pass}
+              onChange={e => setPass(e.target.value)}
+              autoComplete="current-password"
+            />
+          </div>
+
+          {error && (
+            <div style={{ background:'rgba(239,68,68,0.15)', border:'1px solid rgba(239,68,68,0.35)',
+                           borderRadius:10, padding:'0.5rem 0.875rem', color:'#fca5a5', fontSize:'0.82rem',
+                           textAlign:'center' }}>
+              ⚠️ {error}
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:14 }}>
-              <div>
-                <label style={{ display:'block', fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase',
-                                  letterSpacing:'.1em', color:'rgba(255,255,255,0.5)', marginBottom:6 }}>
-                  Correo
-                </label>
-                <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
-                       placeholder="tu@correo.com" autoComplete="email"
-                       style={{ width:'100%', background:'rgba(255,255,255,0.08)', border:'1.5px solid rgba(255,255,255,0.12)',
-                                 borderRadius:12, color:'#fff', fontSize:'0.9rem', padding:'0.7rem 1rem',
-                                 outline:'none', fontFamily:'var(--font-jakarta)', boxSizing:'border-box' }}
-                       onFocus={e=>{e.target.style.borderColor='#d4a017';e.target.style.boxShadow='0 0 0 3px rgba(212,160,23,0.2)';}}
-                       onBlur={e=>{e.target.style.borderColor='rgba(255,255,255,0.12)';e.target.style.boxShadow='none';}}/>
-              </div>
-              <div>
-                <label style={{ display:'block', fontSize:'0.7rem', fontWeight:700, textTransform:'uppercase',
-                                  letterSpacing:'.1em', color:'rgba(255,255,255,0.5)', marginBottom:6 }}>
-                  Contraseña
-                </label>
-                <div style={{ position:'relative' }}>
-                  <input type={showPw?'text':'password'} value={pass} onChange={e=>setPass(e.target.value)}
-                         placeholder="••••••••" autoComplete="current-password"
-                         style={{ width:'100%', background:'rgba(255,255,255,0.08)', border:'1.5px solid rgba(255,255,255,0.12)',
-                                   borderRadius:12, color:'#fff', fontSize:'0.9rem', padding:'0.7rem 2.75rem 0.7rem 1rem',
-                                   outline:'none', fontFamily:'var(--font-jakarta)', boxSizing:'border-box' }}
-                         onFocus={e=>{e.target.style.borderColor='#d4a017';e.target.style.boxShadow='0 0 0 3px rgba(212,160,23,0.2)';}}
-                         onBlur={e=>{e.target.style.borderColor='rgba(255,255,255,0.12)';e.target.style.boxShadow='none';}}/>
-                  <button type="button" onClick={()=>setShowPw(v=>!v)}
-                          style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)',
-                                    background:'none', border:'none', cursor:'pointer', color:'rgba(255,255,255,0.5)', fontSize:'1rem' }}>
-                    {showPw?'🙈':'👁️'}
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div style={{ background:'rgba(239,68,68,0.15)', border:'1px solid rgba(239,68,68,0.35)',
-                               borderRadius:10, padding:'0.6rem 0.875rem', color:'#fca5a5', fontSize:'0.82rem' }}>
-                  ⚠️ {error}
-                </div>
-              )}
-
-              <button type="submit" disabled={stage==='loading'}
-                      style={{ width:'100%', padding:'0.875rem', border:'none', borderRadius:14, cursor:'pointer',
-                                fontSize:'0.95rem', fontWeight:700, fontFamily:'var(--font-jakarta)',
-                                background:'linear-gradient(135deg,#1e3a5f 0%,#2563eb 50%,#d4a017 100%)',
-                                color:'#fff', boxShadow:'0 4px 20px rgba(30,58,95,0.45)',
-                                display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-                                opacity:stage==='loading'?.7:1 }}>
-                {stage==='loading'
-                  ? <span style={{ width:18, height:18, border:'2px solid rgba(255,255,255,0.3)',
-                                    borderTopColor:'#fff', borderRadius:'50%', animation:'spin .7s linear infinite',
-                                    display:'inline-block' }}/>
-                  : 'Ingresar al Panel'}
-              </button>
-            </form>
           )}
-        </div>
-      </div>
+
+          <div className="uv-btn">
+            <button type="submit" className="uv-button1" disabled={stage === 'loading'}>
+              {stage === 'loading'
+                ? <span style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.3)',
+                                  borderTopColor:'#fff', borderRadius:'50%', animation:'uv-spin .7s linear infinite',
+                                  display:'inline-block' }}/>
+                : 'Login'}
+            </button>
+          </div>
+        </form>
+      )}
 
       <style>{`
-        input::placeholder{color:rgba(255,255,255,0.25)}
-        @keyframes ring{0%,100%{opacity:.06}50%{opacity:.18}}
-        @keyframes cardIn{from{opacity:0;transform:translateY(28px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-        @keyframes spin{to{transform:rotate(360deg)}}
+        .uv-form {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          padding-left: 2em;
+          padding-right: 2em;
+          padding-bottom: 0.4em;
+          background-color: #171717;
+          border-radius: 25px;
+          transition: .4s ease-in-out;
+          min-width: 280px;
+        }
+        .uv-form:hover {
+          transform: scale(1.05);
+          border: 1px solid black;
+        }
+        #uv-heading {
+          text-align: center;
+          margin: 2em;
+          color: rgb(255, 255, 255);
+          font-size: 1.2em;
+        }
+        .uv-field {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5em;
+          border-radius: 25px;
+          padding: 0.6em;
+          border: none;
+          outline: none;
+          color: white;
+          background-color: #171717;
+          box-shadow: inset 2px 5px 10px rgb(5, 5, 5);
+        }
+        .uv-input-icon {
+          height: 1.3em;
+          width: 1.3em;
+          fill: white;
+          flex-shrink: 0;
+        }
+        .uv-input-field {
+          background: none;
+          border: none;
+          outline: none;
+          width: 100%;
+          color: #d3d3d3;
+          font-family: inherit;
+        }
+        .uv-input-field::placeholder {
+          color: rgba(255,255,255,0.3);
+        }
+        .uv-btn {
+          display: flex;
+          justify-content: center;
+          flex-direction: row;
+          margin-top: 2.5em;
+          margin-bottom: 3em;
+        }
+        .uv-button1 {
+          padding: 0.5em 2em;
+          border-radius: 5px;
+          border: none;
+          outline: none;
+          transition: .4s ease-in-out;
+          background-color: #252525;
+          color: white;
+          cursor: pointer;
+          font-size: 0.95rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 120px;
+          min-height: 36px;
+        }
+        .uv-button1:hover {
+          background-color: black;
+          color: white;
+        }
+        .uv-button1:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+        @keyframes uv-spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
