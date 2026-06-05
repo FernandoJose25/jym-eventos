@@ -4,16 +4,17 @@ import { useState, useEffect, useRef } from 'react';
 interface ShareBarProps {
   itemId: string;
   title?: string;
-  imageUrl?: string; // imagen real para compartir como archivo (Instagram Stories/TikTok)
+  imageUrl?: string; // foto: para compartir como archivo
+  videoUrl?: string; // video H.264 MP4: para Instagram Stories / TikTok (NUNCA imageUrl en videos)
 }
 
-export function ShareBar({ itemId, title, imageUrl }: ShareBarProps) {
+export function ShareBar({ itemId, title, imageUrl, videoUrl }: ShareBarProps) {
   const [open,    setOpen]    = useState(false);
   const [copied,  setCopied]  = useState(false);
-  const [igToast, setIgToast] = useState<string | null>(null);
+  const [toast,   setToast]   = useState<string | null>(null);
+  const [loading, setLoading] = useState<string | null>(null); // qué plataforma está cargando
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // URL con OG tags server-side → Facebook/WhatsApp leen og:image con la foto real
   const getShareUrl = () =>
     typeof window !== 'undefined'
       ? `${window.location.origin}/foto/${itemId}`
@@ -26,13 +27,80 @@ export function ShareBar({ itemId, title, imageUrl }: ShareBarProps) {
     });
   };
 
-  // Cerrar con Escape
   useEffect(() => {
     if (!open) return;
     const h = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [open]);
+
+  /**
+   * Descarga el archivo (video o imagen) desde Cloudinary y lo comparte
+   * como File nativo. Así Instagram/TikTok muestran la opción "Historias".
+   *
+   * Estrategia de fallback:
+   *  1. Web Share API con File (Stories nativas)
+   *  2. Web Share API solo URL
+   *  3. Copiar URL al portapapeles
+   */
+  async function shareFile(platform: string, mediaUrl: string | undefined) {
+    if (!mediaUrl) {
+      // Sin archivo: compartir solo URL
+      if (navigator?.share) {
+        try { await navigator.share({ title: title || 'J&M Eventos', url: getShareUrl() }); return; } catch { /* cancelado */ }
+      }
+      navigator.clipboard.writeText(getShareUrl()).then(() => {
+        setToast(`¡Copiado! Pégalo en ${platform}`);
+        setTimeout(() => setToast(null), 2500);
+      });
+      return;
+    }
+
+    const isVideo = !!videoUrl && mediaUrl === videoUrl;
+    setLoading(platform);
+
+    try {
+      const res = await fetch(mediaUrl, { mode: 'cors', credentials: 'omit' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+
+      // Forzar MIME correcto para que canShare() acepte el archivo
+      const mime = isVideo ? 'video/mp4' : (blob.type || 'image/jpeg');
+      const ext  = isVideo ? 'mp4'       : (blob.type.split('/')[1] || 'jpg');
+      const file = new File([blob], `jym-eventos.${ext}`, { type: mime });
+
+      if (navigator?.share && navigator?.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: title || 'J&M Eventos' });
+        return;
+      }
+
+      // canShare falló pero share existe → intentar con URL
+      if (navigator?.share) {
+        try { await navigator.share({ title: title || 'J&M Eventos', url: getShareUrl() }); return; } catch { /* cancelado */ }
+      }
+
+      // Último fallback: copiar URL
+      navigator.clipboard.writeText(getShareUrl()).then(() => {
+        setToast(`¡Copiado! Pégalo en ${platform}`);
+        setTimeout(() => setToast(null), 2500);
+      });
+    } catch (err: unknown) {
+      const isAbort = err instanceof Error && err.name === 'AbortError';
+      if (!isAbort) {
+        // Fetch falló (CORS, red, etc.) → fallback URL
+        if (navigator?.share) {
+          try { await navigator.share({ title: title || 'J&M Eventos', url: getShareUrl() }); return; } catch { /* cancelado */ }
+        }
+        setToast(`No se pudo cargar el archivo. Copia el enlace.`);
+        setTimeout(() => setToast(null), 3000);
+      }
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  // El archivo a compartir: video tiene prioridad sobre imagen
+  const shareMedia = videoUrl ?? imageUrl;
 
   const platforms = [
     {
@@ -66,75 +134,34 @@ export function ShareBar({ itemId, title, imageUrl }: ShareBarProps) {
     {
       label: 'Instagram',
       bg: 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)',
-      onClick: async () => {
-        if (typeof navigator !== 'undefined' && navigator.share) {
-          try {
-            // Intentar compartir como archivo → Instagram muestra Feed + Historias + Mensajes
-            if (imageUrl && navigator.canShare) {
-              const res  = await fetch(imageUrl);
-              const blob = await res.blob();
-              const ext  = blob.type.split('/')[1] || 'jpg';
-              const file = new File([blob], `jym-eventos.${ext}`, { type: blob.type });
-              if (navigator.canShare({ files: [file] })) {
-                await navigator.share({ files: [file], title: title || 'J&M Eventos', url: getShareUrl() });
-                return;
-              }
-            }
-            // Fallback: solo URL → Instagram Mensajes
-            await navigator.share({ title: title || 'J&M Eventos', url: getShareUrl() });
-            return;
-          } catch { /* usuario canceló */ }
-        }
-        navigator.clipboard.writeText(getShareUrl()).then(() => {
-          setIgToast('¡Copiado! Pégalo en Instagram');
-          setTimeout(() => setIgToast(null), 2500);
-        });
-      },
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2}
-             strokeLinecap="round" strokeLinejoin="round" width={22} height={22}>
-          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-          <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-        </svg>
-      ),
+      onClick: () => shareFile('Instagram', shareMedia),
+      icon: loading === 'Instagram'
+        ? <Spinner />
+        : (
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2}
+               strokeLinecap="round" strokeLinejoin="round" width={22} height={22}>
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+          </svg>
+        ),
     },
     {
       label: 'TikTok',
       bg: '#010101',
-      onClick: async () => {
-        if (typeof navigator !== 'undefined' && navigator.share) {
-          try {
-            if (imageUrl && navigator.canShare) {
-              const res  = await fetch(imageUrl);
-              const blob = await res.blob();
-              const ext  = blob.type.split('/')[1] || 'jpg';
-              const file = new File([blob], `jym-eventos.${ext}`, { type: blob.type });
-              if (navigator.canShare({ files: [file] })) {
-                await navigator.share({ files: [file], title: title || 'J&M Eventos', url: getShareUrl() });
-                return;
-              }
-            }
-            await navigator.share({ title: title || 'J&M Eventos', url: getShareUrl() });
-            return;
-          } catch { /* usuario canceló */ }
-        }
-        navigator.clipboard.writeText(getShareUrl()).then(() => {
-          setIgToast('¡Copiado! Pégalo en TikTok');
-          setTimeout(() => setIgToast(null), 2500);
-        });
-      },
-      icon: (
-        <svg viewBox="0 0 24 24" fill="#fff" width={20} height={20}>
-          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/>
-        </svg>
-      ),
+      onClick: () => shareFile('TikTok', shareMedia),
+      icon: loading === 'TikTok'
+        ? <Spinner />
+        : (
+          <svg viewBox="0 0 24 24" fill="#fff" width={20} height={20}>
+            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/>
+          </svg>
+        ),
     },
   ];
 
   return (
     <>
-      {/* ── Botón trigger (ícono share) ── */}
       <button
         onClick={e => { e.stopPropagation(); setOpen(true); }}
         title="Compartir"
@@ -150,7 +177,6 @@ export function ShareBar({ itemId, title, imageUrl }: ShareBarProps) {
         onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.22)'}
         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.12)'}
       >
-        {/* Share icon (iOS style) */}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
              strokeLinecap="round" strokeLinejoin="round" width={17} height={17}>
           <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
@@ -160,7 +186,6 @@ export function ShareBar({ itemId, title, imageUrl }: ShareBarProps) {
         Compartir
       </button>
 
-      {/* ── Modal overlay ── */}
       {open && (
         <div
           onClick={e => { e.stopPropagation(); setOpen(false); }}
@@ -181,7 +206,6 @@ export function ShareBar({ itemId, title, imageUrl }: ShareBarProps) {
               animation: 'shareModalIn .25s cubic-bezier(0.34,1.56,0.64,1)',
             }}
           >
-            {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
               <div>
                 <p style={{ fontSize: '0.72rem', color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', margin: 0 }}>
@@ -201,7 +225,6 @@ export function ShareBar({ itemId, title, imageUrl }: ShareBarProps) {
               >✕</button>
             </div>
 
-            {/* Link field */}
             <p style={{ margin: '0 0 8px', fontSize: '0.75rem', color: '#666', fontWeight: 600 }}>
               Enlace a compartir
             </p>
@@ -234,33 +257,46 @@ export function ShareBar({ itemId, title, imageUrl }: ShareBarProps) {
               </button>
             </div>
 
-            {/* Toast Instagram/TikTok */}
-            {igToast && (
+            {/* Toast */}
+            {toast && (
               <div style={{
                 textAlign: 'center', marginBottom: 10,
                 fontSize: '0.75rem', fontWeight: 600, color: '#22c55e',
               }}>
-                ✅ {igToast}
+                ✅ {toast}
               </div>
             )}
 
-            {/* Social icons */}
+            {/* Aviso de carga para Instagram/TikTok con video */}
+            {loading && (
+              <div style={{
+                textAlign: 'center', marginBottom: 10,
+                fontSize: '0.75rem', fontWeight: 600, color: '#0a1628',
+              }}>
+                Preparando {videoUrl ? 'video' : 'imagen'} para {loading}…
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
               {platforms.map(p => (
                 <div key={p.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                   <button
                     onClick={p.onClick}
+                    disabled={!!loading}
                     title={p.label}
                     style={{
                       width: 56, height: 56, borderRadius: '50%', border: 'none',
-                      background: p.bg, cursor: 'pointer',
+                      background: p.bg, cursor: loading ? 'wait' : 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                       transition: 'transform .18s, box-shadow .18s',
+                      opacity: loading && loading !== p.label ? 0.5 : 1,
                     }}
                     onMouseEnter={e => {
-                      (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px) scale(1.07)';
-                      (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.25)';
+                      if (!loading) {
+                        (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px) scale(1.07)';
+                        (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 20px rgba(0,0,0,0.25)';
+                      }
                     }}
                     onMouseLeave={e => {
                       (e.currentTarget as HTMLElement).style.transform = '';
@@ -282,7 +318,18 @@ export function ShareBar({ itemId, title, imageUrl }: ShareBarProps) {
           from { opacity: 0; transform: scale(0.9) translateY(12px); }
           to   { opacity: 1; transform: scale(1) translateY(0); }
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg width={22} height={22} viewBox="0 0 24 24" fill="none"
+         stroke="#fff" strokeWidth={2.5} strokeLinecap="round"
+         style={{ animation: 'spin 0.8s linear infinite' }}>
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+    </svg>
   );
 }

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { collection, getDocs, where, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { cxHero, cxCard, cxVideo, cxFull } from '@/lib/cloudinary';
+import { cxHero, cxCard, cxVideo, cxFull, cxShareVideo } from '@/lib/cloudinary';
 import { ShareBar } from '@/components/ui/ShareBar';
 
 const SERVICIOS_DATA: Record<string, any> = {
@@ -1150,7 +1150,10 @@ export default function ServicioPage() {
             <ShareBar
               itemId={galeria[lightbox].id}
               title={galeria[lightbox].alt || title}
-              imageUrl={cxFull(galeria[lightbox].url)}
+              {...((galeria[lightbox].tipo === 'video' || galeria[lightbox].url?.match(/\.(mp4|webm|mov)(\?|$)/i))
+                ? { videoUrl: cxShareVideo(galeria[lightbox].url) }
+                : { imageUrl: cxFull(galeria[lightbox].url) }
+              )}
             />
           </div>
         </div>

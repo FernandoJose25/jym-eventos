@@ -89,8 +89,19 @@ export function cxOg(url: string): string {
 export function cxVideo(url: string): string {
   if (!url) return url;
   if (!isCloudinary(url)) return url;
-  // Cloudinary video transforms use vc_ (video codec) and q_ for quality
   const t = 'q_auto:best,vc_auto,fl_progressive';
+  return buildVideoUrl(url, t);
+}
+
+/**
+ * Video para compartir en redes sociales (Instagram Stories / TikTok).
+ * Fuerza H.264 + MP4: Instagram y TikTok rechazan H.265/VP9.
+ * q_100 = sin pérdida de calidad absoluta.
+ */
+export function cxShareVideo(url: string): string {
+  if (!url) return url;
+  if (!isCloudinary(url)) return url;
+  const t = 'vc_h264:high,q_100,f_mp4';
   return buildVideoUrl(url, t);
 }
 
