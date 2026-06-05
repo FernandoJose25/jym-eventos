@@ -35,68 +35,66 @@ export function ShareBar({ itemId, title, imageUrl, videoUrl }: ShareBarProps) {
   }, [open]);
 
   /**
-   * Descarga el archivo (video o imagen) desde Cloudinary y lo comparte
-   * como File nativo. Así Instagram/TikTok muestran la opción "Historias".
-   *
-   * Estrategia de fallback:
-   *  1. Web Share API con File (Stories nativas)
-   *  2. Web Share API solo URL
-   *  3. Copiar URL al portapapeles
+   * Comparte el contenido via Web Share API.
+   * Estrategia:
+   *  1. Intentar compartir el archivo (File) — permite Instagram Stories / TikTok
+   *  2. Si el fetch falla o canShare no acepta archivos → compartir solo URL (sin error)
+   *  3. Si el share es cancelado por el usuario → no hacer nada
+   *  4. Último recurso: copiar enlace al portapapeles
    */
   async function shareFile(platform: string, mediaUrl: string | undefined) {
-    if (!mediaUrl) {
-      // Sin archivo: compartir solo URL
-      if (navigator?.share) {
-        try { await navigator.share({ title: title || 'J&M Eventos', url: getShareUrl() }); return; } catch { /* cancelado */ }
-      }
-      navigator.clipboard.writeText(getShareUrl()).then(() => {
-        setToast(`¡Copiado! Pégalo en ${platform}`);
-        setTimeout(() => setToast(null), 2500);
-      });
-      return;
-    }
+    const shareUrl = getShareUrl();
+    const isVid = !!videoUrl && mediaUrl === videoUrl;
 
-    const isVideo = !!videoUrl && mediaUrl === videoUrl;
-    setLoading(platform);
+    // ── Paso 1: intentar compartir archivo ──────────────────────────
+    if (mediaUrl && navigator?.share && navigator?.canShare) {
+      setLoading(platform);
+      try {
+        const ctrl = new AbortController();
+        const tmr  = setTimeout(() => ctrl.abort(), 9000); // timeout 9 s
+        const res  = await fetch(mediaUrl, { mode: 'cors', credentials: 'omit', signal: ctrl.signal });
+        clearTimeout(tmr);
 
-    try {
-      const res = await fetch(mediaUrl, { mode: 'cors', credentials: 'omit' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const blob = await res.blob();
+        if (res.ok) {
+          const blob = await res.blob();
+          const mime = isVid ? 'video/mp4' : (blob.type || 'image/jpeg');
+          const ext  = isVid ? 'mp4'       : (blob.type.split('/')[1] || 'jpg');
+          const file = new File([blob], `jym-eventos.${ext}`, { type: mime });
 
-      // Forzar MIME correcto para que canShare() acepte el archivo
-      const mime = isVideo ? 'video/mp4' : (blob.type || 'image/jpeg');
-      const ext  = isVideo ? 'mp4'       : (blob.type.split('/')[1] || 'jpg');
-      const file = new File([blob], `jym-eventos.${ext}`, { type: mime });
-
-      if (navigator?.share && navigator?.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: title || 'J&M Eventos' });
-        return;
-      }
-
-      // canShare falló pero share existe → intentar con URL
-      if (navigator?.share) {
-        try { await navigator.share({ title: title || 'J&M Eventos', url: getShareUrl() }); return; } catch { /* cancelado */ }
-      }
-
-      // Último fallback: copiar URL
-      navigator.clipboard.writeText(getShareUrl()).then(() => {
-        setToast(`¡Copiado! Pégalo en ${platform}`);
-        setTimeout(() => setToast(null), 2500);
-      });
-    } catch (err: unknown) {
-      const isAbort = err instanceof Error && err.name === 'AbortError';
-      if (!isAbort) {
-        // Fetch falló (CORS, red, etc.) → fallback URL
-        if (navigator?.share) {
-          try { await navigator.share({ title: title || 'J&M Eventos', url: getShareUrl() }); return; } catch { /* cancelado */ }
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: title || 'J&M Eventos' });
+            setLoading(null);
+            return; // ✅ Compartido como archivo
+          }
         }
-        setToast(`No se pudo cargar el archivo. Copia el enlace.`);
-        setTimeout(() => setToast(null), 3000);
+      } catch (e) {
+        // AbortError = el usuario canceló el share nativo → no hacer nada más
+        if (e instanceof Error && e.name === 'AbortError' && !(e.message.includes('fetch'))) {
+          setLoading(null); return;
+        }
+        // Fetch falló (CORS/red/timeout) → continuar al fallback silencioso
       }
-    } finally {
       setLoading(null);
     }
+
+    // ── Paso 2: compartir solo URL (fallback silencioso) ────────────
+    if (navigator?.share) {
+      try {
+        await navigator.share({ title: title || 'J&M Eventos', url: shareUrl });
+        return; // ✅ Compartido como enlace
+      } catch (e) {
+        if (e instanceof Error && e.name === 'AbortError') return; // usuario canceló
+      }
+    }
+
+    // ── Paso 3: copiar al portapapeles ──────────────────────────────
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setToast(`¡Enlace copiado! Pégalo en ${platform}`);
+    } catch {
+      setToast('Copia el enlace desde la barra de arriba');
+    }
+    setTimeout(() => setToast(null), 2800);
   }
 
   // El archivo a compartir: video tiene prioridad sobre imagen

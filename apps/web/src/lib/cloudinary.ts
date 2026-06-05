@@ -101,7 +101,8 @@ export function cxVideo(url: string): string {
 export function cxShareVideo(url: string): string {
   if (!url) return url;
   if (!isCloudinary(url)) return url;
-  const t = 'vc_h264:high,q_100,f_mp4';
+  // q_auto:good = calidad alta pero archivo más pequeño → fetch más rápido para compartir
+  const t = 'vc_h264,q_auto:good,f_mp4';
   return buildVideoUrl(url, t);
 }
 
