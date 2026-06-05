@@ -1,20 +1,3 @@
-/**
- * ================================================================
- *  firestore-migrate-services.js
- *  Migración: agrega el mapa `detail` completo a los 5 servicios
- *  restantes en la colección `services` de Firestore.
- *
- *  NO modifica shows-infantiles (ya está completo).
- *
- *  CÓMO USAR:
- *  1. Abre http://localhost:3001 en el navegador
- *  2. Inicia sesión con tu cuenta de admin
- *  3. Presiona F12 → pestaña "Console"
- *  4. Pega todo este código y presiona Enter
- *  5. Espera el mensaje "✅ Migración completada"
- * ================================================================
- */
-
 const runMigration = async () => {
   const { getApp } =
     await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js');

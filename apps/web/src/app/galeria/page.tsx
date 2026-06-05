@@ -4,6 +4,7 @@ import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Search, X } from 'lucide-react';
 import { cxCard, cxFull, cxVideo } from '@/lib/cloudinary';
+import { ShareBar } from '@/components/ui/ShareBar';
 
 interface GItem {
   id:string; url:string; alt:string;
@@ -477,6 +478,7 @@ export default function GaleriaPage() {
               <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.72rem', margin:'4px 0 0' }}>
                 {lightbox + 1} / {visibles.length}
               </p>
+              <ShareBar title={visibles[lightbox].alt || visibles[lightbox].categoria} />
             </div>
           </div>
 
