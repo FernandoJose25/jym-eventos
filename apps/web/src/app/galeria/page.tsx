@@ -85,16 +85,6 @@ export default function GaleriaPage() {
       });
   }, []);
 
-  // Auto-open lightbox when URL contains ?foto=ID (deep link from share)
-  useEffect(() => {
-    if (autoOpened.current || visibles.length === 0) return;
-    const fotoId = new URLSearchParams(window.location.search).get('foto');
-    if (!fotoId) return;
-    const idx = visibles.findIndex(i => i.id === fotoId);
-    if (idx !== -1) { autoOpened.current = true; setLightbox(idx); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibles]);
-
   useEffect(() => { setSubActiva('Todos'); setSearchQ(''); }, [catActiva]);
 
   // Pipeline: category → subcategory → search
@@ -127,6 +117,16 @@ export default function GaleriaPage() {
     () => smartSearch(subFiltered, searchQ),
     [subFiltered, searchQ]
   );
+
+  // Auto-open lightbox when URL contains ?foto=ID (deep link from share)
+  useEffect(() => {
+    if (autoOpened.current || visibles.length === 0) return;
+    const fotoId = new URLSearchParams(window.location.search).get('foto');
+    if (!fotoId) return;
+    const idx = visibles.findIndex(i => i.id === fotoId);
+    if (idx !== -1) { autoOpened.current = true; setLightbox(idx); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibles]);
 
   // Build category list dynamically from loaded items
   const cats = useMemo(() => {
