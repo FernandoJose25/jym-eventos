@@ -492,6 +492,7 @@ export default function GaleriaPage() {
               <ShareBar
                 itemId={visibles[lightbox].id}
                 title={visibles[lightbox].alt || visibles[lightbox].categoria}
+                imageUrl={cxFull(visibles[lightbox].url)}
               />
             </div>
           </div>

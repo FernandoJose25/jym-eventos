@@ -183,7 +183,7 @@ export default function GallerySection({ items }: { items: GalleryItem[] }) {
               <ShareBar
                 itemId={items[activeIdx].id}
                 title={items[activeIdx].alt || items[activeIdx].categoria}
-                basePath="/galeria"
+                imageUrl={items[activeIdx].url}
               />
             </div>
           </div>

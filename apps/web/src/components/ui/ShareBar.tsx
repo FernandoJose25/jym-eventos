@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 interface ShareBarProps {
   itemId: string;
   title?: string;
-  basePath?: string;
+  imageUrl?: string; // imagen real para compartir como archivo (Instagram Stories/TikTok)
 }
 
-export function ShareBar({ itemId, title }: ShareBarProps) {
+export function ShareBar({ itemId, title, imageUrl }: ShareBarProps) {
   const [open,    setOpen]    = useState(false);
   const [copied,  setCopied]  = useState(false);
   const [igToast, setIgToast] = useState<string | null>(null);
@@ -69,6 +69,18 @@ export function ShareBar({ itemId, title }: ShareBarProps) {
       onClick: async () => {
         if (typeof navigator !== 'undefined' && navigator.share) {
           try {
+            // Intentar compartir como archivo → Instagram muestra Feed + Historias + Mensajes
+            if (imageUrl && navigator.canShare) {
+              const res  = await fetch(imageUrl);
+              const blob = await res.blob();
+              const ext  = blob.type.split('/')[1] || 'jpg';
+              const file = new File([blob], `jym-eventos.${ext}`, { type: blob.type });
+              if (navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: title || 'J&M Eventos', url: getShareUrl() });
+                return;
+              }
+            }
+            // Fallback: solo URL → Instagram Mensajes
             await navigator.share({ title: title || 'J&M Eventos', url: getShareUrl() });
             return;
           } catch { /* usuario canceló */ }
@@ -93,6 +105,16 @@ export function ShareBar({ itemId, title }: ShareBarProps) {
       onClick: async () => {
         if (typeof navigator !== 'undefined' && navigator.share) {
           try {
+            if (imageUrl && navigator.canShare) {
+              const res  = await fetch(imageUrl);
+              const blob = await res.blob();
+              const ext  = blob.type.split('/')[1] || 'jpg';
+              const file = new File([blob], `jym-eventos.${ext}`, { type: blob.type });
+              if (navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: title || 'J&M Eventos', url: getShareUrl() });
+                return;
+              }
+            }
             await navigator.share({ title: title || 'J&M Eventos', url: getShareUrl() });
             return;
           } catch { /* usuario canceló */ }
