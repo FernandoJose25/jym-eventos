@@ -478,7 +478,10 @@ export default function GaleriaPage() {
               <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.72rem', margin:'4px 0 0' }}>
                 {lightbox + 1} / {visibles.length}
               </p>
-              <ShareBar title={visibles[lightbox].alt || visibles[lightbox].categoria} />
+              <ShareBar
+                title={visibles[lightbox].alt || visibles[lightbox].categoria}
+                imageUrl={cxFull(visibles[lightbox].url)}
+              />
             </div>
           </div>
 
