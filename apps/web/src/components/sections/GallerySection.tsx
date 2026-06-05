@@ -180,7 +180,10 @@ export default function GallerySection({ items }: { items: GalleryItem[] }) {
             <img src={items[activeIdx].url} alt={items[activeIdx].alt}
                  style={{ width:'100%', maxHeight:'80vh', objectFit:'contain', display:'block', background:'#0a1628' }}/>
             <div style={{ padding:'12px 16px 16px' }}>
-              <ShareBar title={items[activeIdx].alt || items[activeIdx].categoria} />
+              <ShareBar
+                title={items[activeIdx].alt || items[activeIdx].categoria}
+                imageUrl={items[activeIdx].url}
+              />
             </div>
           </div>
           <button onClick={()=>setActiveIdx(null)}

@@ -4,13 +4,16 @@ import { useState } from 'react';
 interface ShareBarProps {
   url?: string;
   title?: string;
+  imageUrl?: string; // Cloudinary URL de la imagen a compartir
 }
 
-export function ShareBar({ url, title }: ShareBarProps) {
+export function ShareBar({ url, title, imageUrl }: ShareBarProps) {
   const [copied, setCopied] = useState(false);
+  const [loadingShare, setLoadingShare] = useState(false);
 
-  const getUrl = () => url ?? (typeof window !== 'undefined' ? window.location.href : '');
-  const getMsg = () => `${title ? title + ' · ' : ''}J&M Eventos y Decoraciones — Sechura, Piura 🎉 ${getUrl()}`;
+  const getUrl  = () => url ?? (typeof window !== 'undefined' ? window.location.href : '');
+  const getMsg  = () => `${title ? title + ' · ' : ''}J&M Eventos y Decoraciones — Sechura, Piura 🎉`;
+  const shareTarget = imageUrl ?? getUrl();
 
   const copyLink = () => {
     navigator.clipboard.writeText(getUrl()).then(() => {
@@ -19,12 +22,31 @@ export function ShareBar({ url, title }: ShareBarProps) {
     });
   };
 
-  const nativeShare = async () => {
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try { await navigator.share({ title: title || 'J&M Eventos', url: getUrl() }); }
-      catch { /* usuario canceló */ }
-    } else {
-      copyLink();
+  // Descarga la imagen como File y abre la hoja nativa de compartir con el archivo
+  const shareWithImage = async () => {
+    setLoadingShare(true);
+    try {
+      if (imageUrl && typeof navigator !== 'undefined' && navigator.share) {
+        const res = await fetch(imageUrl);
+        const blob = await res.blob();
+        const ext = blob.type.split('/')[1] || 'jpg';
+        const file = new File([blob], `jym-eventos.${ext}`, { type: blob.type });
+
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: title || 'J&M Eventos', text: getMsg(), url: getUrl() });
+          return;
+        }
+        // fallback: share sin archivo
+        await navigator.share({ title: title || 'J&M Eventos', text: getMsg(), url: getUrl() });
+      } else if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share({ title: title || 'J&M Eventos', text: getMsg(), url: getUrl() });
+      } else {
+        copyLink();
+      }
+    } catch {
+      /* usuario canceló o no soportado */
+    } finally {
+      setLoadingShare(false);
     }
   };
 
@@ -32,9 +54,10 @@ export function ShareBar({ url, title }: ShareBarProps) {
     {
       label: 'Facebook',
       color: '#1877f2',
+      // Comparte la URL de la imagen — Facebook la renderiza directamente
       onClick: () => window.open(
-        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getUrl())}`,
-        '_blank', 'noopener,noreferrer'
+        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareTarget)}`,
+        '_blank', 'noopener,noreferrer,width=600,height=480'
       ),
       icon: (
         <svg viewBox="0 0 24 24" fill="currentColor" width={19} height={19}>
@@ -45,8 +68,9 @@ export function ShareBar({ url, title }: ShareBarProps) {
     {
       label: 'WhatsApp',
       color: '#25d366',
+      // Incluye la URL de la imagen + enlace de la página
       onClick: () => window.open(
-        `https://wa.me/?text=${encodeURIComponent(getMsg())}`,
+        `https://wa.me/?text=${encodeURIComponent(getMsg() + '\n' + shareTarget + '\n' + getUrl())}`,
         '_blank', 'noopener,noreferrer'
       ),
       icon: (
@@ -58,7 +82,8 @@ export function ShareBar({ url, title }: ShareBarProps) {
     {
       label: 'Instagram',
       color: '#e1306c',
-      onClick: nativeShare,
+      onClick: shareWithImage,
+      loading: loadingShare,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
              strokeLinecap="round" strokeLinejoin="round" width={19} height={19}>
@@ -71,7 +96,8 @@ export function ShareBar({ url, title }: ShareBarProps) {
     {
       label: 'TikTok',
       color: '#fff',
-      onClick: nativeShare,
+      onClick: shareWithImage,
+      loading: loadingShare,
       icon: (
         <svg viewBox="0 0 24 24" fill="currentColor" width={18} height={18}>
           <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.85 4.85 0 0 1-1.01-.06z"/>
@@ -93,17 +119,20 @@ export function ShareBar({ url, title }: ShareBarProps) {
           key={p.label}
           onClick={p.onClick}
           title={`Compartir en ${p.label}`}
+          disabled={p.loading}
           style={{
             width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
             background: `${p.color}1a`,
             border: `1.5px solid ${p.color}44`,
-            color: p.color, cursor: 'pointer',
+            color: p.color, cursor: p.loading ? 'wait' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all .18s',
+            transition: 'all .18s', opacity: p.loading ? 0.6 : 1,
           }}
           onMouseEnter={e => {
-            (e.currentTarget as HTMLElement).style.background = `${p.color}38`;
-            (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px) scale(1.08)';
+            if (!p.loading) {
+              (e.currentTarget as HTMLElement).style.background = `${p.color}38`;
+              (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px) scale(1.08)';
+            }
           }}
           onMouseLeave={e => {
             (e.currentTarget as HTMLElement).style.background = `${p.color}1a`;

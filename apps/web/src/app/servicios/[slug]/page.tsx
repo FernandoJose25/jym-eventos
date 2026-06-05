@@ -1092,7 +1092,10 @@ export default function ServicioPage() {
                          textAlign: 'center', marginTop: 4, fontFamily: 'var(--font-jakarta)' }}>
               {lightbox + 1} / {galeria.length}
             </p>
-            <ShareBar title={galeria[lightbox].alt || title} />
+            <ShareBar
+              title={galeria[lightbox].alt || title}
+              imageUrl={cxFull(galeria[lightbox].url)}
+            />
           </div>
 
           <button onClick={() => setLightbox(null)}
