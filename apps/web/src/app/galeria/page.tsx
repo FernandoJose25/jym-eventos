@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Search, X } from 'lucide-react';
-import { cxCard, cxFull, cxVideo } from '@/lib/cloudinary';
+import { cxCard, cxFull, cxVideo, cxShareVideo } from '@/lib/cloudinary';
 import { ShareBar } from '@/components/ui/ShareBar';
 
 interface GItem {
@@ -530,7 +530,10 @@ export default function GaleriaPage() {
             <ShareBar
               itemId={visibles[lightbox].id}
               title={visibles[lightbox].alt || visibles[lightbox].categoria}
-              imageUrl={cxFull(visibles[lightbox].url)}
+              {...(isVideo(visibles[lightbox])
+                ? { videoUrl: cxShareVideo(visibles[lightbox].url) }
+                : { imageUrl: cxFull(visibles[lightbox].url) }
+              )}
             />
           </div>
         </div>
