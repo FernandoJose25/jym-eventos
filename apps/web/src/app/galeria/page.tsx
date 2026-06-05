@@ -138,18 +138,22 @@ function CustomVideoPlayer({ src }: { src: string }) {
       onMouseMove={bump}
       onTouchMove={bump}
       style={{
-        position: 'relative', background: '#000', overflow: 'hidden', width: '100%',
+        position: 'relative', background: '#000', width: '100%',
         borderRadius: isFull ? 0 : 16, boxShadow: isFull ? 'none' : '0 32px 80px rgba(0,0,0,0.6)',
       }}
     >
-      {/* Video */}
+      {/* Video — borderRadius directo para no necesitar overflow:hidden en el wrapper */}
       <video
         ref={videoRef}
         src={src}
         autoPlay
         playsInline
         onClick={e => { e.stopPropagation(); togglePlay(); }}
-        style={{ width: '100%', maxHeight: isFull ? '100dvh' : '72vh', display: 'block', background: '#000', cursor: 'pointer' }}
+        style={{
+          width: '100%', maxHeight: isFull ? '100dvh' : '72vh',
+          display: 'block', background: '#000', cursor: 'pointer',
+          borderRadius: isFull ? 0 : 16,
+        }}
       />
 
       {/* Controls overlay */}
@@ -157,22 +161,83 @@ function CustomVideoPlayer({ src }: { src: string }) {
         onClick={stop}
         style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          background: 'linear-gradient(transparent, rgba(0,0,0,0.88))',
-          padding: '48px 12px 12px',
+          background: 'linear-gradient(transparent, rgba(0,0,0,0.92))',
+          padding: '32px 12px 12px', borderRadius: isFull ? 0 : '0 0 16px 16px',
           opacity: visible ? 1 : 0, transition: 'opacity 0.3s',
           pointerEvents: visible ? 'auto' : 'none',
         }}
       >
+        {/* Panel inline de volumen — aparece sobre los controles sin popup flotante */}
+        {showVol && (
+          <div onClick={stop} style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            marginBottom: 10, padding: '6px 4px',
+            background: 'rgba(0,0,0,0.4)', borderRadius: 8,
+          }}>
+            <button onClick={e => { e.stopPropagation(); toggleMute(); }}
+              style={{ ...VBTN, width: 30, height: 30, fontSize: '0.9rem', flexShrink: 0 }}>
+              {muted || volume === 0 ? '🔇' : '🔊'}
+            </button>
+            <input
+              type="range" min={0} max={1} step={0.05}
+              value={muted ? 0 : volume}
+              onChange={e => { e.stopPropagation(); handleVol(Number(e.target.value)); }}
+              onTouchStart={e => e.stopPropagation()}
+              onClick={stop}
+              style={{ flex: 1, accentColor: '#f5c842', cursor: 'pointer' }}
+            />
+            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem', minWidth: 34, textAlign: 'right', flexShrink: 0 }}>
+              {muted ? '0%' : `${Math.round(volume * 100)}%`}
+            </span>
+          </div>
+        )}
+
+        {/* Panel inline del menú — velocidad y PiP */}
+        {showMenu && (
+          <div onClick={stop} style={{
+            marginBottom: 10, padding: '8px 6px',
+            background: 'rgba(0,0,0,0.4)', borderRadius: 8,
+          }}>
+            <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.62rem', margin: '0 0 6px 4px', textTransform: 'uppercase', letterSpacing: '.1em' }}>
+              Velocidad de reproducción
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {[0.5, 0.75, 1, 1.25, 1.5, 2].map(s => (
+                <button key={s} onClick={e => { e.stopPropagation(); applySpeed(s); }}
+                  style={{
+                    padding: '5px 12px', borderRadius: 20, border: 'none', cursor: 'pointer',
+                    background: speed === s ? 'rgba(212,160,23,0.85)' : 'rgba(255,255,255,0.12)',
+                    color: speed === s ? '#0a1628' : 'rgba(255,255,255,0.85)',
+                    fontSize: '0.78rem', fontWeight: speed === s ? 700 : 400,
+                    WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
+                  }}>
+                  {s === 1 ? '1× Normal' : `${s}×`}
+                </button>
+              ))}
+            </div>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', margin: '8px 0 4px' }} />
+            <button onClick={e => { e.stopPropagation(); tryPiP(); }}
+              style={{
+                padding: '5px 12px', borderRadius: 20, border: 'none', cursor: 'pointer',
+                background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)',
+                fontSize: '0.78rem', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
+              }}>
+              📺 Picture in Picture
+            </button>
+          </div>
+        )}
+
         {/* Seek bar */}
         <input
           type="range" min={0} max={100} step={0.1}
           value={progress}
           onChange={e => handleSeek(Number(e.target.value))}
-          onClick={stop} onTouchStart={stop}
-          style={{ width: '100%', accentColor: '#f5c842', cursor: 'pointer', marginBottom: 10, display: 'block', height: 4 }}
+          onTouchStart={e => e.stopPropagation()}
+          onClick={stop}
+          style={{ width: '100%', accentColor: '#f5c842', cursor: 'pointer', marginBottom: 10, display: 'block' }}
         />
 
-        {/* Controls row */}
+        {/* Fila de botones */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 
           {/* Play / Pause */}
@@ -188,34 +253,11 @@ function CustomVideoPlayer({ src }: { src: string }) {
           <div style={{ flex: 1 }} />
 
           {/* Volumen */}
-          <div style={{ position: 'relative' }}>
-            <button style={VBTN} title={muted ? 'Activar sonido' : 'Volumen'}
-              onClick={e => { e.stopPropagation(); setShowVol(x => !x); setShowMenu(false); }}>
-              {muted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
-            </button>
-            {showVol && (
-              <div onClick={stop} style={{
-                position: 'absolute', bottom: '110%', right: 0, zIndex: 20,
-                background: 'rgba(10,10,10,0.95)', borderRadius: 10,
-                padding: '10px 14px', minWidth: 150, boxShadow: '0 4px 24px rgba(0,0,0,0.7)',
-              }}>
-                <input
-                  type="range" min={0} max={1} step={0.05}
-                  value={muted ? 0 : volume}
-                  onChange={e => { e.stopPropagation(); handleVol(Number(e.target.value)); }}
-                  onClick={stop} onTouchStart={stop}
-                  style={{ width: '100%', accentColor: '#f5c842', display: 'block' }}
-                />
-                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.68rem', textAlign: 'center', marginTop: 4 }}>
-                  {muted ? '0%' : `${Math.round(volume * 100)}%`}
-                </div>
-                <button onClick={e => { e.stopPropagation(); toggleMute(); }}
-                  style={{ ...VBTN, width: '100%', borderRadius: 6, marginTop: 8, fontSize: '0.72rem', height: 30 }}>
-                  {muted ? '🔊 Activar' : '🔇 Silenciar'}
-                </button>
-              </div>
-            )}
-          </div>
+          <button style={{ ...VBTN, background: showVol ? 'rgba(212,160,23,0.35)' : VBTN.background }}
+            title={muted ? 'Activar sonido' : 'Volumen'}
+            onClick={e => { e.stopPropagation(); setShowVol(x => !x); setShowMenu(false); }}>
+            {muted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
+          </button>
 
           {/* Pantalla completa */}
           <button style={VBTN} title={isFull ? 'Salir de pantalla completa' : 'Pantalla completa'}
@@ -227,43 +269,10 @@ function CustomVideoPlayer({ src }: { src: string }) {
           </button>
 
           {/* Menú 3 puntos */}
-          <div style={{ position: 'relative' }}>
-            <button style={{ ...VBTN, fontSize: '1.3rem' }}
-              onClick={e => { e.stopPropagation(); setShowMenu(x => !x); setShowVol(false); }}>
-              ⋮
-            </button>
-            {showMenu && (
-              <div onClick={stop} style={{
-                position: 'absolute', bottom: '110%', right: 0, zIndex: 20,
-                background: 'rgba(10,10,10,0.97)', borderRadius: 10,
-                padding: 8, minWidth: 175, boxShadow: '0 4px 24px rgba(0,0,0,0.8)',
-              }}>
-                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.63rem', padding: '2px 8px 6px', margin: 0, textTransform: 'uppercase', letterSpacing: '.1em' }}>
-                  Velocidad de reproducción
-                </p>
-                {[0.5, 0.75, 1, 1.25, 1.5, 2].map(s => (
-                  <button key={s} onClick={e => { e.stopPropagation(); applySpeed(s); }}
-                    style={{
-                      display: 'block', width: '100%', textAlign: 'left',
-                      padding: '7px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                      background: speed === s ? 'rgba(212,160,23,0.18)' : 'transparent',
-                      color: speed === s ? '#f5c842' : 'rgba(255,255,255,0.85)', fontSize: '0.82rem',
-                    }}>
-                    {s === 1 ? '1×  (Normal)' : `${s}×`}{speed === s ? ' ✓' : ''}
-                  </button>
-                ))}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', margin: '6px 0' }} />
-                <button onClick={e => { e.stopPropagation(); tryPiP(); }}
-                  style={{
-                    display: 'block', width: '100%', textAlign: 'left',
-                    padding: '7px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                    background: 'transparent', color: 'rgba(255,255,255,0.85)', fontSize: '0.82rem',
-                  }}>
-                  📺 Picture in Picture
-                </button>
-              </div>
-            )}
-          </div>
+          <button style={{ ...VBTN, fontSize: '1.3rem', background: showMenu ? 'rgba(212,160,23,0.35)' : VBTN.background }}
+            onClick={e => { e.stopPropagation(); setShowMenu(x => !x); setShowVol(false); }}>
+            ⋮
+          </button>
 
         </div>
       </div>
