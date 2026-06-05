@@ -6,6 +6,271 @@ import { Search, X } from 'lucide-react';
 import { cxCard, cxFull, cxVideo, cxShareVideo } from '@/lib/cloudinary';
 import { ShareBar } from '@/components/ui/ShareBar';
 
+// ── CustomVideoPlayer ──────────────────────────────────────────────
+const VBTN: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%',
+  width: 36, height: 36, color: '#fff', cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  fontSize: '1rem', flexShrink: 0,
+  WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
+};
+
+function fmtTime(s: number) {
+  if (!isFinite(s) || isNaN(s)) return '0:00';
+  const m = Math.floor(s / 60);
+  return `${m}:${Math.floor(s % 60).toString().padStart(2, '0')}`;
+}
+
+function CustomVideoPlayer({ src }: { src: string }) {
+  const videoRef  = useRef<HTMLVideoElement>(null);
+  const wrapRef   = useRef<HTMLDivElement>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const [playing,  setPlaying]  = useState(false);
+  const [muted,    setMuted]    = useState(false);
+  const [volume,   setVolume]   = useState(1);
+  const [progress, setProgress] = useState(0);
+  const [cur,      setCur]      = useState(0);
+  const [dur,      setDur]      = useState(0);
+  const [visible,  setVisible]  = useState(true);
+  const [showVol,  setShowVol]  = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [speed,    setSpeed]    = useState(1);
+  const [isFull,   setIsFull]   = useState(false);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+
+    const onTime  = () => { setCur(v.currentTime); setProgress(v.duration ? (v.currentTime / v.duration) * 100 : 0); };
+    const onMeta  = () => setDur(v.duration);
+    const onPlay  = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
+    const onFs    = () => setIsFull(!!(document.fullscreenElement || (document as any).webkitFullscreenElement));
+
+    v.addEventListener('timeupdate',     onTime);
+    v.addEventListener('loadedmetadata', onMeta);
+    v.addEventListener('durationchange', onMeta);
+    v.addEventListener('play',           onPlay);
+    v.addEventListener('pause',          onPause);
+    document.addEventListener('fullscreenchange',       onFs);
+    document.addEventListener('webkitfullscreenchange', onFs);
+
+    return () => {
+      v.removeEventListener('timeupdate',     onTime);
+      v.removeEventListener('loadedmetadata', onMeta);
+      v.removeEventListener('durationchange', onMeta);
+      v.removeEventListener('play',           onPlay);
+      v.removeEventListener('pause',          onPause);
+      document.removeEventListener('fullscreenchange',       onFs);
+      document.removeEventListener('webkitfullscreenchange', onFs);
+      clearTimeout(hideTimer.current);
+    };
+  }, []);
+
+  const bump = () => {
+    setVisible(true);
+    clearTimeout(hideTimer.current);
+    const v = videoRef.current;
+    if (v && !v.paused) hideTimer.current = setTimeout(() => setVisible(false), 3000);
+  };
+
+  const togglePlay = () => {
+    const v = videoRef.current; if (!v) return;
+    if (v.paused) v.play(); else v.pause();
+    bump();
+  };
+
+  const handleSeek = (val: number) => {
+    const v = videoRef.current; if (!v || !v.duration) return;
+    v.currentTime = (val / 100) * v.duration;
+    setProgress(val); bump();
+  };
+
+  const handleVol = (val: number) => {
+    const v = videoRef.current; if (!v) return;
+    v.volume = val; v.muted = val === 0;
+    setVolume(val); setMuted(val === 0);
+  };
+
+  const toggleMute = () => {
+    const v = videoRef.current; if (!v) return;
+    v.muted = !v.muted; setMuted(v.muted); bump();
+  };
+
+  const enterFS = async () => {
+    const el = wrapRef.current; const v = videoRef.current; if (!el || !v) return;
+    try {
+      if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
+        if      (el.requestFullscreen)                      await el.requestFullscreen();
+        else if ((el as any).webkitRequestFullscreen)       (el as any).webkitRequestFullscreen();
+        else if ((v  as any).webkitEnterFullscreen)         (v  as any).webkitEnterFullscreen();
+      } else {
+        if      (document.exitFullscreen)                   await document.exitFullscreen();
+        else if ((document as any).webkitExitFullscreen)    (document as any).webkitExitFullscreen();
+      }
+    } catch { /* ignore */ }
+    bump();
+  };
+
+  const applySpeed = (s: number) => {
+    const v = videoRef.current; if (!v) return;
+    v.playbackRate = s; setSpeed(s); setShowMenu(false); bump();
+  };
+
+  const tryPiP = async () => {
+    const v = videoRef.current; if (!v) return;
+    try {
+      if ((document as any).pictureInPictureElement) await (document as any).exitPictureInPicture();
+      else if (v.requestPictureInPicture)             await v.requestPictureInPicture();
+    } catch { /* ignore */ }
+    setShowMenu(false); bump();
+  };
+
+  const stop = (e: React.SyntheticEvent) => e.stopPropagation();
+
+  return (
+    <div
+      ref={wrapRef}
+      onClick={stop}
+      onTouchStart={stop}
+      onMouseMove={bump}
+      onTouchMove={bump}
+      style={{
+        position: 'relative', background: '#000', overflow: 'hidden', width: '100%',
+        borderRadius: isFull ? 0 : 16, boxShadow: isFull ? 'none' : '0 32px 80px rgba(0,0,0,0.6)',
+      }}
+    >
+      {/* Video */}
+      <video
+        ref={videoRef}
+        src={src}
+        autoPlay
+        playsInline
+        onClick={e => { e.stopPropagation(); togglePlay(); }}
+        style={{ width: '100%', maxHeight: isFull ? '100dvh' : '72vh', display: 'block', background: '#000', cursor: 'pointer' }}
+      />
+
+      {/* Controls overlay */}
+      <div
+        onClick={stop}
+        style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          background: 'linear-gradient(transparent, rgba(0,0,0,0.88))',
+          padding: '48px 12px 12px',
+          opacity: visible ? 1 : 0, transition: 'opacity 0.3s',
+          pointerEvents: visible ? 'auto' : 'none',
+        }}
+      >
+        {/* Seek bar */}
+        <input
+          type="range" min={0} max={100} step={0.1}
+          value={progress}
+          onChange={e => handleSeek(Number(e.target.value))}
+          onClick={stop} onTouchStart={stop}
+          style={{ width: '100%', accentColor: '#f5c842', cursor: 'pointer', marginBottom: 10, display: 'block', height: 4 }}
+        />
+
+        {/* Controls row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+          {/* Play / Pause */}
+          <button style={VBTN} onClick={e => { e.stopPropagation(); togglePlay(); }}>
+            {playing ? '⏸' : '▶'}
+          </button>
+
+          {/* Tiempo */}
+          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.7rem', flexShrink: 0, minWidth: 70 }}>
+            {fmtTime(cur)} / {fmtTime(dur)}
+          </span>
+
+          <div style={{ flex: 1 }} />
+
+          {/* Volumen */}
+          <div style={{ position: 'relative' }}>
+            <button style={VBTN} title={muted ? 'Activar sonido' : 'Volumen'}
+              onClick={e => { e.stopPropagation(); setShowVol(x => !x); setShowMenu(false); }}>
+              {muted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
+            </button>
+            {showVol && (
+              <div onClick={stop} style={{
+                position: 'absolute', bottom: '110%', right: 0, zIndex: 20,
+                background: 'rgba(10,10,10,0.95)', borderRadius: 10,
+                padding: '10px 14px', minWidth: 150, boxShadow: '0 4px 24px rgba(0,0,0,0.7)',
+              }}>
+                <input
+                  type="range" min={0} max={1} step={0.05}
+                  value={muted ? 0 : volume}
+                  onChange={e => { e.stopPropagation(); handleVol(Number(e.target.value)); }}
+                  onClick={stop} onTouchStart={stop}
+                  style={{ width: '100%', accentColor: '#f5c842', display: 'block' }}
+                />
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.68rem', textAlign: 'center', marginTop: 4 }}>
+                  {muted ? '0%' : `${Math.round(volume * 100)}%`}
+                </div>
+                <button onClick={e => { e.stopPropagation(); toggleMute(); }}
+                  style={{ ...VBTN, width: '100%', borderRadius: 6, marginTop: 8, fontSize: '0.72rem', height: 30 }}>
+                  {muted ? '🔊 Activar' : '🔇 Silenciar'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Pantalla completa */}
+          <button style={VBTN} title={isFull ? 'Salir de pantalla completa' : 'Pantalla completa'}
+            onClick={e => { e.stopPropagation(); enterFS(); }}>
+            {isFull
+              ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="14" y1="10" x2="21" y2="3"/></svg>
+              : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            }
+          </button>
+
+          {/* Menú 3 puntos */}
+          <div style={{ position: 'relative' }}>
+            <button style={{ ...VBTN, fontSize: '1.3rem' }}
+              onClick={e => { e.stopPropagation(); setShowMenu(x => !x); setShowVol(false); }}>
+              ⋮
+            </button>
+            {showMenu && (
+              <div onClick={stop} style={{
+                position: 'absolute', bottom: '110%', right: 0, zIndex: 20,
+                background: 'rgba(10,10,10,0.97)', borderRadius: 10,
+                padding: 8, minWidth: 175, boxShadow: '0 4px 24px rgba(0,0,0,0.8)',
+              }}>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.63rem', padding: '2px 8px 6px', margin: 0, textTransform: 'uppercase', letterSpacing: '.1em' }}>
+                  Velocidad de reproducción
+                </p>
+                {[0.5, 0.75, 1, 1.25, 1.5, 2].map(s => (
+                  <button key={s} onClick={e => { e.stopPropagation(); applySpeed(s); }}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left',
+                      padding: '7px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                      background: speed === s ? 'rgba(212,160,23,0.18)' : 'transparent',
+                      color: speed === s ? '#f5c842' : 'rgba(255,255,255,0.85)', fontSize: '0.82rem',
+                    }}>
+                    {s === 1 ? '1×  (Normal)' : `${s}×`}{speed === s ? ' ✓' : ''}
+                  </button>
+                ))}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', margin: '6px 0' }} />
+                <button onClick={e => { e.stopPropagation(); tryPiP(); }}
+                  style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '7px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                    background: 'transparent', color: 'rgba(255,255,255,0.85)', fontSize: '0.82rem',
+                  }}>
+                  📺 Picture in Picture
+                </button>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface GItem {
   id:string; url:string; alt:string;
   categoria?:string; subcategoria?:string;
@@ -467,14 +732,7 @@ export default function GaleriaPage() {
 
             {/* Media — sin nada encima */}
             {isVideo(visibles[lightbox]) ? (
-              <video
-                src={cxVideo(visibles[lightbox].url)}
-                controls
-                autoPlay
-                playsInline
-                style={{ width:'100%', maxHeight:'72vh', display:'block', borderRadius:16,
-                          boxShadow:'0 32px 80px rgba(0,0,0,0.6)', background:'#000' }}
-              />
+              <CustomVideoPlayer key={visibles[lightbox].id} src={cxVideo(visibles[lightbox].url)} />
             ) : (
               <img src={cxFull(visibles[lightbox].url)}
                    alt={visibles[lightbox].alt || 'Evento J&M'}
