@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { ShareBar } from '@/components/ui/ShareBar';
 
 interface GalleryItem {
   id:string; url:string; alt:string;
@@ -178,6 +179,9 @@ export default function GallerySection({ items }: { items: GalleryItem[] }) {
                          animation:'lbIn .3s cubic-bezier(0.34,1.56,0.64,1)' }}>
             <img src={items[activeIdx].url} alt={items[activeIdx].alt}
                  style={{ width:'100%', maxHeight:'80vh', objectFit:'contain', display:'block', background:'#0a1628' }}/>
+            <div style={{ padding:'12px 16px 16px' }}>
+              <ShareBar title={items[activeIdx].alt || items[activeIdx].categoria} />
+            </div>
           </div>
           <button onClick={()=>setActiveIdx(null)}
                   style={{ position:'absolute', top:16, right:16, background:'rgba(255,255,255,0.15)',

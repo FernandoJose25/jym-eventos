@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { collection, getDocs, where, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cxHero, cxCard, cxVideo, cxFull } from '@/lib/cloudinary';
+import { ShareBar } from '@/components/ui/ShareBar';
 
 const SERVICIOS_DATA: Record<string, any> = {
   'shows-infantiles': {
@@ -1091,6 +1092,7 @@ export default function ServicioPage() {
                          textAlign: 'center', marginTop: 4, fontFamily: 'var(--font-jakarta)' }}>
               {lightbox + 1} / {galeria.length}
             </p>
+            <ShareBar title={galeria[lightbox].alt || title} />
           </div>
 
           <button onClick={() => setLightbox(null)}
