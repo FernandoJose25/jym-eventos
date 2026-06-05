@@ -22,25 +22,41 @@ function fmtTime(s: number) {
 }
 
 function CustomVideoPlayer({ src }: { src: string }) {
-  const videoRef  = useRef<HTMLVideoElement>(null);
-  const wrapRef   = useRef<HTMLDivElement>(null);
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const videoRef     = useRef<HTMLVideoElement>(null);
+  const wrapRef      = useRef<HTMLDivElement>(null);
+  const hideTimer    = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // refs para leer estado actual en callbacks sin closures obsoletas
+  const showVolRef   = useRef(false);
+  const showMenuRef  = useRef(false);
 
-  const [playing,  setPlaying]  = useState(false);
-  const [muted,    setMuted]    = useState(false);
-  const [volume,   setVolume]   = useState(1);
-  const [progress, setProgress] = useState(0);
-  const [cur,      setCur]      = useState(0);
-  const [dur,      setDur]      = useState(0);
-  const [visible,  setVisible]  = useState(true);
-  const [showVol,  setShowVol]  = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
-  const [speed,    setSpeed]    = useState(1);
-  const [isFull,   setIsFull]   = useState(false);
+  const [playing,      setPlaying]      = useState(false);
+  const [muted,        setMuted]        = useState(false);
+  const [volume,       setVolume]       = useState(1);
+  const [progress,     setProgress]     = useState(0);
+  const [cur,          setCur]          = useState(0);
+  const [dur,          setDur]          = useState(0);
+  const [visible,      setVisible]      = useState(true);
+  const [showVol,      setShowVol]      = useState(false);
+  const [showMenu,     setShowMenu]     = useState(false);
+  const [speed,        setSpeed]        = useState(1);
+  const [isFull,       setIsFull]       = useState(false);
+  // false = volumen controlable por JS | true = solo mute (iOS Safari)
+  const [volReadOnly, setVolReadOnly]   = useState(false);
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
+
+    // Detectar si el navegador permite cambiar volumen por JS (iOS Safari no lo permite)
+    const prev = v.volume;
+    try {
+      v.volume = prev > 0.5 ? 0.4 : 0.6;
+      setVolReadOnly(Math.abs(v.volume - (prev > 0.5 ? 0.4 : 0.6)) > 0.01);
+      v.volume = prev;
+    } catch {
+      setVolReadOnly(true);
+    }
+
     v.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
 
     const onTime  = () => { setCur(v.currentTime); setProgress(v.duration ? (v.currentTime / v.duration) * 100 : 0); };
@@ -69,11 +85,38 @@ function CustomVideoPlayer({ src }: { src: string }) {
     };
   }, []);
 
+  // Cancelar auto-ocultar mientras un panel está abierto
+  useEffect(() => {
+    if (showVol || showMenu) {
+      clearTimeout(hideTimer.current);
+      setVisible(true);
+    }
+  }, [showVol, showMenu]);
+
   const bump = () => {
     setVisible(true);
     clearTimeout(hideTimer.current);
     const v = videoRef.current;
-    if (v && !v.paused) hideTimer.current = setTimeout(() => setVisible(false), 3000);
+    // No ocultar si hay un panel abierto
+    if (v && !v.paused && !showVolRef.current && !showMenuRef.current) {
+      hideTimer.current = setTimeout(() => setVisible(false), 3000);
+    }
+  };
+
+  const openVol = () => {
+    const next = !showVolRef.current;
+    showVolRef.current  = next;
+    showMenuRef.current = false;
+    setShowVol(next);
+    setShowMenu(false);
+  };
+
+  const openMenu = () => {
+    const next = !showMenuRef.current;
+    showMenuRef.current = next;
+    showVolRef.current  = false;
+    setShowMenu(next);
+    setShowVol(false);
   };
 
   const togglePlay = () => {
@@ -90,7 +133,8 @@ function CustomVideoPlayer({ src }: { src: string }) {
 
   const handleVol = (val: number) => {
     const v = videoRef.current; if (!v) return;
-    v.volume = val; v.muted = val === 0;
+    try { v.volume = val; } catch { /* iOS ignora esto */ }
+    v.muted = val === 0;
     setVolume(val); setMuted(val === 0);
   };
 
@@ -167,28 +211,44 @@ function CustomVideoPlayer({ src }: { src: string }) {
           pointerEvents: visible ? 'auto' : 'none',
         }}
       >
-        {/* Panel inline de volumen — aparece sobre los controles sin popup flotante */}
+        {/* Panel inline de volumen */}
         {showVol && (
           <div onClick={stop} style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            marginBottom: 10, padding: '6px 4px',
-            background: 'rgba(0,0,0,0.4)', borderRadius: 8,
+            marginBottom: 10, padding: '8px 10px',
+            background: 'rgba(0,0,0,0.5)', borderRadius: 10,
           }}>
-            <button onClick={e => { e.stopPropagation(); toggleMute(); }}
-              style={{ ...VBTN, width: 30, height: 30, fontSize: '0.9rem', flexShrink: 0 }}>
-              {muted || volume === 0 ? '🔇' : '🔊'}
-            </button>
-            <input
-              type="range" min={0} max={1} step={0.05}
-              value={muted ? 0 : volume}
-              onChange={e => { e.stopPropagation(); handleVol(Number(e.target.value)); }}
-              onTouchStart={e => e.stopPropagation()}
-              onClick={stop}
-              style={{ flex: 1, accentColor: '#f5c842', cursor: 'pointer' }}
-            />
-            <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem', minWidth: 34, textAlign: 'right', flexShrink: 0 }}>
-              {muted ? '0%' : `${Math.round(volume * 100)}%`}
-            </span>
+            {volReadOnly ? (
+              /* iOS Safari no permite control de volumen por JS */
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button onClick={e => { e.stopPropagation(); toggleMute(); }}
+                  style={{ ...VBTN, flexShrink: 0 }}>
+                  {muted ? '🔇' : '🔊'}
+                </button>
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem' }}>
+                  Usa los botones físicos del dispositivo para ajustar el volumen
+                </span>
+              </div>
+            ) : (
+              /* Android / Desktop: slider de volumen completo */
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button onClick={e => { e.stopPropagation(); toggleMute(); }}
+                  style={{ ...VBTN, width: 32, height: 32, fontSize: '0.9rem', flexShrink: 0 }}>
+                  {muted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
+                </button>
+                <input
+                  type="range" min={0} max={1} step={0.05}
+                  value={muted ? 0 : volume}
+                  onChange={e => { e.stopPropagation(); handleVol(Number(e.target.value)); }}
+                  onTouchStart={e => { e.stopPropagation(); }}
+                  onTouchMove={e => { e.stopPropagation(); }}
+                  onClick={stop}
+                  style={{ flex: 1, accentColor: '#f5c842', cursor: 'pointer', touchAction: 'none' }}
+                />
+                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem', minWidth: 34, textAlign: 'right', flexShrink: 0 }}>
+                  {muted ? '0%' : `${Math.round(volume * 100)}%`}
+                </span>
+              </div>
+            )}
           </div>
         )}
 
@@ -253,9 +313,9 @@ function CustomVideoPlayer({ src }: { src: string }) {
           <div style={{ flex: 1 }} />
 
           {/* Volumen */}
-          <button style={{ ...VBTN, background: showVol ? 'rgba(212,160,23,0.35)' : VBTN.background }}
+          <button style={{ ...VBTN, background: showVol ? 'rgba(212,160,23,0.35)' : VBTN.background as string }}
             title={muted ? 'Activar sonido' : 'Volumen'}
-            onClick={e => { e.stopPropagation(); setShowVol(x => !x); setShowMenu(false); }}>
+            onClick={e => { e.stopPropagation(); openVol(); }}>
             {muted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
           </button>
 
@@ -269,8 +329,8 @@ function CustomVideoPlayer({ src }: { src: string }) {
           </button>
 
           {/* Menú 3 puntos */}
-          <button style={{ ...VBTN, fontSize: '1.3rem', background: showMenu ? 'rgba(212,160,23,0.35)' : VBTN.background }}
-            onClick={e => { e.stopPropagation(); setShowMenu(x => !x); setShowVol(false); }}>
+          <button style={{ ...VBTN, fontSize: '1.3rem', background: showMenu ? 'rgba(212,160,23,0.35)' : VBTN.background as string }}
+            onClick={e => { e.stopPropagation(); openMenu(); }}>
             ⋮
           </button>
 
