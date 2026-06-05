@@ -1106,6 +1106,7 @@ export default function ServicioPage() {
             <ShareBar
               itemId={galeria[lightbox].id}
               title={galeria[lightbox].alt || title}
+              imageUrl={cxFull(galeria[lightbox].url)}
             />
           </div>
 
