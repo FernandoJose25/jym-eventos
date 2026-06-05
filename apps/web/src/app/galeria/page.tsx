@@ -74,7 +74,8 @@ export default function GaleriaPage() {
   const [subActiva, setSubActiva] = useState('Todos');
   const [searchQ,   setSearchQ]   = useState('');
   const [lightbox,  setLightbox]  = useState<number|null>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
+  const searchRef    = useRef<HTMLInputElement>(null);
+  const autoOpened   = useRef(false);
 
   useEffect(() => {
     getDocs(query(collection(db,'gallery_items'), orderBy('order','asc')))
@@ -83,6 +84,16 @@ export default function GaleriaPage() {
         setLoading(false);
       });
   }, []);
+
+  // Auto-open lightbox when URL contains ?foto=ID (deep link from share)
+  useEffect(() => {
+    if (autoOpened.current || visibles.length === 0) return;
+    const fotoId = new URLSearchParams(window.location.search).get('foto');
+    if (!fotoId) return;
+    const idx = visibles.findIndex(i => i.id === fotoId);
+    if (idx !== -1) { autoOpened.current = true; setLightbox(idx); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibles]);
 
   useEffect(() => { setSubActiva('Todos'); setSearchQ(''); }, [catActiva]);
 
@@ -479,8 +490,8 @@ export default function GaleriaPage() {
                 {lightbox + 1} / {visibles.length}
               </p>
               <ShareBar
+                itemId={visibles[lightbox].id}
                 title={visibles[lightbox].alt || visibles[lightbox].categoria}
-                imageUrl={cxFull(visibles[lightbox].url)}
               />
             </div>
           </div>

@@ -181,8 +181,9 @@ export default function GallerySection({ items }: { items: GalleryItem[] }) {
                  style={{ width:'100%', maxHeight:'80vh', objectFit:'contain', display:'block', background:'#0a1628' }}/>
             <div style={{ padding:'12px 16px 16px' }}>
               <ShareBar
+                itemId={items[activeIdx].id}
                 title={items[activeIdx].alt || items[activeIdx].categoria}
-                imageUrl={items[activeIdx].url}
+                basePath="/galeria"
               />
             </div>
           </div>

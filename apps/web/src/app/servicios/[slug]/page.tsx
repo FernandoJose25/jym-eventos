@@ -329,8 +329,9 @@ export default function ServicioPage() {
   const [galeria, setGaleria] = useState<any[]>([]);
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [otrosServicios, setOtrosServicios] = useState<any[]>([]);
-  const statsRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const statsRef   = useRef<HTMLDivElement>(null);
+  const videoRef   = useRef<HTMLVideoElement>(null);
+  const autoOpened = useRef(false);
 
   const c1 = useCounter(200, 1600, statsVisible);
   const c2 = useCounter(5, 1200, statsVisible);
@@ -392,6 +393,16 @@ export default function ServicioPage() {
       })
       .catch(console.error);
   }, [servicio?.title]);
+
+  // Auto-open lightbox when URL contains ?foto=ID (deep link from share)
+  useEffect(() => {
+    if (autoOpened.current || galeria.length === 0) return;
+    const fotoId = new URLSearchParams(window.location.search).get('foto');
+    if (!fotoId) return;
+    const idx = galeria.findIndex((i: any) => i.id === fotoId);
+    if (idx !== -1) { autoOpened.current = true; setLightbox(idx); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [galeria]);
 
   // Lightbox keyboard nav
   useEffect(() => {
@@ -1093,8 +1104,8 @@ export default function ServicioPage() {
               {lightbox + 1} / {galeria.length}
             </p>
             <ShareBar
+              itemId={galeria[lightbox].id}
               title={galeria[lightbox].alt || title}
-              imageUrl={cxFull(galeria[lightbox].url)}
             />
           </div>
 

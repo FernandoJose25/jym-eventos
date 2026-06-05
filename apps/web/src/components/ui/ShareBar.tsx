@@ -2,62 +2,52 @@
 import { useState } from 'react';
 
 interface ShareBarProps {
-  url?: string;
+  itemId: string;
   title?: string;
-  imageUrl?: string; // Cloudinary URL de la imagen a compartir
+  basePath?: string; // si el componente está embebido en otra página (ej. "/galeria")
 }
 
-export function ShareBar({ url, title, imageUrl }: ShareBarProps) {
+export function ShareBar({ itemId, title, basePath }: ShareBarProps) {
   const [copied, setCopied] = useState(false);
   const [loadingShare, setLoadingShare] = useState(false);
 
-  const getUrl  = () => url ?? (typeof window !== 'undefined' ? window.location.href : '');
-  const getMsg  = () => `${title ? title + ' · ' : ''}J&M Eventos y Decoraciones — Sechura, Piura 🎉`;
-  const shareTarget = imageUrl ?? getUrl();
+  const getDeepUrl = () => {
+    if (typeof window === 'undefined') return '';
+    const path = basePath ?? window.location.pathname;
+    return `${window.location.origin}${path}?foto=${itemId}`;
+  };
+
+  const getMsg = () =>
+    `${title ? title + ' · ' : ''}J&M Eventos y Decoraciones — Sechura, Piura 🎉\n${getDeepUrl()}`;
 
   const copyLink = () => {
-    navigator.clipboard.writeText(getUrl()).then(() => {
+    navigator.clipboard.writeText(getDeepUrl()).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
     });
   };
 
-  // Descarga la imagen como File y abre la hoja nativa de compartir con el archivo
-  const shareWithImage = async () => {
+  // Abre la hoja nativa del sistema (incluye Instagram y TikTok en móvil)
+  const nativeShare = async () => {
+    const url = getDeepUrl();
     setLoadingShare(true);
     try {
-      if (imageUrl && typeof navigator !== 'undefined' && navigator.share) {
-        const res = await fetch(imageUrl);
-        const blob = await res.blob();
-        const ext = blob.type.split('/')[1] || 'jpg';
-        const file = new File([blob], `jym-eventos.${ext}`, { type: blob.type });
-
-        if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ files: [file], title: title || 'J&M Eventos', text: getMsg(), url: getUrl() });
-          return;
-        }
-        // fallback: share sin archivo
-        await navigator.share({ title: title || 'J&M Eventos', text: getMsg(), url: getUrl() });
-      } else if (typeof navigator !== 'undefined' && navigator.share) {
-        await navigator.share({ title: title || 'J&M Eventos', text: getMsg(), url: getUrl() });
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share({ title: title || 'J&M Eventos', text: getMsg(), url });
       } else {
         copyLink();
       }
-    } catch {
-      /* usuario canceló o no soportado */
-    } finally {
-      setLoadingShare(false);
-    }
+    } catch { /* usuario canceló */ }
+    finally { setLoadingShare(false); }
   };
 
   const platforms = [
     {
       label: 'Facebook',
       color: '#1877f2',
-      // Comparte la URL de la imagen — Facebook la renderiza directamente
       onClick: () => window.open(
-        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareTarget)}`,
-        '_blank', 'noopener,noreferrer,width=600,height=480'
+        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getDeepUrl())}`,
+        '_blank'
       ),
       icon: (
         <svg viewBox="0 0 24 24" fill="currentColor" width={19} height={19}>
@@ -68,10 +58,9 @@ export function ShareBar({ url, title, imageUrl }: ShareBarProps) {
     {
       label: 'WhatsApp',
       color: '#25d366',
-      // Incluye la URL de la imagen + enlace de la página
       onClick: () => window.open(
-        `https://wa.me/?text=${encodeURIComponent(getMsg() + '\n' + shareTarget + '\n' + getUrl())}`,
-        '_blank', 'noopener,noreferrer'
+        `https://wa.me/?text=${encodeURIComponent(getMsg())}`,
+        '_blank'
       ),
       icon: (
         <svg viewBox="0 0 24 24" fill="currentColor" width={19} height={19}>
@@ -82,7 +71,7 @@ export function ShareBar({ url, title, imageUrl }: ShareBarProps) {
     {
       label: 'Instagram',
       color: '#e1306c',
-      onClick: shareWithImage,
+      onClick: nativeShare,
       loading: loadingShare,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
@@ -96,7 +85,7 @@ export function ShareBar({ url, title, imageUrl }: ShareBarProps) {
     {
       label: 'TikTok',
       color: '#fff',
-      onClick: shareWithImage,
+      onClick: nativeShare,
       loading: loadingShare,
       icon: (
         <svg viewBox="0 0 24 24" fill="currentColor" width={18} height={18}>
