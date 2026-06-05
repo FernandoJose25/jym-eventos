@@ -66,7 +66,13 @@ export function ShareBar({ itemId, title }: ShareBarProps) {
     {
       label: 'Instagram',
       bg: 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)',
-      onClick: () => {
+      onClick: async () => {
+        if (typeof navigator !== 'undefined' && navigator.share) {
+          try {
+            await navigator.share({ title: title || 'J&M Eventos', url: getShareUrl() });
+            return;
+          } catch { /* usuario canceló */ }
+        }
         navigator.clipboard.writeText(getShareUrl()).then(() => {
           setIgToast('¡Copiado! Pégalo en Instagram');
           setTimeout(() => setIgToast(null), 2500);
@@ -84,7 +90,13 @@ export function ShareBar({ itemId, title }: ShareBarProps) {
     {
       label: 'TikTok',
       bg: '#010101',
-      onClick: () => {
+      onClick: async () => {
+        if (typeof navigator !== 'undefined' && navigator.share) {
+          try {
+            await navigator.share({ title: title || 'J&M Eventos', url: getShareUrl() });
+            return;
+          } catch { /* usuario canceló */ }
+        }
         navigator.clipboard.writeText(getShareUrl()).then(() => {
           setIgToast('¡Copiado! Pégalo en TikTok');
           setTimeout(() => setIgToast(null), 2500);

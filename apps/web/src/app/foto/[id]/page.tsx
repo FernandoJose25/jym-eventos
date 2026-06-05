@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import FotoRedirect from './FotoRedirect';
+import { cxOg } from '@/lib/cloudinary';
 
 interface FirestoreItem {
   url: string;
@@ -41,7 +42,8 @@ export async function generateMetadata(
   const siteName  = 'J&M Eventos y Decoraciones — Sechura, Piura';
   const title     = item?.alt || item?.categoria || siteName;
   const desc      = `${item?.categoria ? item.categoria + ' · ' : ''}${siteName}`;
-  const image     = item?.url || '';
+  // JPEG forzado, 1200×630, calidad máxima — Facebook/WhatsApp lo reciben sin recompresión extra
+  const image     = item?.url ? cxOg(item.url) : '';
   const canonical = `https://jym-eventos-web.vercel.app/foto/${id}`;
 
   return {
