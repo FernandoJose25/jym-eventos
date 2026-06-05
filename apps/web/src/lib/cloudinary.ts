@@ -69,6 +69,17 @@ export function cxThumb(url: string): string {
   return buildImageUrl(url, t);
 }
 
+/**
+ * Open Graph / social share — JPEG forzado (Facebook/WhatsApp no recomprimen tanto),
+ * calidad 100, sin dpr_auto, dimensiones OG estándar 1200×630.
+ * f_jpg evita WebP que algunas redes no soportan o recomprimen más.
+ */
+export function cxOg(url: string): string {
+  if (!url) return '';
+  const t = 'q_100,f_jpg,w_1200,h_630,c_fill,g_auto';
+  return buildImageUrl(url, t);
+}
+
 /* ─── Video preset ───────────────────────────────────── */
 
 /**
