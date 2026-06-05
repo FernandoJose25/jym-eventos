@@ -446,88 +446,93 @@ export default function GaleriaPage() {
       {lightbox !== null && visibles[lightbox] && (
         <div style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(5,13,26,0.96)',
                        backdropFilter:'blur(16px)', display:'flex', alignItems:'center',
-                       justifyContent:'center', padding:16, cursor:'zoom-out' }}
+                       justifyContent:'center', padding:'16px 16px 12px', cursor:'zoom-out' }}
              onClick={() => setLightbox(null)}>
 
+          {/* Botón cerrar — siempre arriba a la derecha */}
+          <button onClick={() => setLightbox(null)}
+                  style={{ position:'absolute', top:16, right:16, width:40, height:40,
+                             borderRadius:'50%', background:'rgba(255,255,255,0.12)', border:'none',
+                             color:'#fff', fontSize:'1.1rem', cursor:'pointer', display:'flex',
+                             alignItems:'center', justifyContent:'center', transition:'background .2s', zIndex:1 }}
+                  onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.25)'}
+                  onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.12)'}>
+            ✕
+          </button>
+
           <div onClick={e => e.stopPropagation()}
-               style={{ maxWidth:960, width:'100%', position:'relative', cursor:'default',
+               style={{ maxWidth:960, width:'100%', cursor:'default', display:'flex',
+                         flexDirection:'column', gap:10,
                          animation:'lbIn .3s cubic-bezier(0.34,1.56,0.64,1)' }}>
 
+            {/* Media — sin nada encima */}
             {isVideo(visibles[lightbox]) ? (
               <video
                 src={cxVideo(visibles[lightbox].url)}
                 controls
                 autoPlay
                 playsInline
-                style={{ width:'100%', maxHeight:'80vh', display:'block', borderRadius:16,
+                style={{ width:'100%', maxHeight:'72vh', display:'block', borderRadius:16,
                           boxShadow:'0 32px 80px rgba(0,0,0,0.6)', background:'#000' }}
               />
             ) : (
               <img src={cxFull(visibles[lightbox].url)}
                    alt={visibles[lightbox].alt || 'Evento J&M'}
                    decoding="async"
-                   style={{ width:'100%', maxHeight:'80vh', objectFit:'contain', display:'block',
+                   style={{ width:'100%', maxHeight:'72vh', objectFit:'contain', display:'block',
                              borderRadius:16, boxShadow:'0 32px 80px rgba(0,0,0,0.6)' }}/>
             )}
 
-            <div style={{ position:'absolute', bottom:0, left:0, right:0, padding:'1.5rem',
-                           background:'linear-gradient(to top,rgba(5,13,26,0.9),transparent)',
-                           borderRadius:'0 0 16px 16px' }}>
-              {visibles[lightbox].categoria && (
-                <span style={{ display:'inline-block', background:'rgba(212,160,23,0.9)', color:'#0a1628',
-                                fontSize:'0.7rem', fontWeight:700, padding:'2px 10px', borderRadius:999,
-                                textTransform:'uppercase', letterSpacing:'.08em', marginBottom:4 }}>
-                  {visibles[lightbox].categoria}
-                  {visibles[lightbox].subcategoria ? ` › ${visibles[lightbox].subcategoria}` : ''}
-                </span>
-              )}
-              {visibles[lightbox].alt && (
-                <p style={{ color:'rgba(255,255,255,0.7)', fontSize:'0.82rem', margin:'4px 0 0' }}>
-                  {visibles[lightbox].alt}
+            {/* Barra inferior: flechas + info centrada */}
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+
+              <button onClick={e=>{e.stopPropagation();setLightbox(p=>((p!-1+visibles.length)%visibles.length));}}
+                      style={{ flexShrink:0, width:40, height:40, borderRadius:'50%',
+                                 background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)',
+                                 color:'#fff', fontSize:'1.1rem', cursor:'pointer', display:'flex',
+                                 alignItems:'center', justifyContent:'center', transition:'all .2s' }}
+                      onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(212,160,23,0.3)'}
+                      onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.1)'}>
+                ←
+              </button>
+
+              <div style={{ flex:1, minWidth:0 }}>
+                {visibles[lightbox].categoria && (
+                  <span style={{ display:'inline-block', background:'rgba(212,160,23,0.9)', color:'#0a1628',
+                                  fontSize:'0.65rem', fontWeight:700, padding:'2px 8px', borderRadius:999,
+                                  textTransform:'uppercase', letterSpacing:'.08em', marginBottom:2 }}>
+                    {visibles[lightbox].categoria}
+                    {visibles[lightbox].subcategoria ? ` › ${visibles[lightbox].subcategoria}` : ''}
+                  </span>
+                )}
+                {visibles[lightbox].alt && (
+                  <p style={{ color:'rgba(255,255,255,0.7)', fontSize:'0.78rem', margin:'2px 0 0',
+                               overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    {visibles[lightbox].alt}
+                  </p>
+                )}
+                <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.68rem', margin:'2px 0 0' }}>
+                  {lightbox + 1} / {visibles.length}
                 </p>
-              )}
-              <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.72rem', margin:'4px 0 0' }}>
-                {lightbox + 1} / {visibles.length}
-              </p>
-              <ShareBar
-                itemId={visibles[lightbox].id}
-                title={visibles[lightbox].alt || visibles[lightbox].categoria}
-                imageUrl={cxFull(visibles[lightbox].url)}
-              />
+              </div>
+
+              <button onClick={e=>{e.stopPropagation();setLightbox(p=>((p!+1)%visibles.length));}}
+                      style={{ flexShrink:0, width:40, height:40, borderRadius:'50%',
+                                 background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)',
+                                 color:'#fff', fontSize:'1.1rem', cursor:'pointer', display:'flex',
+                                 alignItems:'center', justifyContent:'center', transition:'all .2s' }}
+                      onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(212,160,23,0.3)'}
+                      onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.1)'}>
+                →
+              </button>
             </div>
+
+            <ShareBar
+              itemId={visibles[lightbox].id}
+              title={visibles[lightbox].alt || visibles[lightbox].categoria}
+              imageUrl={cxFull(visibles[lightbox].url)}
+            />
           </div>
-
-          <button onClick={() => setLightbox(null)}
-                  style={{ position:'absolute', top:20, right:20, width:44, height:44,
-                             borderRadius:'50%', background:'rgba(255,255,255,0.12)', border:'none',
-                             color:'#fff', fontSize:'1.25rem', cursor:'pointer', display:'flex',
-                             alignItems:'center', justifyContent:'center', transition:'background .2s' }}
-                  onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.25)'}
-                  onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.12)'}>
-            ✕
-          </button>
-
-          <button onClick={e=>{e.stopPropagation();setLightbox(p=>((p!-1+visibles.length)%visibles.length));}}
-                  style={{ position:'absolute', left:20, top:'50%', transform:'translateY(-50%)',
-                             width:50, height:50, borderRadius:'50%', background:'rgba(255,255,255,0.1)',
-                             border:'1px solid rgba(255,255,255,0.2)', color:'#fff', fontSize:'1.25rem',
-                             cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
-                             transition:'all .2s' }}
-                  onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(212,160,23,0.3)'}
-                  onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.1)'}>
-            ←
-          </button>
-
-          <button onClick={e=>{e.stopPropagation();setLightbox(p=>((p!+1)%visibles.length));}}
-                  style={{ position:'absolute', right:20, top:'50%', transform:'translateY(-50%)',
-                             width:50, height:50, borderRadius:'50%', background:'rgba(255,255,255,0.1)',
-                             border:'1px solid rgba(255,255,255,0.2)', color:'#fff', fontSize:'1.25rem',
-                             cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
-                             transition:'all .2s' }}
-                  onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(212,160,23,0.3)'}
-                  onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,0.1)'}>
-            →
-          </button>
         </div>
       )}
 

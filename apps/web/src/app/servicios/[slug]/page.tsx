@@ -1076,72 +1076,83 @@ export default function ServicioPage() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999,
                        background: 'rgba(5,13,26,0.96)', backdropFilter: 'blur(16px)',
                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                       padding: 16, cursor: 'zoom-out' }}
+                       padding: '16px 16px 12px', cursor: 'zoom-out' }}
              onClick={() => setLightbox(null)}>
+
+          {/* Botón cerrar */}
+          <button onClick={() => setLightbox(null)}
+                  style={{ position: 'absolute', top: 16, right: 16, width: 40, height: 40,
+                             borderRadius: '50%', background: 'rgba(255,255,255,0.12)',
+                             border: 'none', color: '#fff', fontSize: '1.1rem', cursor: 'pointer',
+                             display: 'flex', alignItems: 'center', justifyContent: 'center',
+                             transition: 'background .2s', zIndex: 1 }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.25)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.12)'}>
+            ✕
+          </button>
+
           <div onClick={e => e.stopPropagation()}
-               style={{ maxWidth: 960, width: '100%', position: 'relative',
-                         cursor: 'default', animation: 'lbIn .3s cubic-bezier(0.34,1.56,0.64,1)' }}>
+               style={{ maxWidth: 960, width: '100%', cursor: 'default', display: 'flex',
+                         flexDirection: 'column', gap: 10,
+                         animation: 'lbIn .3s cubic-bezier(0.34,1.56,0.64,1)' }}>
+
+            {/* Media — sin nada encima */}
             {(galeria[lightbox].tipo === 'video' || galeria[lightbox].url?.match(/\.(mp4|webm|mov)(\?|$)/i)) ? (
               <video src={cxVideo(galeria[lightbox].url)} controls autoPlay playsInline
-                     style={{ width: '100%', maxHeight: '80vh', display: 'block',
+                     style={{ width: '100%', maxHeight: '72vh', display: 'block',
                                borderRadius: 16, boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
                                background: '#000' }}/>
             ) : (
               <img src={cxFull(galeria[lightbox].url)} alt={galeria[lightbox].alt || title}
                    decoding="async"
-                   style={{ width: '100%', maxHeight: '80vh', objectFit: 'contain',
+                   style={{ width: '100%', maxHeight: '72vh', objectFit: 'contain',
                              display: 'block', borderRadius: 16,
                              boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}/>
             )}
-            {galeria[lightbox].alt && (
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem',
-                           textAlign: 'center', marginTop: 12, fontFamily: 'var(--font-jakarta)' }}>
-                {galeria[lightbox].alt}
-              </p>
-            )}
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.7rem',
-                         textAlign: 'center', marginTop: 4, fontFamily: 'var(--font-jakarta)' }}>
-              {lightbox + 1} / {galeria.length}
-            </p>
+
+            {/* Barra inferior: flechas + info centrada */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-jakarta)' }}>
+              <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! - 1 + galeria.length) % galeria.length)); }}
+                      style={{ flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
+                                 background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                                 color: '#fff', fontSize: '1.1rem', cursor: 'pointer',
+                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                 transition: 'all .2s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${accentColor}50`}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
+                ←
+              </button>
+
+              <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
+                {galeria[lightbox].alt && (
+                  <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', margin: 0,
+                               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {galeria[lightbox].alt}
+                  </p>
+                )}
+                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.68rem', margin: '2px 0 0' }}>
+                  {lightbox + 1} / {galeria.length}
+                </p>
+              </div>
+
+              <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! + 1) % galeria.length)); }}
+                      style={{ flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
+                                 background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                                 color: '#fff', fontSize: '1.1rem', cursor: 'pointer',
+                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                 transition: 'all .2s' }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${accentColor}50`}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
+                →
+              </button>
+            </div>
+
             <ShareBar
               itemId={galeria[lightbox].id}
               title={galeria[lightbox].alt || title}
               imageUrl={cxFull(galeria[lightbox].url)}
             />
           </div>
-
-          <button onClick={() => setLightbox(null)}
-                  style={{ position: 'absolute', top: 20, right: 20, width: 44, height: 44,
-                             borderRadius: '50%', background: 'rgba(255,255,255,0.12)',
-                             border: 'none', color: '#fff', fontSize: '1.25rem', cursor: 'pointer',
-                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                             transition: 'background .2s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.25)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.12)'}>
-            ✕
-          </button>
-          <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! - 1 + galeria.length) % galeria.length)); }}
-                  style={{ position: 'absolute', left: 20, top: '50%', transform: 'translateY(-50%)',
-                             width: 50, height: 50, borderRadius: '50%',
-                             background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-                             color: '#fff', fontSize: '1.25rem', cursor: 'pointer',
-                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                             transition: 'all .2s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${accentColor}50`}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
-            ←
-          </button>
-          <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! + 1) % galeria.length)); }}
-                  style={{ position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)',
-                             width: 50, height: 50, borderRadius: '50%',
-                             background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-                             color: '#fff', fontSize: '1.25rem', cursor: 'pointer',
-                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                             transition: 'all .2s' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${accentColor}50`}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
-            →
-          </button>
         </div>
       )}
 
