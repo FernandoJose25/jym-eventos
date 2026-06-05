@@ -7,20 +7,20 @@ interface ShareBarProps {
   basePath?: string;
 }
 
-export function ShareBar({ itemId, title, basePath }: ShareBarProps) {
+export function ShareBar({ itemId, title }: ShareBarProps) {
   const [open,    setOpen]    = useState(false);
   const [copied,  setCopied]  = useState(false);
   const [igToast, setIgToast] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  const getDeepUrl = () => {
-    if (typeof window === 'undefined') return '';
-    const path = basePath ?? window.location.pathname;
-    return `${window.location.origin}${path}?foto=${itemId}`;
-  };
+  // URL con OG tags server-side → Facebook/WhatsApp leen og:image con la foto real
+  const getShareUrl = () =>
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/foto/${itemId}`
+      : `https://jym-eventos-web.vercel.app/foto/${itemId}`;
 
   const copyLink = () => {
-    navigator.clipboard.writeText(getDeepUrl()).then(() => {
+    navigator.clipboard.writeText(getShareUrl()).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
     });
@@ -39,7 +39,7 @@ export function ShareBar({ itemId, title, basePath }: ShareBarProps) {
       label: 'Facebook',
       bg: '#1877f2',
       onClick: () => window.open(
-        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getDeepUrl())}`,
+        `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getShareUrl())}`,
         '_blank'
       ),
       icon: (
@@ -53,7 +53,7 @@ export function ShareBar({ itemId, title, basePath }: ShareBarProps) {
       bg: '#25d366',
       onClick: () => window.open(
         `https://wa.me/?text=${encodeURIComponent(
-          `${title ? title + ' · ' : ''}J&M Eventos y Decoraciones — Sechura, Piura 🎉\n${getDeepUrl()}`
+          `${title ? title + ' · ' : ''}J&M Eventos y Decoraciones — Sechura, Piura 🎉\n${getShareUrl()}`
         )}`,
         '_blank'
       ),
@@ -67,7 +67,7 @@ export function ShareBar({ itemId, title, basePath }: ShareBarProps) {
       label: 'Instagram',
       bg: 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)',
       onClick: () => {
-        navigator.clipboard.writeText(getDeepUrl()).then(() => {
+        navigator.clipboard.writeText(getShareUrl()).then(() => {
           setIgToast('¡Copiado! Pégalo en Instagram');
           setTimeout(() => setIgToast(null), 2500);
         });
@@ -85,7 +85,7 @@ export function ShareBar({ itemId, title, basePath }: ShareBarProps) {
       label: 'TikTok',
       bg: '#010101',
       onClick: () => {
-        navigator.clipboard.writeText(getDeepUrl()).then(() => {
+        navigator.clipboard.writeText(getShareUrl()).then(() => {
           setIgToast('¡Copiado! Pégalo en TikTok');
           setTimeout(() => setIgToast(null), 2500);
         });
@@ -185,7 +185,7 @@ export function ShareBar({ itemId, title, basePath }: ShareBarProps) {
                 flex: 1, fontSize: '0.72rem', color: '#444', overflow: 'hidden',
                 textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
-                {getDeepUrl()}
+                {getShareUrl()}
               </span>
               <button
                 onClick={copyLink}
