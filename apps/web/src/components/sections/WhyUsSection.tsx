@@ -10,6 +10,7 @@ const DEFAULT_ITEMS = [
   { icon:'🤝', title:'Atención Personalizada',  desc:'Equipo dedicado disponible antes, durante y después de tu evento.' },
 ];
 
+/* ── Tarjeta desktop (sin cambios) ── */
 function WhyCard({ item, i }: { item: typeof DEFAULT_ITEMS[0]; i: number }) {
   const [hovered, setHovered] = useState(false);
 
@@ -70,7 +71,6 @@ function WhyCard({ item, i }: { item: typeof DEFAULT_ITEMS[0]; i: number }) {
 
         {/* Ícono con efecto trail */}
         <div style={{ position: 'relative', height: 52, width: 52, margin: '0 auto 12px', overflow: 'hidden' }}>
-          {/* Emoji principal */}
           <div style={{
             fontSize: '2.2rem', lineHeight: '52px', textAlign: 'center',
             position: 'absolute', left: 0, top: 0, width: 52, height: 52,
@@ -78,8 +78,6 @@ function WhyCard({ item, i }: { item: typeof DEFAULT_ITEMS[0]; i: number }) {
           }}>
             {item.icon}
           </div>
-
-          {/* Trail — destello al hover */}
           <div style={{
             position: 'absolute', right: 0, height: '100%', width: '100%',
             opacity: hovered ? 0 : 0,
@@ -100,7 +98,7 @@ function WhyCard({ item, i }: { item: typeof DEFAULT_ITEMS[0]; i: number }) {
           {item.title}
         </h3>
 
-        {/* Descripción — hover en desktop, siempre visible en mobile */}
+        {/* Descripción */}
         <p className="why-desc" style={{
           color: 'rgba(255,255,255,0.65)', fontSize: '0.75rem',
           lineHeight: 1.55, margin: 0, padding: '0 1.25rem',
@@ -113,7 +111,7 @@ function WhyCard({ item, i }: { item: typeof DEFAULT_ITEMS[0]; i: number }) {
         </p>
       </div>
 
-      {/* Número decorativo de fondo */}
+      {/* Número decorativo */}
       <div style={{
         position: 'absolute', bottom: -10, right: 10,
         fontFamily: 'var(--font-playfair)', fontWeight: 900,
@@ -137,11 +135,86 @@ function WhyCard({ item, i }: { item: typeof DEFAULT_ITEMS[0]; i: number }) {
   );
 }
 
+/* ── Tarjeta mobile accordion ── */
+function WhyCardMobile({ item, i, isOpen, onToggle }: {
+  item: typeof DEFAULT_ITEMS[0]; i: number; isOpen: boolean; onToggle: () => void;
+}) {
+  const ACCENT = '#d4a017';
+  return (
+    <div
+      onClick={onToggle}
+      style={{
+        background: '#0a1628',
+        borderRadius: 16,
+        border: `1px solid ${isOpen ? 'rgba(212,160,23,0.35)' : 'rgba(212,160,23,0.08)'}`,
+        overflow: 'hidden',
+        cursor: 'pointer',
+        transition: 'border-color 0.3s',
+        WebkitTapHighlightColor: 'transparent',
+      }}
+    >
+      {/* Cabecera siempre visible */}
+      <div style={{ display:'flex', alignItems:'center', gap:14, padding:'1rem 1.25rem' }}>
+        <div style={{
+          width:48, height:48, borderRadius:14, flexShrink:0,
+          background: isOpen ? 'rgba(212,160,23,0.18)' : 'rgba(212,160,23,0.1)',
+          border: '1px solid rgba(212,160,23,0.2)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          fontSize:'1.5rem',
+          transform: isOpen ? 'scale(1.05)' : 'scale(1)',
+          transition:'all 0.3s',
+        }}>
+          {item.icon}
+        </div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(212,160,23,0.5)', letterSpacing:'.1em', textTransform:'uppercase', marginBottom:2 }}>
+            {String(i + 1).padStart(2, '0')}
+          </div>
+          <div style={{ fontFamily:'var(--font-playfair)', fontSize:'0.95rem', fontWeight:700, color:ACCENT, lineHeight:1.2 }}>
+            {item.title}
+          </div>
+        </div>
+        <div style={{
+          width:28, height:28, borderRadius:8, flexShrink:0,
+          background: isOpen ? 'rgba(212,160,23,0.15)' : 'rgba(255,255,255,0.05)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          transition:'all 0.35s cubic-bezier(0.4,0,0.2,1)',
+          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke={isOpen ? ACCENT : 'rgba(255,255,255,0.5)'}
+               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+      </div>
+
+      {/* Cuerpo expandible */}
+      <div style={{
+        maxHeight: isOpen ? 160 : 0,
+        overflow:'hidden',
+        transition:'max-height 0.4s cubic-bezier(0.4,0,0.2,1)',
+      }}>
+        <div style={{ padding:'0 1.25rem 1.25rem', paddingLeft:'calc(1.25rem + 48px + 14px)' }}>
+          <div style={{ height:1, background:'linear-gradient(90deg,rgba(212,160,23,0.3),transparent)', marginBottom:10 }}/>
+          <p style={{ color:'rgba(255,255,255,0.65)', fontSize:'0.82rem', lineHeight:1.6, margin:'0 0 10px' }}>
+            {item.desc}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function WhyUsSection({ data }: { data: any }) {
   const rawItems = data?.items || DEFAULT_ITEMS;
   const items = rawItems.filter((item: any) => item.visible !== false);
   const h2    = data?.h2   || '¿Por qué <em>elegirnos</em>?';
   const desc  = data?.desc || 'Más de una década transformando celebraciones en Sechura, Piura.';
+
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const toggle = (i: number) => setOpenIndex(prev => prev === i ? null : i);
 
   return (
     <section style={{ padding:'6rem 0', background:'#f0f4f8', position:'relative', overflow:'hidden' }}>
@@ -168,25 +241,44 @@ export default function WhyUsSection({ data }: { data: any }) {
           <p style={{ color:'#64748b', fontSize:'1.05rem', maxWidth:500, margin:'0.75rem auto 0' }}>{desc}</p>
         </div>
 
-        {/* Grid 3 columnas */}
+        {/* Desktop: grid de tarjetas con hover (sin cambios) */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'1.5rem' }}
-             className="why-grid">
+             className="why-grid why-desktop">
           {items.map((item: any, i: number) => (
             <div key={i} className={`reveal stagger-${Math.min(i+1,8)}`}>
               <WhyCard item={item} i={i}/>
             </div>
           ))}
         </div>
+
+        {/* Mobile: accordion exclusivo */}
+        <div className="why-mobile" style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {items.map((item: any, i: number) => (
+            <WhyCardMobile
+              key={i}
+              item={item}
+              i={i}
+              isOpen={openIndex === i}
+              onToggle={() => toggle(i)}
+            />
+          ))}
+        </div>
       </div>
 
       <style>{`
+        /* Desktop: mostrar grid, ocultar accordion */
+        .why-desktop { display: grid !important; }
+        .why-mobile  { display: none !important; }
+
+        /* Mobile: ocultar grid, mostrar accordion */
+        @media(max-width:768px){
+          .why-desktop { display: none !important; }
+          .why-mobile  { display: flex !important; }
+        }
+
         @media(max-width:900px){ .why-grid{ grid-template-columns:1fr 1fr !important; } }
         @media(max-width:600px){ .why-grid{ grid-template-columns:1fr 1fr !important; gap:1rem !important; } }
         @media(max-width:400px){ .why-grid{ grid-template-columns:1fr !important; } }
-        @media(max-width:767px){
-          .why-card{ height:auto !important; min-height:180px; padding:1.5rem 1rem 1.75rem !important; border-radius:10px !important; }
-          .why-desc{ opacity:1 !important; transform:none !important; max-height:none !important; }
-        }
       `}</style>
     </section>
   );

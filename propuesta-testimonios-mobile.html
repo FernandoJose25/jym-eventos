@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Propuesta — Testimonios (Mobile)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: #e8edf5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+    gap: 2rem;
+  }
+
+  .proposal-label {
+    background: #d4a017;
+    color: #0a1628;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.5rem 1.5rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+  }
+
+  .caption {
+    color: #64748b;
+    font-size: 0.8rem;
+    text-align: center;
+    max-width: 380px;
+    line-height: 1.5;
+  }
+
+  /* ── Simulador móvil ── */
+  .phone-frame {
+    width: 390px;
+    background: #0a1628;
+    border-radius: 40px;
+    box-shadow: 0 0 0 10px #1a1a1a, 0 0 0 12px #333, 0 40px 80px rgba(0,0,0,0.4);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .phone-notch {
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 126px; height: 34px;
+    background: #1a1a1a;
+    border-radius: 0 0 20px 20px;
+    z-index: 100;
+  }
+
+  /* ── Sección testimonios ── */
+  .section-wrap {
+    background: linear-gradient(160deg, #0a1628 0%, #1e3a5f 100%);
+    padding: 60px 0 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Decoración de fondo */
+  .bg-orb {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .section-header {
+    text-align: center;
+    padding: 0 1.5rem 2rem;
+    position: relative;
+    z-index: 2;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.35rem 1rem;
+    border-radius: 9999px;
+    background: rgba(212,160,23,0.1);
+    border: 1px solid rgba(212,160,23,0.3);
+    color: #f5c842;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    margin-bottom: 1rem;
+  }
+
+  .section-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.7rem;
+    color: #fff;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-header h2 em {
+    color: #d4a017;
+    font-style: italic;
+  }
+
+  /* ── Slider de tarjetas ── */
+  .slider-container {
+    position: relative;
+    z-index: 2;
+  }
+
+  .slider-track {
+    display: flex;
+    gap: 14px;
+    padding: 0.5rem 1.25rem 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    cursor: grab;
+  }
+
+  .slider-track::-webkit-scrollbar { display: none; }
+  .slider-track:active { cursor: grabbing; }
+
+  /* ── Tarjeta de testimonio ── */
+  .testi-card {
+    flex-shrink: 0;
+    width: 300px;
+    scroll-snap-align: center;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s, border-color 0.3s;
+  }
+
+  /* Orbe de color en la parte superior de cada tarjeta */
+  .card-orb {
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    filter: blur(30px);
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  .card-top {
+    padding: 1.25rem 1.25rem 1rem;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Comillas decorativas */
+  .quote-mark {
+    font-size: 3.5rem;
+    line-height: 1;
+    color: rgba(212,160,23,0.2);
+    font-family: 'Playfair Display', serif;
+    margin-bottom: -0.5rem;
+    display: block;
+  }
+
+  .testi-text {
+    color: rgba(255,255,255,0.82);
+    font-size: 0.88rem;
+    line-height: 1.65;
+    font-style: italic;
+    margin-bottom: 1rem;
+  }
+
+  .stars {
+    display: flex;
+    gap: 3px;
+    margin-bottom: 0.875rem;
+  }
+
+  .star {
+    font-size: 0.8rem;
+    color: #f59e0b;
+  }
+
+  /* Separador */
+  .card-divider {
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212,160,23,0.3), transparent);
+    margin: 0 1.25rem;
+  }
+
+  /* Footer de la tarjeta: avatar + nombre */
+  .card-footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 1rem 1.25rem 1.25rem;
+    position: relative;
+    z-index: 2;
+  }
+
+  .avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    border: 2px solid rgba(212,160,23,0.4);
+  }
+
+  .author-name {
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: #fff;
+    margin-bottom: 2px;
+  }
+
+  .author-role {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.4);
+  }
+
+  /* ── Puntos de navegación ── */
+  .dots {
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    padding: 0.75rem 0 0;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .dot.active {
+    background: #d4a017;
+    width: 20px;
+    border-radius: 3px;
+  }
+
+  /* ── Hint de swipe ── */
+  .swipe-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: rgba(255,255,255,0.2);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    padding: 0.75rem 0 1rem;
+  }
+
+  .swipe-arrow {
+    animation: swipeAnim 1.5s ease-in-out infinite;
+  }
+
+  @keyframes swipeAnim {
+    0%, 100% { transform: translateX(0); opacity: 0.2; }
+    50% { transform: translateX(5px); opacity: 0.6; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="proposal-label">🎨 Propuesta visual — No edita código original</div>
+  <p class="caption">Simulación de la sección "Testimonios" en iPhone (390px). Desliza las tarjetas horizontalmente — contenido siempre visible, sin flip, sin carrusel automático.</p>
+
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+
+    <div class="section-wrap">
+      <!-- Orbes de fondo -->
+      <div class="bg-orb" style="width:300px;height:300px;background:rgba(212,160,23,0.04);top:-100px;right:-100px;"></div>
+      <div class="bg-orb" style="width:200px;height:200px;background:rgba(37,99,235,0.06);bottom:0;left:-50px;"></div>
+
+      <!-- Header -->
+      <div class="section-header">
+        <div class="badge">⭐ Testimonios</div>
+        <h2>Lo que dicen nuestros <em>clientes</em></h2>
+      </div>
+
+      <!-- Slider -->
+      <div class="slider-container">
+        <div class="slider-track" id="track">
+
+          <!-- Tarjeta 1 -->
+          <div class="testi-card">
+            <div class="card-orb" style="background:#ff9966;"></div>
+            <div class="card-top">
+              <span class="quote-mark">"</span>
+              <div class="stars">
+                <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+              </div>
+              <p class="testi-text">Decoraron mi quinceañero de manera increíble. Cada detalle fue exactamente como lo soñé. ¡Superaron todas mis expectativas!</p>
+            </div>
+            <div class="card-divider"></div>
+            <div class="card-footer">
+              <div class="avatar" style="background:linear-gradient(135deg,#ff9966,#ff6644);">AM</div>
+              <div>
+                <div class="author-name">Ana María López</div>
+                <div class="author-role">Quinceañera · Sechura</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta 2 -->
+          <div class="testi-card">
+            <div class="card-orb" style="background:#a855f7;"></div>
+            <div class="card-top">
+              <span class="quote-mark">"</span>
+              <div class="stars">
+                <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+              </div>
+              <p class="testi-text">Nuestra boda fue perfecta gracias a J&M. El equipo es muy profesional y atento. Definitivamente los recomendamos.</p>
+            </div>
+            <div class="card-divider"></div>
+            <div class="card-footer">
+              <div class="avatar" style="background:linear-gradient(135deg,#a855f7,#7c3aed);">CR</div>
+              <div>
+                <div class="author-name">Carlos & Rosa</div>
+                <div class="author-role">Boda · Piura</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta 3 -->
+          <div class="testi-card">
+            <div class="card-orb" style="background:#f5c842;"></div>
+            <div class="card-top">
+              <span class="quote-mark">"</span>
+              <div class="stars">
+                <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+              </div>
+              <p class="testi-text">El cumpleaños de mi hijo fue mágico. Los globos, la decoración temática... los niños quedaron encantados. 100% recomendados.</p>
+            </div>
+            <div class="card-divider"></div>
+            <div class="card-footer">
+              <div class="avatar" style="background:linear-gradient(135deg,#f5c842,#d4a017);">MP</div>
+              <div>
+                <div class="author-name">María Pérez</div>
+                <div class="author-role">Fiesta infantil · Sechura</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjeta 4 -->
+          <div class="testi-card">
+            <div class="card-orb" style="background:#14b8a6;"></div>
+            <div class="card-top">
+              <span class="quote-mark">"</span>
+              <div class="stars">
+                <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+              </div>
+              <p class="testi-text">Excelente servicio desde la cotización hasta el último detalle del evento. Muy puntuales y organizados.</p>
+            </div>
+            <div class="card-divider"></div>
+            <div class="card-footer">
+              <div class="avatar" style="background:linear-gradient(135deg,#14b8a6,#0f766e);">JR</div>
+              <div>
+                <div class="author-name">Jorge Ramírez</div>
+                <div class="author-role">Evento corporativo · Piura</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Dots -->
+        <div class="dots" id="dots">
+          <div class="dot active" onclick="goTo(0)"></div>
+          <div class="dot" onclick="goTo(1)"></div>
+          <div class="dot" onclick="goTo(2)"></div>
+          <div class="dot" onclick="goTo(3)"></div>
+        </div>
+
+        <!-- Hint -->
+        <div class="swipe-hint">
+          <span>Desliza</span>
+          <span class="swipe-arrow">→</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="caption">
+    Sin carrusel automático — el usuario controla el ritmo.<br/>
+    Sin flip 3D — el texto del testimonio siempre visible.<br/>
+    En desktop se mantiene el carrusel actual con flip.
+  </p>
+
+<script>
+  const track = document.getElementById('track');
+  const dots = document.querySelectorAll('.dot');
+
+  function goTo(index) {
+    const card = track.children[index];
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+
+  // Actualizar dot activo al hacer scroll
+  track.addEventListener('scroll', () => {
+    const cards = track.children;
+    const trackRect = track.getBoundingClientRect();
+    let closest = 0;
+    let minDist = Infinity;
+    for (let i = 0; i < cards.length; i++) {
+      const rect = cards[i].getBoundingClientRect();
+      const dist = Math.abs(rect.left + rect.width / 2 - (trackRect.left + trackRect.width / 2));
+      if (dist < minDist) { minDist = dist; closest = i; }
+    }
+    dots.forEach((d, i) => d.classList.toggle('active', i === closest));
+  });
+</script>
+</body>
+</html>
