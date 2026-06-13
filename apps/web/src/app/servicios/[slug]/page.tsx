@@ -436,19 +436,20 @@ export default function ServicioPage() {
   const firestoreIncludes = (dt.includes || []).filter((i: any) => i.visible !== false);
   const incluyeList = firestoreIncludes.length > 0 ? firestoreIncludes : (sd.incluye || []);
 
-  // features: parse from detail.longDesc2 (✓ bullets) or keep static
-  // longDesc2 format: "✓ Text: Detail. ✓ Text2: Detail2. …"
+  // features: parse from detail.longDesc2 — one item per line.
+  // Legacy format used "✓" as separator; strip those chars for backwards compat.
   const featuresList: any[] = (() => {
     if (dt.longDesc2) {
       return dt.longDesc2
-        .split('✓')
-        .map((s: string) => s.trim())
+        .replace(/✓/g, '\n')
+        .split('\n')
+        .map((s: string) => s.trim().replace(/\.$/, ''))
         .filter(Boolean)
         .map((s: string) => {
           const colonIdx = s.indexOf(':');
           return colonIdx > 0
-            ? { text: s.slice(0, colonIdx).trim(), detail: s.slice(colonIdx + 1).trim().replace(/\.$/, '') }
-            : { text: s.replace(/\.$/, ''), detail: '' };
+            ? { text: s.slice(0, colonIdx).trim(), detail: s.slice(colonIdx + 1).trim() }
+            : { text: s, detail: '' };
         });
     }
     return sd.features || [];

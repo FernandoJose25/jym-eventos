@@ -225,9 +225,9 @@ export default function ServiceContentPage() {
             <F label="Párrafo principal" field="longDesc"
                value={srvData.detail?.longDesc||''} onChange={(k,v)=>setDetail(k,v)} type="textarea" rows={4}
                placeholder="Nuestros shows infantiles son espectáculos diseñados para hacer de cada cumpleaños..."/>
-            <F label="Párrafo secundario / características (✓ Punto: Detalle.)" field="longDesc2"
-               value={srvData.detail?.longDesc2||''} onChange={(k,v)=>setDetail(k,v)} type="textarea" rows={4}
-               placeholder="✓ Personajes temáticos: Superhéroes, princesas..."/>
+            <F label="Características (una por línea)" field="longDesc2"
+               value={srvData.detail?.longDesc2||''} onChange={(k,v)=>setDetail(k,v)} type="textarea" rows={5}
+               placeholder={"Personajes temáticos: Superhéroes, princesas...\nMúsica en vivo / DJ\nLluvia de serpentinas"}/>
           </div>
         </fieldset>
 
