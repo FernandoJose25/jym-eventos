@@ -207,7 +207,7 @@ export default function ContactSection({ data }: Props) {
             ))}
 
             {/* Social links */}
-            <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginTop:4 }}>
+            <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginTop:4, justifyContent:'center' }}>
               {[
                 {
                   href: data?.instagram||'https://www.instagram.com/jmdecoracionesyeventos1/',
