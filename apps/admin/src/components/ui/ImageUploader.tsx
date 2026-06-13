@@ -473,14 +473,33 @@ export default function ImageUploader({
   const [uploading, setUploading] = useState(false);
   const [error,     setError]     = useState('');
 
+  interface QualityInfo {
+    origSize: number;   // bytes
+    finalSize: number;  // bytes
+    origW: number; origH: number;
+    finalW: number; finalH: number;
+    format: string;
+  }
+  const [quality, setQuality] = useState<QualityInfo | null>(null);
+
   const [cropSrc,  setCropSrc]  = useState('');
   const [cropFile, setCropFile] = useState<File | null>(null);
 
   /* ── upload ── */
   const upload = useCallback(async (file: File, currentFp?: FP) => {
     const useFp = currentFp ?? fp;
-    setError(''); setUploading(true); setProgress(0);
+    setError(''); setUploading(true); setProgress(0); setQuality(null);
     const isVideo = file.type.startsWith('video/');
+
+    // dimensiones originales
+    let origW = 0, origH = 0;
+    if (!isVideo) {
+      await new Promise<void>(res => {
+        const img = new Image();
+        img.onload = () => { origW = img.naturalWidth; origH = img.naturalHeight; res(); };
+        img.src = URL.createObjectURL(file);
+      });
+    }
 
     try {
       let fileToUpload = file;
@@ -559,6 +578,22 @@ export default function ImageUploader({
       setProgress(100);
       setPreview(url);
       setPreviewType(isVideo ? 'video' : 'image');
+      if (!isVideo && origW > 0) {
+        // leer dimensiones finales del archivo comprimido
+        let finalW = origW, finalH = origH;
+        await new Promise<void>(res => {
+          const img2 = new Image();
+          img2.onload = () => { finalW = img2.naturalWidth; finalH = img2.naturalHeight; res(); };
+          img2.src = URL.createObjectURL(fileToUpload);
+        });
+        setQuality({
+          origSize: file.size,
+          finalSize: fileToUpload.size,
+          origW, origH,
+          finalW, finalH,
+          format: fileToUpload.type === 'image/webp' ? 'WebP' : fileToUpload.type.split('/')[1].toUpperCase(),
+        });
+      }
       onComplete(url, useFp, isVideo ? 'video' : 'image');
     } catch (e: any) {
       setError(e?.message || 'Error al subir. Intenta de nuevo.');
@@ -587,6 +622,7 @@ export default function ImageUploader({
         setError(validation.reason ?? 'Archivo no permitido.');
         return;
       }
+      setQuality(null);
       if (file.type.startsWith('video/')) {
         setPreview(URL.createObjectURL(file));
         setPreviewType('video');
@@ -815,6 +851,39 @@ export default function ImageUploader({
               )}
             </div>
           )}
+
+          {/* Badge de calidad post-subida */}
+          {!uploading && quality && previewType === 'image' && (() => {
+            const saved = Math.round((1 - quality.finalSize / quality.origSize) * 100);
+            const dimChanged = quality.finalW !== quality.origW || quality.finalH !== quality.origH;
+            const fmt = (b: number) => b >= 1024*1024
+              ? `${(b/1024/1024).toFixed(1)} MB`
+              : `${Math.round(b/1024)} KB`;
+            const isGood = saved >= 20;
+            const isWarning = saved > 0 && saved < 20;
+            const grew = saved < 0;
+            return (
+              <div style={{
+                background: grew ? '#fff1f2' : isWarning ? '#fffbeb' : '#f0fdf4',
+                border: `1px solid ${grew ? '#fecaca' : isWarning ? '#fde68a' : '#bbf7d0'}`,
+                borderRadius: 10, padding: '0.6rem 0.875rem',
+                fontSize: '0.72rem', color: grew ? '#9f1239' : isWarning ? '#92400e' : '#166534',
+              }}>
+                <div style={{ display:'flex', alignItems:'center', gap:6, fontWeight:700, marginBottom:4 }}>
+                  <span>{grew ? '⚠️' : isWarning ? '🟡' : '✅'}</span>
+                  <span>
+                    {grew
+                      ? `Archivo creció ${Math.abs(saved)}% — considera comprimir manualmente`
+                      : `Comprimida ${saved}% · formato ${quality.format}`}
+                  </span>
+                </div>
+                <div style={{ display:'flex', gap:14, flexWrap:'wrap', color:'inherit', opacity:0.85 }}>
+                  <span>Original: <strong>{fmt(quality.origSize)}</strong> · {quality.origW}×{quality.origH}px</span>
+                  <span>Final: <strong>{fmt(quality.finalSize)}</strong>{dimChanged ? ` · ${quality.finalW}×${quality.finalH}px` : ''}</span>
+                </div>
+              </div>
+            );
+          })()}
 
           {!uploading && (
             <div style={{ display:'flex', gap:10, alignItems:'center', flexWrap:'wrap' }}>
