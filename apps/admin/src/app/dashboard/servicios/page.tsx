@@ -65,17 +65,17 @@ export default function ServiciosPage() {
 
   return (
     <div className="space-y-6">
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-        <div>
-          <h1 style={{ fontFamily:'var(--font-playfair)', fontSize:'1.5rem', fontWeight:700, color:'#0a1628', margin:0 }}>
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <h1 className="page-h1" style={{ fontFamily:'var(--font-playfair)', fontSize:'1.5rem', fontWeight:700, color:'#0a1628', margin:0 }}>
             Servicios
           </h1>
-          <p style={{ color:'#64748b', fontSize:'0.82rem', marginTop:4 }}>
-            {servicios.filter(s=>s.visible).length} activos · Clic en ✏️ para editar nombre, ícono o descripción
+          <p className="page-h1-sub" style={{ color:'#64748b', fontSize:'0.82rem', marginTop:4 }}>
+            {servicios.filter(s=>s.visible).length} activos · Toca ✏️ para editar nombre, ícono o descripción
           </p>
         </div>
-        <Link href="/dashboard/servicios/nuevo" className="btn-primary" style={{ textDecoration:'none' }}>
-          <Plus size={16}/> Nuevo Servicio
+        <Link href="/dashboard/servicios/nuevo" className="btn-primary" style={{ textDecoration:'none', flexShrink:0 }}>
+          <Plus size={16}/> Nuevo
         </Link>
       </div>
 
@@ -111,7 +111,7 @@ export default function ServiciosPage() {
                 {editingId === s.id ? (
                   /* ── Modo edición ── */
                   <div>
-                    <div style={{ display:'grid', gridTemplateColumns:'80px 1fr 1fr 80px', gap:10, marginBottom:12, alignItems:'start' }}>
+                    <div className="grid-edit-service" style={{ marginBottom:12 }}>
                       <div>
                         <label style={{ fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', color:'#94a3b8', display:'block', marginBottom:4 }}>Ícono</label>
                         <input type="text" value={editData.icon}
@@ -124,13 +124,13 @@ export default function ServiciosPage() {
                                onChange={e=>setEditData((p:any)=>({...p,title:e.target.value}))}
                                className="admin-input"/>
                       </div>
-                      <div>
+                      <div className="col-desc">
                         <label style={{ fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', color:'#94a3b8', display:'block', marginBottom:4 }}>Descripción</label>
                         <input type="text" value={editData.desc}
                                onChange={e=>setEditData((p:any)=>({...p,desc:e.target.value}))}
                                className="admin-input" placeholder="Breve descripción…"/>
                       </div>
-                      <div>
+                      <div className="col-order">
                         <label style={{ fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', color:'#94a3b8', display:'block', marginBottom:4 }}>Orden</label>
                         <input type="number" value={editData.order}
                                onChange={e=>setEditData((p:any)=>({...p,order:+e.target.value}))}
@@ -166,7 +166,7 @@ export default function ServiciosPage() {
                   </div>
                 ) : (
                   /* ── Modo vista ── */
-                  <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
                     <span style={{ color:'#94a3b8', fontSize:'0.78rem', display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
                       <GripVertical size={14}/> {s.order??0}
                     </span>
@@ -188,34 +188,36 @@ export default function ServiciosPage() {
                       </p>
                       {s.desc && (
                         <p style={{ color:'#94a3b8', fontSize:'0.75rem', margin:0,
-                                     overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:300 }}>
+                                     overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                           {s.desc}
                         </p>
                       )}
                       <code style={{ fontSize:'0.68rem', color:'#94a3b8' }}>{getSlugUrl(s)}</code>
                     </div>
 
-                    <span className={s.visible?'badge badge-green':'badge badge-slate'}>
-                      {s.visible?'✓ Visible':'○ Oculto'}
-                    </span>
-
-                    <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0, marginLeft:'auto' }}>
+                      <span className={s.visible?'badge badge-green':'badge badge-slate'}>
+                        {s.visible?'✓ Visible':'○ Oculto'}
+                      </span>
                       <button onClick={()=>startEdit(s)} title="Editar"
-                              style={{ padding:'6px 10px', background:'#eff6ff', border:'1px solid #bfdbfe',
-                                        borderRadius:8, color:'#1e40af', cursor:'pointer', display:'flex', alignItems:'center' }}>
-                        <Edit2 size={13}/>
+                              style={{ padding:'8px 10px', background:'#eff6ff', border:'1px solid #bfdbfe',
+                                        borderRadius:8, color:'#1e40af', cursor:'pointer', display:'flex', alignItems:'center',
+                                        minWidth:36, minHeight:36, justifyContent:'center' }}>
+                        <Edit2 size={14}/>
                       </button>
                       <button onClick={()=>toggleVisible(s)} title={s.visible?'Ocultar':'Mostrar'}
-                              style={{ padding:'6px 10px', background:s.visible?'#fffbeb':'#f0fdf4',
+                              style={{ padding:'8px 10px', background:s.visible?'#fffbeb':'#f0fdf4',
                                         border:`1px solid ${s.visible?'#fde68a':'#bbf7d0'}`,
                                         borderRadius:8, color:s.visible?'#92400e':'#166534',
-                                        cursor:'pointer', display:'flex', alignItems:'center' }}>
-                        {s.visible ? <EyeOff size={13}/> : <Eye size={13}/>}
+                                        cursor:'pointer', display:'flex', alignItems:'center',
+                                        minWidth:36, minHeight:36, justifyContent:'center' }}>
+                        {s.visible ? <EyeOff size={14}/> : <Eye size={14}/>}
                       </button>
                       <button onClick={()=>handleDelete(s)} title="Eliminar"
-                              style={{ padding:'6px 10px', background:'#fff1f2', border:'1px solid #fecaca',
-                                        borderRadius:8, color:'#ef4444', cursor:'pointer', display:'flex', alignItems:'center' }}>
-                        <Trash2 size={13}/>
+                              style={{ padding:'8px 10px', background:'#fff1f2', border:'1px solid #fecaca',
+                                        borderRadius:8, color:'#ef4444', cursor:'pointer', display:'flex', alignItems:'center',
+                                        minWidth:36, minHeight:36, justifyContent:'center' }}>
+                        <Trash2 size={14}/>
                       </button>
                     </div>
                   </div>

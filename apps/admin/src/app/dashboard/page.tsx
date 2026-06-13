@@ -68,16 +68,16 @@ export default function DashboardPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {/* Header */}
       <div>
-        <h1 style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.75rem', fontWeight: 700, color: '#0a1628', margin: 0 }}>
+        <h1 className="page-h1" style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.75rem', fontWeight: 700, color: '#0a1628', margin: 0 }}>
           Panel de Control
         </h1>
-        <p style={{ color: '#64748b', fontSize: '0.9rem', margin: '4px 0 0', fontFamily: 'var(--font-jakarta)' }}>
+        <p className="page-h1-sub" style={{ color: '#64748b', fontSize: '0.9rem', margin: '4px 0 0', fontFamily: 'var(--font-jakarta)' }}>
           Resumen general de J&M Eventos
         </p>
       </div>
 
       {/* Stats grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14 }}>
+      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14 }}>
         {cards.map(card => (
           <Link key={card.label} href={card.href} style={{ textDecoration: 'none' }}>
             <div style={{
@@ -125,7 +125,7 @@ export default function DashboardPage() {
             const est = estadoStyles[msg.estado] || estadoStyles['pendiente'];
             return (
               <Link key={msg.id} href="/dashboard/mensajes" style={{ textDecoration: 'none' }}>
-                <div style={{
+                <div className="msg-row" style={{
                   display: 'flex', alignItems: 'center', gap: 14,
                   padding: '0.875rem 1.5rem',
                   borderBottom: i < recientes.length - 1 ? '1px solid #f8fafc' : 'none',
@@ -170,7 +170,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick links */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+      <div className="quick-links-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
         {[
           { label: 'Gestionar servicios', icon: '🎉', href: '/dashboard/servicios' },
           { label: 'Galería de fotos',    icon: '🖼️', href: '/dashboard/galeria' },

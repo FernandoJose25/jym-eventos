@@ -174,15 +174,15 @@ export default function GaleriaPage() {
 
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
-        <div>
-          <h1 style={{ fontFamily:'var(--font-playfair)', fontSize:'1.5rem', fontWeight:700, color:'#0a1628', margin:0 }}>Galería</h1>
-          <p style={{ color:'#64748b', fontSize:'0.82rem', marginTop:4 }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <h1 className="page-h1" style={{ fontFamily:'var(--font-playfair)', fontSize:'1.5rem', fontWeight:700, color:'#0a1628', margin:0 }}>Galería</h1>
+          <p className="page-h1-sub" style={{ color:'#64748b', fontSize:'0.82rem', marginTop:4 }}>
             {activeCount} visibles · {hiddenCount} ocultas
             {filterCat !== 'Todas' && ` · filtrando: "${filterCat}"`}
           </p>
         </div>
-        <button onClick={openAdd} className="btn-primary">
-          <Plus size={16}/> Agregar imagen / video
+        <button onClick={openAdd} className="btn-primary" style={{ flexShrink:0, whiteSpace:'nowrap' }}>
+          <Plus size={16}/> Agregar
         </button>
       </div>
 
@@ -203,8 +203,9 @@ export default function GaleriaPage() {
           <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'#0a1628', margin:'0 0 16px' }}>
             {mode === 'edit' ? '✏️ Editar imagen / video' : 'Nueva imagen o video'}
           </h3>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
+          <div className="galeria-form-grid" style={{ display:'flex', flexDirection:'row', flexWrap:'wrap', gap:20 }}>
             {/* Uploader */}
+            <div style={{ flex:'1 1 280px', minWidth:0 }}>
             <ImageUploader
               key={editId ?? 'new'}
               label="Imagen o Video (máx 200MB)"
@@ -215,9 +216,10 @@ export default function GaleriaPage() {
               previewAspect={4/3} previewLabel="Galería (paisaje 4:3)"
               onComplete={(url, fp, type) => setFormData((p:any) => ({ ...p, url, focalX:fp.x, focalY:fp.y, mediaType:type }))}
             />
+            </div>
 
             {/* Campos */}
-            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div style={{ flex:'1 1 280px', minWidth:0, display:'flex', flexDirection:'column', gap:14 }}>
 
               {/* Categoría */}
               <div>
@@ -324,7 +326,7 @@ export default function GaleriaPage() {
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
 
           {/* Search input */}
-          <div style={{ position:'relative', maxWidth:480 }}>
+          <div style={{ position:'relative', maxWidth:480, width:'100%' }}>
             <Search size={15} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', pointerEvents:'none' }}/>
             <input
               ref={searchRef}
@@ -350,18 +352,15 @@ export default function GaleriaPage() {
             )}
           </div>
 
-          {/* Category filter pills */}
-          <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
-            <Filter size={14} style={{ color:'#94a3b8' }}/>
+          {/* Category filter chips — horizontal scroll en móvil */}
+          <div className="chip-scroll" style={{ alignItems:'center' }}>
+            <Filter size={14} style={{ color:'#94a3b8', flexShrink:0 }}/>
             {['Todas', ...cats.filter(c => items.some(i=>i.categoria===c))].map(cat => (
               <button key={cat} onClick={() => setFilterCat(cat)}
-                      style={{ padding:'0.35rem 0.875rem', borderRadius:999, border:'none', cursor:'pointer',
-                                fontFamily:'var(--font-jakarta)', fontSize:'0.78rem', fontWeight:filterCat===cat?600:400,
-                                background:filterCat===cat?'#0a1628':'#f1f5f9',
-                                color:filterCat===cat?'#fff':'#64748b', transition:'all .2s' }}>
+                      className={`chip${filterCat===cat?' active':''}`}>
                 {cat}
                 {cat !== 'Todas' && (
-                  <span style={{ marginLeft:5, fontSize:'0.65rem', color:filterCat===cat?'rgba(255,255,255,.6)':'#94a3b8' }}>
+                  <span style={{ marginLeft:4, fontSize:'0.65rem', opacity:.7 }}>
                     {items.filter(i=>i.categoria===cat).length}
                   </span>
                 )}
