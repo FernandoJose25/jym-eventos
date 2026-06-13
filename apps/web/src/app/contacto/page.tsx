@@ -222,10 +222,10 @@ export default function ContactoPage() {
               {/* Redes */}
               <div>
                 <p style={{ fontSize:'0.62rem', fontWeight:700, textTransform:'uppercase',
-                  letterSpacing:'.12em', color:'rgba(255,255,255,0.28)', margin:'8px 0 10px' }}>
+                  letterSpacing:'.12em', color:'rgba(255,255,255,0.28)', margin:'8px 0 10px', textAlign:'center' }}>
                   Síguenos
                 </p>
-                <div style={{ display:'flex', gap:8 }}>
+                <div style={{ display:'flex', gap:8, justifyContent:'center' }}>
                   {[
                     {
                       label:'Instagram', bg:'linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)',
