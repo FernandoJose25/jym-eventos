@@ -14,6 +14,9 @@
 html { scroll-behavior: smooth; }
 body { font-family: var(--font-jakarta); -webkit-font-smoothing: antialiased; }
 
+/* Evitar scroll horizontal en todo el admin */
+html, body { max-width: 100%; overflow-x: hidden; }
+
 /* ── Admin inputs ── */
 .admin-input {
   width: 100%;
@@ -314,13 +317,27 @@ select.admin-input   { cursor: pointer; }
 }
 .chip:hover:not(.active) { border-color: #94a3b8; background: #f8fafc; }
 
+/* ── Reducción de padding en elementos internos en móvil ── */
+@media(max-width:640px){
+  /* fieldsets con padding grande → reducir en móvil */
+  fieldset { padding: 0.75rem !important; }
+  /* Panel de contenido de configuración */
+  .cfg-content-card { padding: 0.875rem 0.75rem !important; }
+  /* Header de contenido de servicio: apilar verticalmente */
+  .srv-header-actions { flex-direction: column !important; align-items: stretch !important; }
+  .srv-header-actions > div { flex: unset !important; }
+  .srv-header-actions textarea { width: 100% !important; }
+  .srv-header-actions button { width: 100% !important; justify-content: center !important; }
+}
+
 /* ── Configuracion layout: 2 paneles → columna en móvil ── */
 .cfg-layout { display:flex; gap:20px; }
 .cfg-sidebar { width:210px; flex-shrink:0; }
+.cfg-side-btn { width:100%; text-align:left; margin-bottom:2px; }
 @media(max-width:768px){
   .cfg-layout { flex-direction:column; gap:0; }
   .cfg-sidebar {
-    width:100%; display:flex; flex-direction:row; gap:6px;
+    width:100%; display:flex; flex-direction:row; gap:4px;
     overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
     padding:8px 0 10px; border-right:none !important;
     border-bottom:1px solid #e2e8f0 !important; flex-shrink:unset;
@@ -328,6 +345,7 @@ select.admin-input   { cursor: pointer; }
   .cfg-sidebar::-webkit-scrollbar { display:none; }
   .cfg-sidebar > div > p { display:none !important; }
   .cfg-sidebar > div { display:contents; }
+  .cfg-side-btn { width:auto !important; margin-bottom:0 !important; }
 }
 
 /* ── Grid 2 cols → 1 col en móvil ── */
