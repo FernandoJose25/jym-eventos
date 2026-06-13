@@ -50,6 +50,14 @@ export default function MensajesPage() {
     <div style={{ display:'flex', flexDirection:'column', gap:16, height:'calc(100vh - 120px)' }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          {selected && (
+            <button onClick={() => setSelected(null)} className="msg-back-btn"
+                    style={{ display:'none', background:'none', border:'none', cursor:'pointer',
+                              color:'#1e3a5f', fontSize:'1.1rem', padding:'4px 8px', borderRadius:8,
+                              fontFamily:'var(--font-jakarta)', fontWeight:700, alignItems:'center', gap:4 }}>
+              ← Volver
+            </button>
+          )}
           <h1 style={{ fontFamily:'var(--font-playfair)', fontSize:'1.5rem', fontWeight:700, color:'#0a1628', margin:0 }}>Mensajes</h1>
           {noLeidos > 0 && (
             <span style={{ background:'#ef4444', color:'#fff', fontSize:'0.7rem', fontWeight:700, padding:'2px 8px', borderRadius:999 }}>
@@ -63,23 +71,23 @@ export default function MensajesPage() {
         </button>
       </div>
 
-      <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
         <input type="search" placeholder="Buscar nombre, correo, teléfono..." value={busqueda}
-               onChange={e=>setBusqueda(e.target.value)} className="admin-input" style={{ flex:1, minWidth:200 }}/>
-        {(['todos','pendiente','en-revision','cotizado','cerrado'] as const).map(f=>(
-          <button key={f} onClick={()=>setFiltro(f)}
-                  style={{ padding:'0.5rem 1rem', borderRadius:10, fontSize:'0.78rem', fontWeight:600,
-                            cursor:'pointer', border:'none', fontFamily:'var(--font-jakarta)',
-                            background:filtro===f?'#1e3a5f':'#f1f5f9',
-                            color:filtro===f?'#fff':'#64748b' }}>
-            {f==='todos' ? `Todos (${mensajes.length})` : ESTADOS[f]?.label}
-          </button>
-        ))}
+               onChange={e=>setBusqueda(e.target.value)} className="admin-input"/>
+        <div className="chip-scroll">
+          {(['todos','pendiente','en-revision','cotizado','cerrado'] as const).map(f=>(
+            <button key={f} onClick={()=>setFiltro(f)}
+                    className={`chip${filtro===f?' active':''}`}>
+              {f==='todos' ? `Todos (${mensajes.length})` : ESTADOS[f]?.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={{ display:'flex', gap:16, flex:1, minHeight:0 }}>
         {/* Lista */}
-        <div style={{ width:300, flexShrink:0, overflowY:'auto', display:'flex', flexDirection:'column', gap:6 }}>
+        <div className={selected ? 'msg-list msg-list-hidden' : 'msg-list'}
+             style={{ width:300, flexShrink:0, overflowY:'auto', display:'flex', flexDirection:'column', gap:6 }}>
           {loading && [...Array(5)].map((_,i)=>(
             <div key={i} className="skeleton" style={{ height:72, borderRadius:12 }}/>
           ))}
@@ -138,7 +146,8 @@ export default function MensajesPage() {
         </div>
 
         {/* Detalle */}
-        <div style={{ flex:1, background:'#fff', borderRadius:20, border:'1px solid #e2e8f0',
+        <div className={selected ? 'msg-detail msg-detail-active' : 'msg-detail'}
+             style={{ flex:1, background:'#fff', borderRadius:20, border:'1px solid #e2e8f0',
                        overflow:'hidden', display:'flex', flexDirection:'column' }}>
           {!selected ? (
             <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, color:'#94a3b8' }}>
@@ -167,7 +176,7 @@ export default function MensajesPage() {
               </div>
 
               <div style={{ padding:'1.25rem 1.5rem', flex:1, overflowY:'auto' }}>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:20 }}>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))', gap:16, marginBottom:20 }}>
                   {[
                     ['📱 Teléfono',       selected.telefono],
                     ['✉️ Correo',          selected.correo],

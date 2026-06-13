@@ -229,7 +229,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                          boxShadow:'0 2px 8px rgba(212,160,23,.3)', whiteSpace:'nowrap' }}>
               ↗ Ver web
             </a>
-            <div style={{ width:34, height:34, borderRadius:9, background:'linear-gradient(135deg,#1e3a5f,#2563eb)',
+            <div className="topbar-avatar" style={{ width:34, height:34, borderRadius:9, background:'linear-gradient(135deg,#1e3a5f,#2563eb)',
                            display:'flex', alignItems:'center', justifyContent:'center', color:'#fff',
                            fontWeight:700, fontSize:'0.88rem', boxShadow:'0 2px 8px rgba(30,58,95,.3)', flexShrink:0 }}>
               {profile?.nombre?.charAt(0).toUpperCase() || '?'}
@@ -249,16 +249,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .sidebar-mobile{display:none}
         @media(max-width:1023px){
           .sidebar-desktop{display:none!important}
-          .hamburger-btn{display:flex!important;min-width:44px;min-height:44px}
+          .hamburger-btn{display:flex!important;min-width:44px;min-height:44px;align-items:center;justify-content:center}
           .sidebar-mobile{display:block!important}
           .dash-main{padding:1rem!important}
           .dash-topbar{padding:0 1rem!important}
         }
         @media(max-width:640px){
-          .dash-main{padding:0.75rem!important}
-          .dash-topbar{padding:0 0.75rem!important;gap:8px!important}
+          .dash-main{padding:0.625rem!important}
+          .dash-topbar{padding:0 0.625rem!important;gap:6px!important;height:56px!important}
           .topbar-label{display:none!important}
-          .topbar-web-btn{padding:0.4rem 0.6rem!important;font-size:0.72rem!important}
+          .topbar-web-btn{display:none!important}
+          .topbar-avatar{width:30px!important;height:30px!important;font-size:0.78rem!important}
         }
       `}</style>
     </div>
