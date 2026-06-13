@@ -24,15 +24,19 @@ export interface ValidationResult {
 }
 
 export async function validateFile(file: File): Promise<ValidationResult> {
-  // 1. Validar MIME type
-  const mimeOk = ALLOWED_MIME_PREFIXES.some(p => file.type.startsWith(p));
-  if (!mimeOk) return { ok: false, reason: `Tipo MIME no permitido: ${file.type}` };
-
-  // 2. Validar extensión
+  // 1. Validar extensión (fuente de verdad principal)
   const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
     return { ok: false, reason: `Extensión no permitida: .${ext}` };
   }
+
+  // 2. Validar MIME type — permitir application/octet-stream (archivos enviados como
+  //    documento en WhatsApp) si la extensión ya pasó la validación anterior
+  const mimeOk = ALLOWED_MIME_PREFIXES.some(p => file.type.startsWith(p))
+    || file.type === 'application/octet-stream'
+    || file.type === '';
+  if (!mimeOk) return { ok: false, reason: `Tipo MIME no permitido: ${file.type}` };
+
 
   // 3. Validar magic bytes (primeros 8 bytes del archivo real)
   const buffer = await file.slice(0, 8).arrayBuffer();

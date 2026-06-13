@@ -456,6 +456,9 @@ function CropModal({
   );
 }
 
+const IMAGE_EXTS = /\.(jpe?g|png|webp|heic|heif|gif|bmp|tiff?)$/i;
+const VIDEO_EXTS = /\.(mp4|webm|mov|avi|mkv)$/i;
+
 /* ══════════════════════════════════════════ main component ══ */
 export default function ImageUploader({
   value, focal = { x:.5, y:.5 }, folder = 'jym',
@@ -489,7 +492,7 @@ export default function ImageUploader({
   const upload = useCallback(async (file: File, currentFp?: FP) => {
     const useFp = currentFp ?? fp;
     setError(''); setUploading(true); setProgress(0); setQuality(null);
-    const isVideo = file.type.startsWith('video/');
+    const isVideo = file.type.startsWith('video/') || VIDEO_EXTS.test(file.name);
 
     // dimensiones originales
     let origW = 0, origH = 0;
@@ -602,17 +605,40 @@ export default function ImageUploader({
     }
   }, [folder, fp, onComplete]);
 
+  /* ── detectar tipo real por extensión (WhatsApp envía como documento con MIME genérico) ── */
+  const resolveFileType = (file: File): 'image' | 'video' | null => {
+    if (file.type.startsWith('image/')) return 'image';
+    if (file.type.startsWith('video/')) return 'video';
+    // MIME genérico (ej. application/octet-stream desde WhatsApp) → detectar por extensión
+    if (IMAGE_EXTS.test(file.name)) return 'image';
+    if (acceptVideo && VIDEO_EXTS.test(file.name)) return 'video';
+    return null;
+  };
+
   /* ── dropzone ── */
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: acceptVideo
-      ? { 'image/*':['.jpg','.jpeg','.png','.webp','.heic'], 'video/*':['.mp4','.webm','.mov'] }
-      : { 'image/*':['.jpg','.jpeg','.png','.webp','.heic'] },
+      ? {
+          'image/*':               ['.jpg','.jpeg','.png','.webp','.heic','.heif'],
+          'video/*':               ['.mp4','.webm','.mov'],
+          'application/octet-stream': ['.jpg','.jpeg','.png','.webp','.heic','.heif','.mp4','.webm','.mov'],
+        }
+      : {
+          'image/*':               ['.jpg','.jpeg','.png','.webp','.heic','.heif'],
+          'application/octet-stream': ['.jpg','.jpeg','.png','.webp','.heic','.heif'],
+        },
     maxSize: MAX_VIDEO_BYTES,
     multiple: false,
+    validator: (file) => {
+      // Permitir archivos con extensión de imagen/video aunque el MIME sea genérico
+      const kind = resolveFileType(file);
+      if (!kind) return { code: 'file-invalid-type', message: 'Formato no válido.' };
+      return null;
+    },
     onDrop: async (accepted: File[], rejected: FileRejection[]) => {
       if (rejected.length) {
         setError(rejected[0].errors[0].code === 'file-too-large'
-          ? 'El archivo supera el límite.' : 'Formato no válido.');
+          ? 'El archivo supera el límite (100 MB).' : 'Formato no válido. Usa JPG, PNG, WebP o MP4.');
         return;
       }
       const file = accepted[0];
@@ -622,8 +648,9 @@ export default function ImageUploader({
         setError(validation.reason ?? 'Archivo no permitido.');
         return;
       }
+      const kind = resolveFileType(file);
       setQuality(null);
-      if (file.type.startsWith('video/')) {
+      if (kind === 'video') {
         setPreview(URL.createObjectURL(file));
         setPreviewType('video');
         upload(file);
@@ -672,8 +699,8 @@ export default function ImageUploader({
 
   const op        = `${fp.x * 100}% ${fp.y * 100}%`;
   const sizeLabel = acceptVideo
-    ? 'JPEG · PNG · WebP · HEIC (se comprimen) · MP4 · WebM · MOV — Máx 100 MB'
-    : 'JPEG · PNG · WebP · HEIC — se comprimen automáticamente';
+    ? 'JPEG · PNG · WebP · HEIC · MP4 · MOV — Máx 100 MB · Incluye fotos enviadas como documento en WhatsApp'
+    : 'JPEG · PNG · WebP · HEIC — incluye fotos enviadas como documento en WhatsApp';
 
   /* paddingTop trick para mantener aspect ratio */
   const previewPadding = `${(1 / previewAspect) * 100}%`;
