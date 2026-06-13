@@ -313,3 +313,40 @@ select.admin-input   { cursor: pointer; }
   border-color: #0a1628;
 }
 .chip:hover:not(.active) { border-color: #94a3b8; background: #f8fafc; }
+
+/* ── Configuracion layout: 2 paneles → columna en móvil ── */
+.cfg-layout { display:flex; gap:20px; }
+.cfg-sidebar { width:210px; flex-shrink:0; }
+@media(max-width:768px){
+  .cfg-layout { flex-direction:column; gap:0; }
+  .cfg-sidebar {
+    width:100%; display:flex; flex-direction:row; gap:6px;
+    overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+    padding:8px 0 10px; border-right:none !important;
+    border-bottom:1px solid #e2e8f0 !important; flex-shrink:unset;
+  }
+  .cfg-sidebar::-webkit-scrollbar { display:none; }
+  .cfg-sidebar > div > p { display:none !important; }
+  .cfg-sidebar > div { display:contents; }
+}
+
+/* ── Grid 2 cols → 1 col en móvil ── */
+.cfg-2col { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:640px){ .cfg-2col { grid-template-columns:1fr !important; } }
+
+/* ── Grid 3 cols → 1 col en móvil ── */
+.cfg-3col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+@media(max-width:640px){ .cfg-3col { grid-template-columns:1fr !important; } }
+
+/* ── Charts responsive ── */
+.charts-2col  { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr); gap:14px; }
+.charts-equal { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.charts-3col  { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+@media(max-width:768px){
+  .charts-2col  { grid-template-columns:1fr !important; }
+  .charts-equal { grid-template-columns:1fr !important; }
+  .charts-3col  { grid-template-columns:repeat(2,1fr) !important; }
+}
+@media(max-width:480px){
+  .charts-3col { grid-template-columns:1fr !important; }
+}

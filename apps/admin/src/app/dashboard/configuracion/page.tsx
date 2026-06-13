@@ -685,7 +685,7 @@ export default function ConfiguracionPage() {
             {mi('Nombre','name','Destacado')}
             {mi('CTA botón','cta','Elegir')}
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+          <div className="cfg-2col" style={{ gap:12 }}>
             {mi('Precio','price','S/. 350')}
             {mi('Período','period','/mes')}
           </div>
@@ -799,10 +799,10 @@ export default function ConfiguracionPage() {
         )}
       </div>
 
-      <div style={{ display:'flex', gap:20 }}>
+      <div className="cfg-layout">
 
         {/* Left sidebar */}
-        <div style={{ width:210, flexShrink:0 }}>
+        <div className="cfg-sidebar">
           {(() => {
             const groups = [...new Set(SECTIONS.map(s => s.group||''))];
             return groups.map(g => (
@@ -859,7 +859,7 @@ export default function ConfiguracionPage() {
                   <F label="Eyebrow (texto sobre el H1)" fieldKey="eyebrow" value={data.eyebrow||''} onChange={handleField} placeholder="Organizamos tu momento especial"/>
                   <F label='H1 — usa <em>texto</em> para color dorado' fieldKey="h1" value={data.h1||''} onChange={handleField} placeholder='Eventos que dejan <em>huella</em>'/>
                   <F label="Descripción" fieldKey="desc" value={data.desc||''} onChange={handleField} type="textarea" rows={3} placeholder="Somos expertos en transformar cada celebración..."/>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                  <div className="cfg-2col" style={{ gap:16 }}>
                     <F label="Texto botón 1" fieldKey="btn1Text" value={data.btn1Text||''} onChange={handleField} placeholder="Ver Servicios"/>
                     <F label="URL botón 1"   fieldKey="btn1Link" value={data.btn1Link||''} onChange={handleField} placeholder="/#servicios"/>
                     <F label="Texto botón 2" fieldKey="btn2Text" value={data.btn2Text||''} onChange={handleField} placeholder="Cotizar por WhatsApp"/>
@@ -943,11 +943,11 @@ export default function ConfiguracionPage() {
                   <F label="Párrafo 1" fieldKey="p1" value={data.p1||''} onChange={handleField} type="textarea" rows={3} placeholder="Somos una empresa especializada en..."/>
                   <F label="Párrafo 2" fieldKey="p2" value={data.p2||''} onChange={handleField} type="textarea" rows={3} placeholder="Con más de una década de experiencia..."/>
                   <F label="Párrafo 3" fieldKey="p3" value={data.p3||''} onChange={handleField} type="textarea" rows={3} placeholder="Nuestro compromiso con la calidad..."/>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                  <div className="cfg-2col" style={{ gap:16 }}>
                     <F label="Número del badge (ej: +10)" fieldKey="badgeNum" value={data.badgeNum||''} onChange={handleField} placeholder="+10"/>
                     <F label="Texto del badge" fieldKey="badgeTxt" value={data.badgeTxt||''} onChange={handleField} placeholder="Años de Experiencia"/>
                   </div>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
+                  <div className="cfg-2col" style={{ gap:20 }}>
                     <ImageUploader label="Imagen / Video principal" folder="configuracion/about"
                       value={data.img1} focal={{ x:0.5, y:0.4 }} acceptVideo={true}
                       soundEnabled={!!data.img1Sound} onSound={v=>set('img1Sound',v)}
@@ -1015,7 +1015,7 @@ export default function ConfiguracionPage() {
                   <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
                     <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Historia / Timeline</legend>
                     <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                      <div className="cfg-2col" style={{ gap:12 }}>
                         <F label="Subtítulo sección" fieldKey="histSubtitle" value={data.histSubtitle||''} onChange={handleField} placeholder="Nuestra trayectoria"/>
                         <F label="H2 (parte dorada)" fieldKey="histH2Gold" value={data.histH2Gold||''} onChange={handleField} placeholder="construyendo magia"/>
                       </div>
@@ -1073,7 +1073,7 @@ export default function ConfiguracionPage() {
                       <F label="Badge" fieldKey="ctaBadge" value={data.ctaBadge||''} onChange={handleField} placeholder="¿Lista tu celebración?"/>
                       <F label="Título H2" fieldKey="ctaH2" value={data.ctaH2||''} onChange={handleField} placeholder="Tu evento soñado comienza aquí"/>
                       <F label="Descripción" fieldKey="ctaDesc" value={data.ctaDesc||''} onChange={handleField} type="textarea" rows={2} placeholder="Contáctanos y hagamos realidad tu evento soñado..."/>
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                      <div className="cfg-2col" style={{ gap:12 }}>
                         <F label="Texto botón 1" fieldKey="ctaBtn1" value={data.ctaBtn1||''} onChange={handleField} placeholder="✨ Empezar a planear"/>
                         <F label="URL botón 1"   fieldKey="ctaBtn1Url" value={data.ctaBtn1Url||''} onChange={handleField} placeholder="/contacto"/>
                         <F label="Texto botón 2" fieldKey="ctaBtn2" value={data.ctaBtn2||''} onChange={handleField} placeholder="💬 Hablar por WhatsApp"/>
@@ -1165,7 +1165,7 @@ export default function ConfiguracionPage() {
                   <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:10, padding:'0.75rem 1rem' }}>
                     <p style={{ fontSize:'0.8rem', color:'#1e40af', margin:0 }}>📞 Esta información aparece en la sección de contacto de la web y en el footer.</p>
                   </div>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                  <div className="cfg-2col" style={{ gap:16 }}>
                     <F label="Teléfono (mostrar)" fieldKey="telefono" value={data.telefono||''} onChange={handleField} placeholder="+51 945 203 708"/>
                     <F label="WhatsApp (solo números)" fieldKey="whatsapp" value={data.whatsapp||''} onChange={handleField} placeholder="51945203708"/>
                     <F label="Correo electrónico" fieldKey="email" value={data.email||''} onChange={handleField} type="email" placeholder="jm@gmail.com"/>
@@ -1174,7 +1174,7 @@ export default function ConfiguracionPage() {
                   </div>
                   <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
                     <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Redes Sociales</legend>
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                    <div className="cfg-2col" style={{ gap:16 }}>
                       <F label="Instagram URL" fieldKey="instagram" value={data.instagram||''} onChange={handleField} placeholder="https://instagram.com/jymeventos"/>
                       <F label="Facebook URL" fieldKey="facebook" value={data.facebook||''} onChange={handleField} placeholder="https://facebook.com/jymeventos"/>
                       <F label="TikTok URL" fieldKey="tiktok" value={data.tiktok||''} onChange={handleField} placeholder="https://tiktok.com/@jymeventos"/>
@@ -1183,7 +1183,7 @@ export default function ConfiguracionPage() {
                   </fieldset>
                   <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
                     <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Ubicación en Google Maps</legend>
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                    <div className="cfg-2col" style={{ gap:16 }}>
                       <F label="Latitud" fieldKey="mapsLat" value={data.mapsLat||''} onChange={handleField} placeholder="-5.5566"/>
                       <F label="Longitud" fieldKey="mapsLng" value={data.mapsLng||''} onChange={handleField} placeholder="-80.8234"/>
                     </div>
@@ -1223,7 +1223,7 @@ export default function ConfiguracionPage() {
                   <F label="Descripción de la empresa (columna izquierda)" fieldKey="desc" type="textarea" rows={3}
                      value={data.desc||''} onChange={handleField}
                      placeholder="En cada evento, cuidamos cada detalle para que tú solo te encargues de disfrutar..."/>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                  <div className="cfg-2col" style={{ gap:16 }}>
                     <F label="Localidad (ej: Sechura)" fieldKey="tagline" value={data.tagline||''} onChange={handleField} placeholder="Sechura"/>
                     <F label="Año de fundación" fieldKey="foundedYear" value={data.foundedYear||''} onChange={handleField} placeholder="2018"/>
                   </div>
@@ -1250,7 +1250,7 @@ export default function ConfiguracionPage() {
                   <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
                     <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Marca</legend>
                     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                      <div className="cfg-2col" style={{ gap:16 }}>
                         <F label="Número WhatsApp (con código país)" fieldKey="phoneNumber" value={data.phoneNumber||''} onChange={handleField} placeholder="51945203708"/>
                         <div>
                           {lbl('Color primario de la marca')}
@@ -1273,7 +1273,7 @@ export default function ConfiguracionPage() {
 
                   <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
                     <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Botón flotante</legend>
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                    <div className="cfg-2col" style={{ gap:16 }}>
                       <div>
                         {lbl('Color del botón')}
                         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
@@ -1324,7 +1324,7 @@ export default function ConfiguracionPage() {
                     <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Hero</legend>
                     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
                       <F label="Badge (texto etiqueta dorada)" fieldKey="heroBadge" value={data.heroBadge||''} onChange={handleField} placeholder="Publicidad &amp; Patrocinios"/>
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                      <div className="cfg-2col" style={{ gap:12 }}>
                         <F label="Título línea 1" fieldKey="heroTitle1" value={data.heroTitle1||''} onChange={handleField} placeholder="Llega a miles de familias"/>
                         <F label="Título dorado (línea 2)" fieldKey="heroTitleGold" value={data.heroTitleGold||''} onChange={handleField} placeholder="que celebran"/>
                       </div>
@@ -1354,7 +1354,7 @@ export default function ConfiguracionPage() {
                   <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
                     <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Por qué anunciar aquí</legend>
                     <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                      <div className="cfg-2col" style={{ gap:12 }}>
                         <F label="Badge texto" fieldKey="benefitsBadge" value={data.benefitsBadge||''} onChange={handleField} placeholder="Por qué anunciar aquí"/>
                         <F label="Título sección" fieldKey="benefitsTitle" value={data.benefitsTitle||''} onChange={handleField} placeholder="Tu marca, en el momento exacto"/>
                       </div>
@@ -1393,7 +1393,7 @@ export default function ConfiguracionPage() {
                     <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
                       <F label="Título" fieldKey="ctaTitle" value={data.ctaTitle||''} onChange={handleField} placeholder="¿Listo para crecer con J&M?"/>
                       <F label="Descripción" fieldKey="ctaDesc" value={data.ctaDesc||''} onChange={handleField} type="textarea" rows={2} placeholder="Contáctanos y diseñemos juntos el plan perfecto..."/>
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                      <div className="cfg-2col" style={{ gap:12 }}>
                         <F label="Botón 1 texto" fieldKey="ctaBtn1" value={data.ctaBtn1||''} onChange={handleField} placeholder="✉️ Enviar propuesta"/>
                         <F label="Botón 1 URL" fieldKey="ctaBtn1Url" value={data.ctaBtn1Url||''} onChange={handleField} placeholder="/contacto"/>
                         <F label="Botón 2 texto" fieldKey="ctaBtn2" value={data.ctaBtn2||''} onChange={handleField} placeholder="💬 WhatsApp"/>
@@ -1588,7 +1588,7 @@ export default function ConfiguracionPage() {
       >
         {testModal && (
           <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            <div className="cfg-2col" style={{ gap:12 }}>
               <div>
                 {lbl('Nombre *')}
                 <input type="text" value={testModal.form.name||''} onChange={e=>setTestModal(p=>p?{...p,form:{...p.form,name:e.target.value}}:null)}

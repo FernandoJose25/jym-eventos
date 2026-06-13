@@ -176,15 +176,15 @@ export default function ServiceContentPage() {
             </div>
           </div>
         </div>
-        <div style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
-          <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+        <div style={{ display:'flex', gap:10, alignItems:'flex-start', flexWrap:'wrap' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:4, flex:'1 1 260px', minWidth:0 }}>
             <textarea
               rows={2}
               value={srvData.aiInstrucciones || ''}
               onChange={e => set('aiInstrucciones', e.target.value)}
               placeholder="Instrucciones para la IA (opcional): ej. «enfócate en quinceañeros», «incluye paquetes», «tono más formal»…"
               className="admin-input"
-              style={{ width:340, resize:'vertical', fontSize:'0.78rem', minHeight:52 }}
+              style={{ width:'100%', maxWidth:340, resize:'vertical', fontSize:'0.78rem', minHeight:52 }}
             />
           </div>
           <button onClick={handleGenerate} disabled={generating}
@@ -192,7 +192,7 @@ export default function ServiceContentPage() {
             <Sparkles size={15}/> {generating ? 'Generando…' : '✨ Generar con IA'}
           </button>
           <button onClick={handleSave} disabled={saving}
-            style={{ display:'flex', alignItems:'center', gap:8, padding:'0.6rem 1.25rem', background:'linear-gradient(135deg,#1e3a5f,#2563eb)', color:'#fff', border:'none', borderRadius:12, fontWeight:700, fontSize:'0.85rem', cursor:'pointer', opacity:saving?0.6:1, fontFamily:'var(--font-jakarta)' }}>
+            style={{ display:'flex', alignItems:'center', gap:8, padding:'0.6rem 1.25rem', background:'linear-gradient(135deg,#1e3a5f,#2563eb)', color:'#fff', border:'none', borderRadius:12, fontWeight:700, fontSize:'0.85rem', cursor:'pointer', opacity:saving?0.6:1, fontFamily:'var(--font-jakarta)', flexShrink:0 }}>
             <Save size={16}/> {saving ? 'Guardando…' : 'Guardar servicio'}
           </button>
         </div>
