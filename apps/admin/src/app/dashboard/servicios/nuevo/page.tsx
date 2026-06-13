@@ -17,6 +17,7 @@ export default function NuevoServicioPage() {
   const [aiDetail,   setAiDetail]   = useState<any>(null);
   const [form,       setForm]       = useState({
     title:     '',
+    slug:      '',
     icon:      '🎉',
     desc:      '',
     order:     10,
@@ -64,7 +65,7 @@ export default function NuevoServicioPage() {
     if (!form.title.trim()) { toast.error('El nombre del servicio es requerido'); return; }
     setSaving(true);
     try {
-      const slug    = slugify(form.title);
+      const slug    = form.slug?.trim() || slugify(form.title);
       const link    = `servicios/${slug}.html`;
       const docId   = slug;
       await setDoc(doc(db, COL.SERVICIOS, docId), {
@@ -124,11 +125,27 @@ export default function NuevoServicioPage() {
               <Sparkles size={14}/> {generating ? 'Generando…' : aiDetail ? '✓ Generado' : 'IA'}
             </button>
           </div>
-          {form.title && (
-            <p style={{ fontSize:'0.72rem', color:'#94a3b8', marginTop:4 }}>
-              Slug: <strong>{slugify(form.title)}</strong> · URL: /servicios/{slugify(form.title)}
+          <div style={{ marginTop:10 }}>
+            <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:4 }}>
+              URL pública <span style={{ color:'#94a3b8', fontWeight:400, textTransform:'none', letterSpacing:0 }}>(opcional — se genera del nombre si se deja vacío)</span>
+            </label>
+            <div style={{ display:'flex', alignItems:'center', background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:10, overflow:'hidden' }}>
+              <span style={{ padding:'0.5rem 0.75rem', background:'#f1f5f9', color:'#94a3b8', fontSize:'0.75rem', borderRight:'1px solid #e2e8f0', whiteSpace:'nowrap', flexShrink:0 }}>
+                /servicios/
+              </span>
+              <input
+                type="text"
+                value={form.slug}
+                onChange={e=>set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-'))}
+                className="admin-input"
+                style={{ border:'none', borderRadius:0, background:'transparent', flex:1 }}
+                placeholder={form.title ? slugify(form.title) : 'bm-vogue'}
+              />
+            </div>
+            <p style={{ fontSize:'0.68rem', color:'#94a3b8', marginTop:3 }}>
+              URL final: <strong>/servicios/{form.slug || (form.title ? slugify(form.title) : '…')}</strong>
             </p>
-          )}
+          </div>
           {aiDetail && (
             <p style={{ fontSize:'0.78rem', color:'#059669', marginTop:4, display:'flex', alignItems:'center', gap:4 }}>
               ✨ Contenido de IA listo — se guardará junto con el servicio

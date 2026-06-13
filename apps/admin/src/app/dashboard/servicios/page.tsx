@@ -22,18 +22,26 @@ export default function ServiciosPage() {
 
   const startEdit = (s: any) => {
     setEditingId(s.id);
-    setEditData({ title:s.title, icon:s.icon||'🎉', desc:s.desc||'', order:s.order||1 });
+    const currentSlug = s.link
+      ? s.link.replace('servicios/','').replace('.html','')
+      : s.id;
+    setEditData({ title:s.title, icon:s.icon||'🎉', desc:s.desc||'', order:s.order||1, slug:currentSlug });
   };
 
   const cancelEdit = () => { setEditingId(null); setEditData({}); };
 
   const saveEdit = async (id: string) => {
     if (!editData.title?.trim()) { toast.error('El nombre es requerido'); return; }
+    const cleanSlug = (editData.slug||'').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+    if (!cleanSlug) { toast.error('La URL no puede estar vacía'); return; }
     const payload: any = {
       title: editData.title.trim(),
       icon:  editData.icon,
       desc:  editData.desc,
       order: Number(editData.order) || 1,
+      link:  `servicios/${cleanSlug}.html`,
     };
     if (editData.mediaSrc)  payload.mediaSrc   = editData.mediaSrc;
     if (editData.mediaType) payload.mediaType  = editData.mediaType;
@@ -123,6 +131,27 @@ export default function ServiciosPage() {
                         <input type="text" value={editData.title}
                                onChange={e=>setEditData((p:any)=>({...p,title:e.target.value}))}
                                className="admin-input"/>
+                      </div>
+                      <div style={{ gridColumn:'1 / -1' }}>
+                        <label style={{ fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', color:'#94a3b8', display:'block', marginBottom:4 }}>
+                          URL pública del servicio
+                        </label>
+                        <div style={{ display:'flex', alignItems:'center', gap:0, background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:10, overflow:'hidden' }}>
+                          <span style={{ padding:'0.5rem 0.75rem', background:'#f1f5f9', color:'#94a3b8', fontSize:'0.75rem', borderRight:'1px solid #e2e8f0', whiteSpace:'nowrap', flexShrink:0 }}>
+                            /servicios/
+                          </span>
+                          <input
+                            type="text"
+                            value={editData.slug||''}
+                            onChange={e=>setEditData((p:any)=>({...p,slug:e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-')}))}
+                            className="admin-input"
+                            style={{ border:'none', borderRadius:0, background:'transparent', flex:1 }}
+                            placeholder="bm-vogue"
+                          />
+                        </div>
+                        <p style={{ fontSize:'0.68rem', color:'#94a3b8', marginTop:3 }}>
+                          URL final: <strong>/servicios/{editData.slug||'…'}</strong>
+                        </p>
                       </div>
                       <div className="col-desc">
                         <label style={{ fontSize:'0.65rem', fontWeight:700, textTransform:'uppercase', color:'#94a3b8', display:'block', marginBottom:4 }}>Descripción</label>
