@@ -512,7 +512,7 @@ export default function ImageUploader({
           setProgress(10);
           fileToUpload = await imageCompression(file, {
             maxSizeMB:8, maxWidthOrHeight:2400,
-            useWebWorker:true, fileType:'image/webp', initialQuality:0.85,
+            useWebWorker:true, fileType:'image/webp', initialQuality:0.95,
             onProgress: p => setProgress(10 + Math.round(p * 0.3)),
           }) as File;
         } catch { /* falla compresión → sube original */ }
