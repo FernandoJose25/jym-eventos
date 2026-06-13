@@ -784,7 +784,7 @@ export default function ConfiguracionPage() {
      RENDER
   ═══════════════════════════════════════════════════ */
   return (
-    <div style={{ maxWidth:960, margin:'0 auto', width:'100%', minWidth:0 }}>
+    <div style={{ maxWidth:960, margin:'0 auto', width:'100%', minWidth:0, boxSizing:'border-box' }}>
 
       {/* Page header */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24, flexWrap:'wrap', gap:12 }}>

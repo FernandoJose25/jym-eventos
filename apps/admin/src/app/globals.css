@@ -14,8 +14,16 @@
 html { scroll-behavior: smooth; }
 body { font-family: var(--font-jakarta); -webkit-font-smoothing: antialiased; }
 
-/* Evitar scroll horizontal en todo el admin */
+/* ── Fix sistémico de overflow horizontal ── */
+/* 1. Cortar overflow en html/body */
 html, body { max-width: 100%; overflow-x: hidden; }
+
+/* 2. fieldset tiene min-width:min-content por defecto en todos los browsers —
+      esto hace que se expanda más allá de su padre. Fix obligatorio: */
+fieldset { min-width: 0; width: 100%; }
+
+/* 3. Inputs/textareas nunca deben exceder su padre */
+input, textarea, select { max-width: 100%; }
 
 /* ── Admin inputs ── */
 .admin-input {

@@ -160,7 +160,7 @@ export default function ServiceContentPage() {
   );
 
   return (
-    <div style={{ maxWidth:900, margin:'0 auto' }}>
+    <div style={{ maxWidth:900, margin:'0 auto', width:'100%', minWidth:0, boxSizing:'border-box' }}>
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20, flexWrap:'wrap', width:'100%' }}>
         <button onClick={() => router.back()}
