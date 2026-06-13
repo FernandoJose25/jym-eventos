@@ -150,7 +150,7 @@ export default function Footer() {
             </div>
 
             {/* Redes sociales */}
-            <div style={{ display:'flex', gap:10, marginTop:20 }}>
+            <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'center', flexWrap:'wrap' }}>
               {([
                 {
                   bg:'linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)',
