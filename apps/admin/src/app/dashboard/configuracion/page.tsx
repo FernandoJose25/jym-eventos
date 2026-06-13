@@ -769,14 +769,14 @@ export default function ConfiguracionPage() {
      Sidebar button
   ───────────────────────────────────────────────────── */
   const SideBtn = ({ s }: { s:typeof SECTIONS[0] }) => (
-    <button onClick={() => setSection(s.id)}
-            style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'0.55rem 0.75rem',
+    <button onClick={() => setSection(s.id)} className="cfg-side-btn"
+            style={{ display:'flex', alignItems:'center', gap:6, padding:'0.45rem 0.65rem',
                       borderRadius:9, border: section===s.id ? '1px solid rgba(30,58,95,.2)' : '1px solid transparent',
-                      cursor:'pointer', marginBottom:2, textAlign:'left', fontFamily:'var(--font-jakarta)',
-                      fontSize:'0.8rem', fontWeight: section===s.id ? 600 : 400,
+                      cursor:'pointer', fontFamily:'var(--font-jakarta)', whiteSpace:'nowrap', flexShrink:0,
+                      fontSize:'0.78rem', fontWeight: section===s.id ? 600 : 400,
                       background: section===s.id ? 'rgba(30,58,95,.08)' : 'transparent',
                       color: section===s.id ? '#1e3a5f' : '#64748b' }}>
-      <span style={{ fontSize:'0.9rem' }}>{s.icon}</span><span>{s.label}</span>
+      <span style={{ fontSize:'0.85rem' }}>{s.icon}</span><span>{s.label}</span>
     </button>
   );
 
@@ -784,7 +784,7 @@ export default function ConfiguracionPage() {
      RENDER
   ═══════════════════════════════════════════════════ */
   return (
-    <div style={{ maxWidth:960, margin:'0 auto' }}>
+    <div style={{ maxWidth:960, margin:'0 auto', width:'100%', minWidth:0 }}>
 
       {/* Page header */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24, flexWrap:'wrap', gap:12 }}>
@@ -818,7 +818,7 @@ export default function ConfiguracionPage() {
         </div>
 
         {/* Content panel */}
-        <div className="admin-card" style={{ flex:1, padding:'1.5rem' }}>
+        <div className="admin-card cfg-content-card" style={{ flex:1, padding:'1.5rem', minWidth:0 }}>
           {loading ? (
             <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
               {[...Array(4)].map((_,i) => <div key={i} className="skeleton" style={{ height:52, borderRadius:8 }}/>)}

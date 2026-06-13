@@ -162,38 +162,38 @@ export default function ServiceContentPage() {
   return (
     <div style={{ maxWidth:900, margin:'0 auto' }}>
       {/* Header */}
-      <div style={{ display:'flex', alignItems:'center', gap:16, marginBottom:28, flexWrap:'wrap' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20, flexWrap:'wrap', width:'100%' }}>
         <button onClick={() => router.back()}
-          style={{ display:'flex', alignItems:'center', gap:6, background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'0.5rem 0.875rem', cursor:'pointer', color:'#64748b', fontSize:'0.82rem', fontWeight:500 }}>
+          style={{ display:'flex', alignItems:'center', gap:6, background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'0.5rem 0.875rem', cursor:'pointer', color:'#64748b', fontSize:'0.82rem', fontWeight:500, flexShrink:0 }}>
           <ArrowLeft size={15}/> Volver
         </button>
-        <div style={{ flex:1 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <span style={{ fontSize:'1.8rem' }}>{srvData.icon||'🎉'}</span>
-            <div>
-              <h1 style={{ fontFamily:'var(--font-playfair)', fontSize:'1.4rem', fontWeight:700, color:'#0a1628', margin:0 }}>{srvData.title||'Servicio'}</h1>
-              <p style={{ color:'#64748b', fontSize:'0.78rem', margin:0 }}>Editando contenido del servicio</p>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ fontSize:'1.5rem', flexShrink:0 }}>{srvData.icon||'🎉'}</span>
+            <div style={{ minWidth:0 }}>
+              <h1 style={{ fontFamily:'var(--font-playfair)', fontSize:'1.2rem', fontWeight:700, color:'#0a1628', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{srvData.title||'Servicio'}</h1>
+              <p style={{ color:'#64748b', fontSize:'0.75rem', margin:0 }}>Editando contenido del servicio</p>
             </div>
           </div>
         </div>
-        <div style={{ display:'flex', gap:10, alignItems:'flex-start', flexWrap:'wrap' }}>
-          <div style={{ display:'flex', flexDirection:'column', gap:4, flex:'1 1 260px', minWidth:0 }}>
+        <div className="srv-header-actions" style={{ display:'flex', gap:10, alignItems:'flex-start', flexWrap:'wrap', width:'100%' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:4, flex:'1 1 200px', minWidth:0 }}>
             <textarea
               rows={2}
               value={srvData.aiInstrucciones || ''}
               onChange={e => set('aiInstrucciones', e.target.value)}
-              placeholder="Instrucciones para la IA (opcional): ej. «enfócate en quinceañeros», «incluye paquetes», «tono más formal»…"
+              placeholder="Instrucciones para la IA (opcional)…"
               className="admin-input"
-              style={{ width:'100%', maxWidth:340, resize:'vertical', fontSize:'0.78rem', minHeight:52 }}
+              style={{ width:'100%', resize:'vertical', fontSize:'0.78rem', minHeight:52 }}
             />
           </div>
           <button onClick={handleGenerate} disabled={generating}
-            style={{ display:'flex', alignItems:'center', gap:7, padding:'0.6rem 1.1rem', background:'linear-gradient(135deg,#7c3aed,#a855f7)', color:'#fff', border:'none', borderRadius:12, fontWeight:700, fontSize:'0.82rem', cursor:'pointer', opacity:generating?0.6:1, fontFamily:'var(--font-jakarta)', flexShrink:0, marginTop:2 }}>
-            <Sparkles size={15}/> {generating ? 'Generando…' : '✨ Generar con IA'}
+            style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:7, padding:'0.6rem 1.1rem', background:'linear-gradient(135deg,#7c3aed,#a855f7)', color:'#fff', border:'none', borderRadius:12, fontWeight:700, fontSize:'0.82rem', cursor:'pointer', opacity:generating?0.6:1, fontFamily:'var(--font-jakarta)', flexShrink:0 }}>
+            <Sparkles size={15}/> {generating ? 'Generando…' : '✨ IA'}
           </button>
           <button onClick={handleSave} disabled={saving}
-            style={{ display:'flex', alignItems:'center', gap:8, padding:'0.6rem 1.25rem', background:'linear-gradient(135deg,#1e3a5f,#2563eb)', color:'#fff', border:'none', borderRadius:12, fontWeight:700, fontSize:'0.85rem', cursor:'pointer', opacity:saving?0.6:1, fontFamily:'var(--font-jakarta)', flexShrink:0 }}>
-            <Save size={16}/> {saving ? 'Guardando…' : 'Guardar servicio'}
+            style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'0.6rem 1.25rem', background:'linear-gradient(135deg,#1e3a5f,#2563eb)', color:'#fff', border:'none', borderRadius:12, fontWeight:700, fontSize:'0.85rem', cursor:'pointer', opacity:saving?0.6:1, fontFamily:'var(--font-jakarta)', flexShrink:0 }}>
+            <Save size={16}/> {saving ? 'Guardando…' : 'Guardar'}
           </button>
         </div>
       </div>

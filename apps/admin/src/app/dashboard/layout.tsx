@@ -212,7 +212,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Main */}
-      <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0 }}>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0, overflow:'hidden' }}>
         {/* Topbar */}
         <header className="dash-topbar" style={{ height:'var(--jym-topbar-h)', background:'#fff', borderBottom:'1px solid #e2e8f0',
                            display:'flex', alignItems:'center', padding:'0 1.5rem', gap:12,
@@ -248,7 +248,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="dash-main" style={{ flex:1, padding:'1.5rem', maxWidth:1400, width:'100%', margin:'0 auto', boxSizing:'border-box' }}>
+        <main className="dash-main" style={{ flex:1, padding:'1.5rem', maxWidth:1400, width:'100%', margin:'0 auto', boxSizing:'border-box', overflowX:'hidden', minWidth:0 }}>
           {children}
         </main>
       </div>
