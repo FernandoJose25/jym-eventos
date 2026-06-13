@@ -3,8 +3,7 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { collection, getDocs, where, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { cxHero, cxCard, cxVideo, cxFull, cxShareVideo } from '@/lib/cloudinary';
-import { ShareBar } from '@/components/ui/ShareBar';
+import { cxHero, cxCard, cxVideo } from '@/lib/cloudinary';
 
 const SERVICIOS_DATA: Record<string, any> = {
   'shows-infantiles': {
@@ -326,12 +325,9 @@ export default function ServicioPage() {
   const [mediaError, setMediaError] = useState(false);
   const [statsVisible, setStatsVisible] = useState(false);
   const [visibleCards, setVisibleCards] = useState<Set<string>>(new Set());
-  const [galeria, setGaleria] = useState<any[]>([]);
-  const [lightbox, setLightbox] = useState<number | null>(null);
   const [otrosServicios, setOtrosServicios] = useState<any[]>([]);
   const statsRef   = useRef<HTMLDivElement>(null);
   const videoRef   = useRef<HTMLVideoElement>(null);
-  const autoOpened = useRef(false);
 
   const c1 = useCounter(200, 1600, statsVisible);
   const c2 = useCounter(5, 1200, statsVisible);
@@ -376,45 +372,6 @@ export default function ServicioPage() {
     };
     load();
   }, [rawSlug]);
-
-  // Load gallery items for this service category
-  useEffect(() => {
-    if (!servicio?.title) return;
-    getDocs(query(
-      collection(db, 'gallery_items'),
-      where('categoria', '==', servicio.title),
-    ))
-      .then(snap => {
-        const items = snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter((d: any) => d.visible !== false)
-          .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
-        setGaleria(items);
-      })
-      .catch(console.error);
-  }, [servicio?.title]);
-
-  // Auto-open lightbox when URL contains ?foto=ID (deep link from share)
-  useEffect(() => {
-    if (autoOpened.current || galeria.length === 0) return;
-    const fotoId = new URLSearchParams(window.location.search).get('foto');
-    if (!fotoId) return;
-    const idx = galeria.findIndex((i: any) => i.id === fotoId);
-    if (idx !== -1) { autoOpened.current = true; setLightbox(idx); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [galeria]);
-
-  // Lightbox keyboard nav
-  useEffect(() => {
-    if (lightbox === null) return;
-    const h = (e: KeyboardEvent) => {
-      if (e.key === 'Escape')      setLightbox(null);
-      if (e.key === 'ArrowRight')  setLightbox(p => ((p! + 1) % galeria.length));
-      if (e.key === 'ArrowLeft')   setLightbox(p => ((p! - 1 + galeria.length) % galeria.length));
-    };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [lightbox, galeria.length]);
 
   // Stats intersection observer
   useEffect(() => {
@@ -933,230 +890,6 @@ export default function ServicioPage() {
             </div>
           </div>
         </section>
-      )}
-
-      {/* ═══════════════════════════════════════════
-          GALERÍA DEL SERVICIO — imágenes de la categoría
-      ═══════════════════════════════════════════ */}
-      {galeria.length > 0 && (
-        <section style={{ padding: 'clamp(5rem,9vw,8rem) 0', background: '#0a1628', position: 'relative', overflow: 'hidden' }}>
-          {/* Fondo decorativo */}
-          <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(rgba(212,160,23,0.04) 1px,transparent 1px)', backgroundSize:'32px 32px', pointerEvents:'none' }}/>
-          <div style={{ position:'absolute', top:-200, right:-200, width:600, height:600, borderRadius:'50%', background:`radial-gradient(circle,${accentColor}08 0%,transparent 65%)`, pointerEvents:'none', animation:'heroOrb 10s ease-in-out infinite alternate' }}/>
-
-          <div className="container" style={{ position:'relative', zIndex:2 }}>
-            {/* Header */}
-            <div style={{ textAlign:'center', marginBottom:'clamp(2.5rem,5vw,4rem)', animation:'fadeSlideUp .6s ease both' }}>
-              <div style={{ display:'inline-flex', alignItems:'center', gap:8, marginBottom:'1rem',
-                             padding:'0.4rem 1.5rem', borderRadius:9999,
-                             background:`${accentColor}18`, border:`1px solid ${accentColor}40`,
-                             color:'#f5c842', fontSize:'0.68rem', fontWeight:700,
-                             textTransform:'uppercase', letterSpacing:'.14em', fontFamily:'var(--font-jakarta)' }}>
-                📸 Momentos reales
-              </div>
-              <h2 style={{ fontFamily:'var(--font-playfair)', fontSize:'clamp(1.9rem,3vw,3rem)',
-                            color:'#fff', margin:0, letterSpacing:'-.03em' }}>
-                Galería de <em style={{ color:'#d4a017', fontStyle:'italic' }}>{title}</em>
-              </h2>
-              <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.9rem', marginTop:'0.75rem', fontFamily:'var(--font-jakarta)' }}>
-                {galeria.length} foto{galeria.length !== 1 ? 's' : ''} · Haz clic para ampliar
-              </p>
-            </div>
-
-            {/* Masonry grid */}
-            <div style={{ columns:'3 220px', gap:'1rem' }}>
-              {galeria.map((item, i) => {
-                const isVid = item.tipo === 'video' || !!item.url?.match(/\.(mp4|webm|mov)(\?|$)/i);
-                const fp = `${(item.focalX ?? 0.5) * 100}% ${(item.focalY ?? 0.5) * 100}%`;
-                return (
-                  <div key={item.id}
-                       onClick={() => setLightbox(i)}
-                       style={{
-                         breakInside:'avoid', marginBottom:'1rem',
-                         borderRadius:16, overflow:'hidden', cursor:'zoom-in',
-                         position:'relative', background:'#0c1e30',
-                         boxShadow:'0 4px 20px rgba(0,0,0,0.3)',
-                         animation:`galFadeIn .5s ${i * 0.07}s ease both`,
-                         transition:'transform .35s cubic-bezier(0.23,1,0.32,1), box-shadow .35s ease',
-                       }}
-                       onMouseEnter={e => {
-                         const el = e.currentTarget as HTMLElement;
-                         el.style.transform = 'translateY(-6px) scale(1.02)';
-                         el.style.boxShadow = `0 20px 48px rgba(0,0,0,0.45), 0 0 0 1px ${accentColor}50`;
-                         const ov = el.querySelector('.srv-gal-ov') as HTMLElement | null;
-                         const zm = el.querySelector('.srv-gal-zoom') as HTMLElement | null;
-                         if (ov) ov.style.opacity = '1';
-                         if (zm) zm.style.opacity = '1';
-                       }}
-                       onMouseLeave={e => {
-                         const el = e.currentTarget as HTMLElement;
-                         el.style.transform = '';
-                         el.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
-                         const ov = el.querySelector('.srv-gal-ov') as HTMLElement | null;
-                         const zm = el.querySelector('.srv-gal-zoom') as HTMLElement | null;
-                         if (ov) ov.style.opacity = '0';
-                         if (zm) zm.style.opacity = '0';
-                       }}>
-                    {isVid ? (
-                      <video src={cxVideo(item.url)} muted playsInline preload="metadata"
-                             style={{ width:'100%', display:'block', objectFit:'cover', objectPosition:fp }}/>
-                    ) : (
-                      <img src={cxCard(item.url)} alt={item.alt || `${title} ${i + 1}`}
-                           loading={i < 6 ? 'eager' : 'lazy'} decoding="async"
-                           style={{ width:'100%', display:'block', objectFit:'cover', objectPosition:fp, transition:'transform .5s ease' }}/>
-                    )}
-
-                    {/* Overlay degradado */}
-                    <div className="srv-gal-ov"
-                         style={{ position:'absolute', inset:0, opacity:0, transition:'opacity .3s',
-                                   background:'linear-gradient(to top,rgba(10,22,40,0.88) 0%,rgba(10,22,40,0.2) 50%,transparent 100%)',
-                                   pointerEvents:'none' }}/>
-
-                    {/* Zoom icon */}
-                    <div className="srv-gal-zoom"
-                         style={{ position:'absolute', top:'50%', left:'50%',
-                                   transform:'translate(-50%,-50%)',
-                                   width:48, height:48, borderRadius:'50%',
-                                   background:'rgba(255,255,255,0.15)',
-                                   backdropFilter:'blur(8px)',
-                                   border:'1px solid rgba(255,255,255,0.3)',
-                                   display:'flex', alignItems:'center', justifyContent:'center',
-                                   fontSize:'1.2rem', opacity:0, transition:'opacity .3s',
-                                   pointerEvents:'none' }}>
-                      {isVid ? '▶' : '🔍'}
-                    </div>
-
-                    {/* Etiqueta inferior */}
-                    <div className="srv-gal-ov"
-                         style={{ position:'absolute', bottom:0, left:0, right:0,
-                                   padding:'0.75rem 1rem', opacity:0, transition:'opacity .3s',
-                                   pointerEvents:'none' }}>
-                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                        {item.alt && <span style={{ color:'rgba(255,255,255,0.85)', fontSize:'0.75rem', fontFamily:'var(--font-jakarta)', fontWeight:500 }}>{item.alt}</span>}
-                        {isVid && (
-                          <span style={{ background:`${accentColor}30`, border:`1px solid ${accentColor}60`,
-                                          color:'#f5c842', fontSize:'0.6rem', fontWeight:700,
-                                          padding:'2px 8px', borderRadius:999, letterSpacing:'.08em' }}>
-                            🎬 VIDEO
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Borde dorado en hover — esquina superior */}
-                    <div style={{ position:'absolute', top:0, left:0, right:0, height:2,
-                                   background:`linear-gradient(90deg,${accentColor},transparent)`,
-                                   transform:'scaleX(0)', transformOrigin:'left',
-                                   transition:'transform .4s ease', pointerEvents:'none' }}
-                         className="srv-gal-line"/>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <style>{`
-            @keyframes galFadeIn {
-              from { opacity:0; transform:translateY(28px) scale(0.97); }
-              to   { opacity:1; transform:translateY(0) scale(1); }
-            }
-            .srv-gal-zoom { transition: opacity .3s, transform .3s !important; }
-            div:hover > .srv-gal-line { transform: scaleX(1) !important; }
-          `}</style>
-        </section>
-      )}
-
-      {/* placeholder para mantener la sección mientras carga */}
-      {galeria.length === 0 && servicio && (
-        <div style={{ display:'none' }}/>
-      )}
-
-      {/* Lightbox galería del servicio */}
-      {lightbox !== null && galeria[lightbox] && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999,
-                       background: 'rgba(5,13,26,0.96)', backdropFilter: 'blur(16px)',
-                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                       padding: '16px 16px 12px', cursor: 'zoom-out' }}
-             onClick={() => setLightbox(null)}>
-
-          {/* Botón cerrar */}
-          <button onClick={() => setLightbox(null)}
-                  style={{ position: 'absolute', top: 16, right: 16, width: 40, height: 40,
-                             borderRadius: '50%', background: 'rgba(255,255,255,0.12)',
-                             border: 'none', color: '#fff', fontSize: '1.1rem', cursor: 'pointer',
-                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                             transition: 'background .2s', zIndex: 1 }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.25)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.12)'}>
-            ✕
-          </button>
-
-          <div onClick={e => e.stopPropagation()}
-               style={{ maxWidth: 960, width: '100%', cursor: 'default', display: 'flex',
-                         flexDirection: 'column', gap: 10,
-                         animation: 'lbIn .3s cubic-bezier(0.34,1.56,0.64,1)' }}>
-
-            {/* Media — sin nada encima */}
-            {(galeria[lightbox].tipo === 'video' || galeria[lightbox].url?.match(/\.(mp4|webm|mov)(\?|$)/i)) ? (
-              <video src={cxVideo(galeria[lightbox].url)} controls autoPlay playsInline
-                     style={{ width: '100%', maxHeight: '72vh', display: 'block',
-                               borderRadius: 16, boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
-                               background: '#000' }}/>
-            ) : (
-              <img src={cxFull(galeria[lightbox].url)} alt={galeria[lightbox].alt || title}
-                   decoding="async"
-                   style={{ width: '100%', maxHeight: '72vh', objectFit: 'contain',
-                             display: 'block', borderRadius: 16,
-                             boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}/>
-            )}
-
-            {/* Barra inferior: flechas + info centrada */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-jakarta)' }}>
-              <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! - 1 + galeria.length) % galeria.length)); }}
-                      style={{ flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
-                                 background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-                                 color: '#fff', fontSize: '1.1rem', cursor: 'pointer',
-                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                 transition: 'all .2s' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${accentColor}50`}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
-                ←
-              </button>
-
-              <div style={{ flex: 1, minWidth: 0, textAlign: 'center' }}>
-                {galeria[lightbox].alt && (
-                  <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', margin: 0,
-                               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {galeria[lightbox].alt}
-                  </p>
-                )}
-                <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.68rem', margin: '2px 0 0' }}>
-                  {lightbox + 1} / {galeria.length}
-                </p>
-              </div>
-
-              <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! + 1) % galeria.length)); }}
-                      style={{ flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
-                                 background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-                                 color: '#fff', fontSize: '1.1rem', cursor: 'pointer',
-                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                 transition: 'all .2s' }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${accentColor}50`}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
-                →
-              </button>
-            </div>
-
-            <ShareBar
-              itemId={galeria[lightbox].id}
-              title={galeria[lightbox].alt || title}
-              {...((galeria[lightbox].tipo === 'video' || galeria[lightbox].url?.match(/\.(mp4|webm|mov)(\?|$)/i))
-                ? { videoUrl: cxShareVideo(galeria[lightbox].url) }
-                : { imageUrl: cxFull(galeria[lightbox].url) }
-              )}
-            />
-          </div>
-        </div>
       )}
 
       {/* ═══════════════════════════════════════════
