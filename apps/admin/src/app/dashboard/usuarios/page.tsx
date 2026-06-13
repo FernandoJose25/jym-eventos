@@ -162,7 +162,7 @@ export default function UsuariosPage() {
       {adding && (
         <div className="admin-card" style={{ padding:'1.5rem', marginBottom:20 }}>
           <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'#0a1628', margin:'0 0 16px' }}>Nuevo usuario</h3>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+          <div className="cfg-2col">
             {[
               { label:'Nombre', key:'nombre', type:'text',     ph:'Ej: Ana García' },
               { label:'Correo', key:'email',  type:'email',    ph:'correo@ejemplo.com' },
