@@ -136,7 +136,7 @@ export default function NuevoServicioPage() {
           )}
         </div>
 
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16 }}>
+        <div className="cfg-3col" style={{ gap:16 }}>
           {/* Ícono */}
           <div>
             <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>

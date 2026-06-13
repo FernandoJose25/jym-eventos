@@ -225,7 +225,7 @@ export default function AnaliticasPage() {
       </div>
 
       {/* Charts row 1 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2fr) minmax(0,1fr)', gap: 14 }}>
+      <div className="charts-2col">
 
         {/* Bar chart: mensajes por día */}
         <ChartCard title={`Mensajes por día — ${days === 7 ? 'última semana' : `últimos ${days} días`}`}>
@@ -281,7 +281,7 @@ export default function AnaliticasPage() {
       </div>
 
       {/* Charts row 2 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div className="charts-equal">
         <ChartCard title="Tipos de evento solicitados">
           {msgsLoad
             ? <div className="skeleton" style={{ height: 180, borderRadius: 8 }} />
@@ -297,7 +297,7 @@ export default function AnaliticasPage() {
       {/* Inventario */}
       <div>
         <p style={{ margin: '0 0 12px', fontWeight: 700, fontSize: '0.88rem', color: '#0a1628' }}>Inventario del contenido</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+        <div className="charts-3col">
           {([
             { icon: Briefcase,  label: 'Servicios',   active: svcActive, total: svcTotal, color: '#1e3a5f' },
             { icon: ImageIcon,  label: 'Galería',      active: galVis,   total: galTotal, color: '#7c3aed' },
