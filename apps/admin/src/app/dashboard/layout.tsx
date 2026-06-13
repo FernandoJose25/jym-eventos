@@ -31,6 +31,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router   = useRouter();
   const pathname = usePathname();
   const [sideOpen, setSideOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = sideOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sideOpen]);
   const [unread,   setUnread]   = useState(0);
   const [srvOpen,  setSrvOpen]  = useState(false);
   const [srvList,  setSrvList]  = useState<{id:string;title:string;icon:string}[]>([]);
@@ -183,22 +188,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Mobile overlay */}
-      {sideOpen && (
-        <div style={{ position:'fixed', inset:0, zIndex:40 }} className="sidebar-mobile">
-          <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.6)', backdropFilter:'blur(4px)' }}
-               onClick={()=>setSideOpen(false)}/>
-          <aside style={{ position:'relative', zIndex:50, width:270, height:'100%', background:'#0a1628',
-                           display:'flex', flexDirection:'column', animation:'slideIn .3s ease' }}>
-            <button onClick={()=>setSideOpen(false)}
-                    style={{ position:'absolute', top:10, right:10, background:'rgba(255,255,255,0.1)',
-                              border:'none', borderRadius:7, width:28, height:28, cursor:'pointer',
-                              display:'flex', alignItems:'center', justifyContent:'center', color:'#fff' }}>
-              <X size={14}/>
-            </button>
-            <SideContent/>
-          </aside>
-        </div>
-      )}
+      <div style={{ position:'fixed', inset:0, zIndex:40,
+                     visibility: sideOpen ? 'visible' : 'hidden',
+                     pointerEvents: sideOpen ? 'auto' : 'none' }}
+           className="sidebar-mobile">
+        <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,0.6)',
+                       opacity: sideOpen ? 1 : 0, transition:'opacity .3s' }}
+             onClick={()=>setSideOpen(false)}/>
+        <aside style={{ position:'absolute', top:0, left:0, bottom:0, width:280, background:'#0a1628',
+                         display:'flex', flexDirection:'column',
+                         transform: sideOpen ? 'translateX(0)' : 'translateX(-100%)',
+                         transition:'transform .3s cubic-bezier(.4,0,.2,1)',
+                         boxShadow:'4px 0 24px rgba(0,0,0,0.4)' }}>
+          <button onClick={()=>setSideOpen(false)}
+                  style={{ position:'absolute', top:10, right:10, background:'rgba(255,255,255,0.1)',
+                            border:'none', borderRadius:7, width:32, height:32, cursor:'pointer',
+                            display:'flex', alignItems:'center', justifyContent:'center', color:'#fff',
+                            zIndex:10, flexShrink:0 }}>
+            <X size={15}/>
+          </button>
+          <SideContent/>
+        </aside>
+      </div>
 
       {/* Main */}
       <div style={{ flex:1, display:'flex', flexDirection:'column', minWidth:0 }}>
@@ -243,7 +254,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       <style>{`
-        @keyframes slideIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
         .sidebar-desktop{display:flex;flex-direction:column}
         .hamburger-btn{display:none}
         .sidebar-mobile{display:none}
