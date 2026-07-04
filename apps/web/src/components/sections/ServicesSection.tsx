@@ -125,7 +125,7 @@ function AtvCard({ s, idx }: { s: Service; idx: number }) {
                   )}
                 </>
               ) : (
-                <img src={s.mediaSrc} alt={s.title}
+                <img src={s.mediaSrc} alt={s.title} loading="lazy" decoding="async"
                      style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>
               )
             ) : (

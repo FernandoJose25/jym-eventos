@@ -1,6 +1,40 @@
 'use client';
 
-export default function CapybaraLoader({ label = 'Cargando J&M Eventos' }: { label?: string }) {
+export default function CapybaraLoader({ label = 'Cargando J&M Eventos', inline = false }: { label?: string; inline?: boolean }) {
+  if (inline) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+        <div className="capybaraloader" style={{ transform: 'scale(0.4)', margin: '-3em 0' }}>
+          <div className="capybara">
+            <div className="capyhead">
+              <div className="capyear"><div className="capyear2"></div></div>
+              <div className="capyear"></div>
+              <div className="capymouth">
+                <div className="capylips"></div>
+                <div className="capylips"></div>
+              </div>
+              <div className="capyeye"></div>
+              <div className="capyeye"></div>
+            </div>
+            <div className="capyleg"></div>
+            <div className="capyleg2"></div>
+            <div className="capyleg2"></div>
+            <div className="capy"></div>
+          </div>
+          <div className="loader">
+            <div className="loaderline"></div>
+          </div>
+        </div>
+        {label && (
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', letterSpacing: '.1em', textTransform: 'uppercase', fontFamily: 'var(--font-jakarta)', margin: 0 }}>
+            {label}
+          </p>
+        )}
+        <style>{CAPYBARA_CSS}</style>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -38,7 +72,12 @@ export default function CapybaraLoader({ label = 'Cargando J&M Eventos' }: { lab
         {label}
       </p>
 
-      <style>{`
+      <style>{CAPYBARA_CSS}</style>
+    </div>
+  );
+}
+
+const CAPYBARA_CSS = `
         .capybaraloader {
           width: 14em; height: 10em; position: relative; z-index: 1;
           --color: rgb(212,160,23); --color2: rgb(139,90,43);
@@ -123,7 +162,4 @@ export default function CapybaraLoader({ label = 'Cargando J&M Eventos' }: { lab
           95%  { opacity: 100%; }
           100% { opacity: 0%; transform: translateX(-70%); }
         }
-      `}</style>
-    </div>
-  );
-}
+      `;

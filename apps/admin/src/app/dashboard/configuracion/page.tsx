@@ -32,6 +32,17 @@ const DEFAULT_WHY_ITEMS = [
   { icon:'🤝', title:'Atención Personalizada',  desc:'Equipo dedicado disponible antes, durante y después de tu evento.', visible:true },
 ];
 
+const DEFAULT_SEO = {
+  homeTitle:      'Shows, Decoración y Catering en Sechura, Piura',
+  homeDesc:       'Organizamos shows infantiles, hora loca, decoración temática y catering en Sechura, Piura. +500 eventos realizados. Cotiza gratis por WhatsApp.',
+  contactoTitle:  'Contacto y Cotizaciones | J&M Eventos',
+  contactoDesc:   'Cotiza tu evento en Sechura, Piura. Respuesta rápida por WhatsApp. Shows, decoración, catering, quinceaños y paquetes completos.',
+  galeriaTitle:   'Galería de Eventos | J&M Eventos y Decoraciones',
+  galeriaDesc:    'Fotos y videos reales de shows infantiles, decoración temática, quinceaños y eventos corporativos realizados en Sechura, Piura.',
+  nosotrosTitle:  'Nuestra Historia | J&M Eventos y Decoraciones',
+  nosotrosDesc:   'Más de 10 años creando experiencias inolvidables en Sechura, Piura. Conoce nuestra trayectoria, valores y equipo.',
+};
+
 /* ─────────────────────────────────────────────────────
    DEFAULTS COMPLETOS — se usan cuando Firestore no tiene
    el documento todavía (mismos valores que usa la web).
@@ -349,7 +360,7 @@ function StatCard({ num, label, secondary, index, onEdit }: {
 /* ─────────────────────────────────────────────────────
    Section types
 ───────────────────────────────────────────────────── */
-type Section = 'hero' | 'stats' | 'about' | 'nosotros' | 'why-us' | 'brands' | 'contacto' | 'navbar' | 'testimonios' | 'footer' | 'whatsapp' | 'anuncia' | 'legal';
+type Section = 'hero' | 'stats' | 'about' | 'nosotros' | 'why-us' | 'brands' | 'contacto' | 'navbar' | 'testimonios' | 'footer' | 'whatsapp' | 'anuncia' | 'legal' | 'seo';
 
 const SECTIONS: { id:Section; icon:string; label:string; group?:string }[] = [
   /* ── Página principal ── */
@@ -366,6 +377,7 @@ const SECTIONS: { id:Section; icon:string; label:string; group?:string }[] = [
   { id:'footer',      icon:'🦶',  label:'Footer',               group:'Global' },
   { id:'contacto',    icon:'📞',  label:'Contacto y Redes',     group:'Global' },
   { id:'whatsapp',    icon:'💬',  label:'WhatsApp Widget',      group:'Global' },
+  { id:'seo',         icon:'🔍',  label:'SEO / Metadatos',      group:'Global' },
   /* ── Contenido ── */
   { id:'testimonios', icon:'⭐',  label:'Testimonios',          group:'Contenido' },
   /* ── Legal ── */
@@ -451,6 +463,7 @@ export default function ConfiguracionPage() {
           'nosotros': DEFAULT_NOSOTROS,
           'anuncia':  DEFAULT_ANUNCIA,
           'legal':    DEFAULT_LEGAL,
+          'seo':      DEFAULT_SEO,
         };
         if (SECTION_DEFAULTS[section]) {
           loaded = { ...SECTION_DEFAULTS[section] };
@@ -1312,6 +1325,57 @@ export default function ConfiguracionPage() {
                       <F label="Texto predeterminado del cliente" fieldKey="customerText" value={data.customerText||''} onChange={handleField} placeholder="Hola, quiero cotizar un evento"/>
                     </div>
                   </fieldset>
+                </div>
+              )}
+
+              {/* ══════════ SEO / METADATOS ══════════ */}
+              {section === 'seo' && (
+                <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+                  <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:10, padding:'0.75rem 1rem' }}>
+                    <p style={{ fontSize:'0.8rem', color:'#1e40af', margin:0 }}>
+                      🔍 Título y descripción que Google muestra en los resultados de búsqueda para cada página.
+                      Los cambios se reflejan al redesplegar la web. Recomendado: título hasta 60 caracteres, descripción hasta 155.
+                    </p>
+                  </div>
+
+                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
+                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Inicio</legend>
+                    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                      <F label="Título (SEO)" fieldKey="homeTitle" value={data.homeTitle||''} onChange={handleField} placeholder="Shows, Decoración y Catering en Sechura, Piura"/>
+                      <F label="Descripción (SEO)" fieldKey="homeDesc" type="textarea" rows={2} value={data.homeDesc||''} onChange={handleField} placeholder="Organizamos shows infantiles, hora loca..."/>
+                    </div>
+                  </fieldset>
+
+                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
+                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Contacto</legend>
+                    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                      <F label="Título (SEO)" fieldKey="contactoTitle" value={data.contactoTitle||''} onChange={handleField} placeholder="Contacto y Cotizaciones | J&M Eventos"/>
+                      <F label="Descripción (SEO)" fieldKey="contactoDesc" type="textarea" rows={2} value={data.contactoDesc||''} onChange={handleField} placeholder="Cotiza tu evento en Sechura, Piura..."/>
+                    </div>
+                  </fieldset>
+
+                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
+                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Galería</legend>
+                    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                      <F label="Título (SEO)" fieldKey="galeriaTitle" value={data.galeriaTitle||''} onChange={handleField} placeholder="Galería de Eventos | J&M Eventos y Decoraciones"/>
+                      <F label="Descripción (SEO)" fieldKey="galeriaDesc" type="textarea" rows={2} value={data.galeriaDesc||''} onChange={handleField} placeholder="Fotos y videos reales de shows infantiles..."/>
+                    </div>
+                  </fieldset>
+
+                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
+                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Sobre Nosotros</legend>
+                    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                      <F label="Título (SEO)" fieldKey="nosotrosTitle" value={data.nosotrosTitle||''} onChange={handleField} placeholder="Nuestra Historia | J&M Eventos y Decoraciones"/>
+                      <F label="Descripción (SEO)" fieldKey="nosotrosDesc" type="textarea" rows={2} value={data.nosotrosDesc||''} onChange={handleField} placeholder="Más de 10 años creando experiencias..."/>
+                    </div>
+                  </fieldset>
+
+                  <div style={{ background:'#fefce8', border:'1px solid #fde68a', borderRadius:10, padding:'0.75rem 1rem' }}>
+                    <p style={{ fontSize:'0.78rem', color:'#854d0e', margin:0 }}>
+                      ℹ️ Las 9 páginas de Servicios individuales (Shows Infantiles, Quinceaños, etc.) generan su título y descripción
+                      automáticamente a partir de su propio contenido — no se editan aquí.
+                    </p>
+                  </div>
                 </div>
               )}
 

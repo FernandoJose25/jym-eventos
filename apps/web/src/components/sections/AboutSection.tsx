@@ -145,7 +145,7 @@ export default function AboutSection({ data }: AboutProps) {
                                style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
                         {img1Sound && <VideoSoundControl videoRef={vid1Ref} position="bottom-left"/>}
                       </>
-                    : <img src={img1} alt={h2}
+                    : <img src={img1} alt={h2} loading="lazy" decoding="async"
                            style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:img1Pos,
                                      transition:'transform .6s ease',
                                      transform: imgHover1 ? 'scale(1.06)' : 'scale(1)' }}/>
@@ -204,7 +204,7 @@ export default function AboutSection({ data }: AboutProps) {
                                style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
                         {img2Sound && <VideoSoundControl videoRef={vid2Ref} position="bottom-right"/>}
                       </>
-                    : <img src={img2} alt="Evento J&M"
+                    : <img src={img2} alt="Evento J&M" loading="lazy" decoding="async"
                            style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:img2Pos }}/>
                   }
                   {imgHover2 && (

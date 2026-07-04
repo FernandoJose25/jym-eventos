@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase';
 import { Search, X } from 'lucide-react';
 import { cxCard, cxFull, cxVideo, cxShareVideo } from '@/lib/cloudinary';
 import { ShareBar } from '@/components/ui/ShareBar';
+import CapybaraLoader from '@/components/ui/CapybaraLoader';
 
 // ── CustomVideoPlayer ──────────────────────────────────────────────
 const VBTN: React.CSSProperties = {
@@ -375,6 +376,9 @@ export default function GaleriaClient() {
   const [catActiva, setCatActiva] = useState('Todos');
   const [subActiva, setSubActiva] = useState('Todos');
   const [searchQ,   setSearchQ]   = useState('');
+  const PAGE_SIZE = 24;
+  const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
+  const [loadingMore,  setLoadingMore]  = useState(false);
   const [lightbox,  setLightbox]  = useState<number|null>(null);
   const searchRef    = useRef<HTMLInputElement>(null);
   const autoOpened   = useRef(false);
@@ -456,6 +460,10 @@ export default function GaleriaClient() {
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [lightbox, visibles.length]);
+
+  useEffect(() => {
+    setVisibleLimit(PAGE_SIZE);
+  }, [catActiva, subActiva, searchQ]);
 
   return (
     <>
@@ -638,7 +646,7 @@ export default function GaleriaClient() {
 
               {/* Masonry */}
               <div style={{ columns:'3 220px', gap:'1.25rem' }}>
-                {visibles.map((item, i) => {
+                {visibles.slice(0, visibleLimit).map((item, i) => {
                   const fp = `${(item.focalX??0.5)*100}% ${(item.focalY??0.5)*100}%`;
                   const vid = isVideo(item);
                   return (
@@ -710,6 +718,34 @@ export default function GaleriaClient() {
                   );
                 })}
               </div>
+
+              {/* Cargar más */}
+              {visibleLimit < visibles.length && (
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, marginTop:'2.5rem' }}>
+                  {loadingMore ? (
+                    <CapybaraLoader inline label="Cargando más fotos..." />
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setLoadingMore(true);
+                        setTimeout(() => {
+                          setVisibleLimit(l => l + PAGE_SIZE);
+                          setLoadingMore(false);
+                        }, 600);
+                      }}
+                      style={{
+                        padding:'0.85rem 2rem', borderRadius:999, border:'1px solid rgba(30,58,95,0.2)',
+                        background:'#fff', color:'#1e3a5f', fontWeight:600, cursor:'pointer',
+                        boxShadow:'0 4px 14px rgba(10,22,40,0.08)', transition:'transform .2s, box-shadow .2s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform='translateY(0)'; }}
+                    >
+                      Cargar más fotos ({visibles.length - visibleLimit} restantes)
+                    </button>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
