@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import ContactoClient from './ContactoClient';
+
+export const dynamic = 'force-dynamic';
 
 const DEFAULT_TITLE = 'Contacto y Cotizaciones | J&M Eventos';
 const DEFAULT_DESC  = 'Cotiza tu evento en Sechura, Piura. Respuesta rápida por WhatsApp. Shows, decoración, catering, quinceaños y paquetes completos.';
