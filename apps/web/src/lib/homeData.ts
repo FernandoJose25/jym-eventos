@@ -8,7 +8,7 @@ export function toPlain(data: Record<string, any>): Record<string, any> {
     else if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') r[k] = v;
     else if (Array.isArray(v)) r[k] = v.map((x: any) =>
       typeof x === 'string' || typeof x === 'number' || typeof x === 'boolean' ? x
-      : typeof x === 'object' && !x?.toDate && !('seconds' in x) ? toPlain(x) : String(x)
+        : typeof x === 'object' && !x?.toDate && !('seconds' in x) ? toPlain(x) : String(x)
     );
     else if (v?.toDate) r[k] = v.toDate().toISOString();
     else if (typeof v === 'object' && 'seconds' in v) r[k] = new Date(v.seconds * 1000).toISOString();
@@ -44,15 +44,15 @@ export async function getHomeData(): Promise<HomeData> {
       ]);
 
     return {
-      hero:         heroS.status === 'fulfilled' && heroS.value.exists()         ? toPlain(heroS.value.data())         : {},
-      stats:        statsS.status === 'fulfilled' && statsS.value.exists()       ? toPlain(statsS.value.data())        : {},
-      about:        aboutS.status === 'fulfilled' && aboutS.value.exists()       ? toPlain(aboutS.value.data())        : {},
-      contacto:     contactoS.status === 'fulfilled' && contactoS.value.exists() ? toPlain(contactoS.value.data())     : {},
-      whyUs:        whyUsS.status === 'fulfilled' && whyUsS.value.exists()       ? toPlain(whyUsS.value.data())        : null,
-      brands:       brandsS.status === 'fulfilled' && brandsS.value.exists()     ? toPlain(brandsS.value.data())       : null,
-      services:     servicesS.status === 'fulfilled'      ? servicesS.value.docs.map(d => toPlain({ id: d.id, ...d.data() }))      : [],
-      gallery:      galleryS.status === 'fulfilled'       ? galleryS.value.docs.map(d => toPlain({ id: d.id, ...d.data() }))       : [],
-      testimonials: testimonialsS.status === 'fulfilled'  ? testimonialsS.value.docs.map(d => toPlain({ id: d.id, ...d.data() }))  : [],
+      hero: heroS.status === 'fulfilled' && heroS.value.exists() ? toPlain(heroS.value.data()) : {},
+      stats: statsS.status === 'fulfilled' && statsS.value.exists() ? toPlain(statsS.value.data()) : {},
+      about: aboutS.status === 'fulfilled' && aboutS.value.exists() ? toPlain(aboutS.value.data()) : {},
+      contacto: contactoS.status === 'fulfilled' && contactoS.value.exists() ? toPlain(contactoS.value.data()) : {},
+      whyUs: whyUsS.status === 'fulfilled' && whyUsS.value.exists() ? toPlain(whyUsS.value.data()) : null,
+      brands: brandsS.status === 'fulfilled' && brandsS.value.exists() ? toPlain(brandsS.value.data()) : null,
+      services: servicesS.status === 'fulfilled' ? servicesS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
+      gallery: galleryS.status === 'fulfilled' ? galleryS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
+      testimonials: testimonialsS.status === 'fulfilled' ? testimonialsS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
       loaded: true,
     };
   } catch (e) {
