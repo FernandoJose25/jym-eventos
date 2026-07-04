@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
+
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import SobreNosotrosClient from './SobreNosotrosClient';
+
+export const dynamic = 'force-dynamic';
 
 const DEFAULT_TITLE = 'Nuestra Historia | J&M Eventos y Decoraciones';
 const DEFAULT_DESC  = 'Más de 10 años creando experiencias inolvidables en Sechura, Piura. Conoce nuestra trayectoria, valores y equipo.';

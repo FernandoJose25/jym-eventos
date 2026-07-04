@@ -4,6 +4,11 @@ import { db } from '@/lib/firebase';
 import { getHomeData } from '@/lib/homeData';
 import HomeClient from './HomeClient';
 
+// Evita que Next.js "congele" la Home en el momento del build.
+// Así, los cambios hechos en el panel admin (Firestore) se ven
+// de inmediato en cada visita, sin esperar un nuevo despliegue.
+export const dynamic = 'force-dynamic';
+
 const DEFAULT_TITLE = 'Shows, Decoración y Catering en Sechura, Piura';
 const DEFAULT_DESC = 'Organizamos shows infantiles, hora loca, decoración temática y catering en Sechura, Piura. +500 eventos realizados. Cotiza gratis por WhatsApp.';
 
