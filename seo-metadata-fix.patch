@@ -1,3 +1,108 @@
+diff --git a/apps/admin/src/app/dashboard/configuracion/page.tsx b/apps/admin/src/app/dashboard/configuracion/page.tsx
+index 18a28d6..a1fbf5e 100644
+--- a/apps/admin/src/app/dashboard/configuracion/page.tsx
++++ b/apps/admin/src/app/dashboard/configuracion/page.tsx
+@@ -32,6 +32,17 @@ const DEFAULT_WHY_ITEMS = [
+   { icon:'🤝', title:'Atención Personalizada',  desc:'Equipo dedicado disponible antes, durante y después de tu evento.', visible:true },
+ ];
+ 
++const DEFAULT_SEO = {
++  homeTitle:      'Shows, Decoración y Catering en Sechura, Piura',
++  homeDesc:       'Organizamos shows infantiles, hora loca, decoración temática y catering en Sechura, Piura. +500 eventos realizados. Cotiza gratis por WhatsApp.',
++  contactoTitle:  'Contacto y Cotizaciones | J&M Eventos',
++  contactoDesc:   'Cotiza tu evento en Sechura, Piura. Respuesta rápida por WhatsApp. Shows, decoración, catering, quinceaños y paquetes completos.',
++  galeriaTitle:   'Galería de Eventos | J&M Eventos y Decoraciones',
++  galeriaDesc:    'Fotos y videos reales de shows infantiles, decoración temática, quinceaños y eventos corporativos realizados en Sechura, Piura.',
++  nosotrosTitle:  'Nuestra Historia | J&M Eventos y Decoraciones',
++  nosotrosDesc:   'Más de 10 años creando experiencias inolvidables en Sechura, Piura. Conoce nuestra trayectoria, valores y equipo.',
++};
++
+ /* ─────────────────────────────────────────────────────
+    DEFAULTS COMPLETOS — se usan cuando Firestore no tiene
+    el documento todavía (mismos valores que usa la web).
+@@ -349,7 +360,7 @@ function StatCard({ num, label, secondary, index, onEdit }: {
+ /* ─────────────────────────────────────────────────────
+    Section types
+ ───────────────────────────────────────────────────── */
+-type Section = 'hero' | 'stats' | 'about' | 'nosotros' | 'why-us' | 'brands' | 'contacto' | 'navbar' | 'testimonios' | 'footer' | 'whatsapp' | 'anuncia' | 'legal';
++type Section = 'hero' | 'stats' | 'about' | 'nosotros' | 'why-us' | 'brands' | 'contacto' | 'navbar' | 'testimonios' | 'footer' | 'whatsapp' | 'anuncia' | 'legal' | 'seo';
+ 
+ const SECTIONS: { id:Section; icon:string; label:string; group?:string }[] = [
+   /* ── Página principal ── */
+@@ -366,6 +377,7 @@ const SECTIONS: { id:Section; icon:string; label:string; group?:string }[] = [
+   { id:'footer',      icon:'🦶',  label:'Footer',               group:'Global' },
+   { id:'contacto',    icon:'📞',  label:'Contacto y Redes',     group:'Global' },
+   { id:'whatsapp',    icon:'💬',  label:'WhatsApp Widget',      group:'Global' },
++  { id:'seo',         icon:'🔍',  label:'SEO / Metadatos',      group:'Global' },
+   /* ── Contenido ── */
+   { id:'testimonios', icon:'⭐',  label:'Testimonios',          group:'Contenido' },
+   /* ── Legal ── */
+@@ -451,6 +463,7 @@ export default function ConfiguracionPage() {
+           'nosotros': DEFAULT_NOSOTROS,
+           'anuncia':  DEFAULT_ANUNCIA,
+           'legal':    DEFAULT_LEGAL,
++          'seo':      DEFAULT_SEO,
+         };
+         if (SECTION_DEFAULTS[section]) {
+           loaded = { ...SECTION_DEFAULTS[section] };
+@@ -1315,6 +1328,57 @@ export default function ConfiguracionPage() {
+                 </div>
+               )}
+ 
++              {/* ══════════ SEO / METADATOS ══════════ */}
++              {section === 'seo' && (
++                <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
++                  <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:10, padding:'0.75rem 1rem' }}>
++                    <p style={{ fontSize:'0.8rem', color:'#1e40af', margin:0 }}>
++                      🔍 Título y descripción que Google muestra en los resultados de búsqueda para cada página.
++                      Los cambios se reflejan al redesplegar la web. Recomendado: título hasta 60 caracteres, descripción hasta 155.
++                    </p>
++                  </div>
++
++                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
++                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Inicio</legend>
++                    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
++                      <F label="Título (SEO)" fieldKey="homeTitle" value={data.homeTitle||''} onChange={handleField} placeholder="Shows, Decoración y Catering en Sechura, Piura"/>
++                      <F label="Descripción (SEO)" fieldKey="homeDesc" type="textarea" rows={2} value={data.homeDesc||''} onChange={handleField} placeholder="Organizamos shows infantiles, hora loca..."/>
++                    </div>
++                  </fieldset>
++
++                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
++                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Contacto</legend>
++                    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
++                      <F label="Título (SEO)" fieldKey="contactoTitle" value={data.contactoTitle||''} onChange={handleField} placeholder="Contacto y Cotizaciones | J&M Eventos"/>
++                      <F label="Descripción (SEO)" fieldKey="contactoDesc" type="textarea" rows={2} value={data.contactoDesc||''} onChange={handleField} placeholder="Cotiza tu evento en Sechura, Piura..."/>
++                    </div>
++                  </fieldset>
++
++                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
++                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Galería</legend>
++                    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
++                      <F label="Título (SEO)" fieldKey="galeriaTitle" value={data.galeriaTitle||''} onChange={handleField} placeholder="Galería de Eventos | J&M Eventos y Decoraciones"/>
++                      <F label="Descripción (SEO)" fieldKey="galeriaDesc" type="textarea" rows={2} value={data.galeriaDesc||''} onChange={handleField} placeholder="Fotos y videos reales de shows infantiles..."/>
++                    </div>
++                  </fieldset>
++
++                  <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
++                    <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Sobre Nosotros</legend>
++                    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
++                      <F label="Título (SEO)" fieldKey="nosotrosTitle" value={data.nosotrosTitle||''} onChange={handleField} placeholder="Nuestra Historia | J&M Eventos y Decoraciones"/>
++                      <F label="Descripción (SEO)" fieldKey="nosotrosDesc" type="textarea" rows={2} value={data.nosotrosDesc||''} onChange={handleField} placeholder="Más de 10 años creando experiencias..."/>
++                    </div>
++                  </fieldset>
++
++                  <div style={{ background:'#fefce8', border:'1px solid #fde68a', borderRadius:10, padding:'0.75rem 1rem' }}>
++                    <p style={{ fontSize:'0.78rem', color:'#854d0e', margin:0 }}>
++                      ℹ️ Las 9 páginas de Servicios individuales (Shows Infantiles, Quinceaños, etc.) generan su título y descripción
++                      automáticamente a partir de su propio contenido — no se editan aquí.
++                    </p>
++                  </div>
++                </div>
++              )}
++
+               {/* ══════════ ANUNCIA CON NOSOTROS ══════════ */}
+               {section === 'anuncia' && (
+                 <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
 diff --git a/apps/web/src/app/contacto/ContactoClient.tsx b/apps/web/src/app/contacto/ContactoClient.tsx
 new file mode 100644
 index 0000000..2383ba8
@@ -458,17 +563,17 @@ index 0000000..2383ba8
 +  );
 +}
 diff --git a/apps/web/src/app/contacto/page.tsx b/apps/web/src/app/contacto/page.tsx
-index 16bc6c7..15dd999 100644
+index 16bc6c7..b81355e 100644
 --- a/apps/web/src/app/contacto/page.tsx
 +++ b/apps/web/src/app/contacto/page.tsx
-@@ -1,453 +1,11 @@
+@@ -1,453 +1,24 @@
 -'use client';
 -import { useState, useEffect } from 'react';
 -import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
--import { db } from '@/lib/firebase';
 +import type { Metadata } from 'next';
-+import ContactoClient from './ContactoClient';
- 
++import { doc, getDoc } from 'firebase/firestore';
+ import { db } from '@/lib/firebase';
+-
 -function toPlain(d: Record<string,any>): Record<string,any> {
 -  const r: Record<string,any> = {};
 -  for (const [k,v] of Object.entries(d)) {
@@ -476,10 +581,25 @@ index 16bc6c7..15dd999 100644
 -    else if (v?.toDate) r[k]=v.toDate().toISOString();
 -    else if (typeof v==='object'&&'seconds' in v) r[k]=new Date(v.seconds*1000).toISOString();
 -    else if (typeof v==='object') r[k]=toPlain(v);
--  }
++import ContactoClient from './ContactoClient';
++
++const DEFAULT_TITLE = 'Contacto y Cotizaciones | J&M Eventos';
++const DEFAULT_DESC  = 'Cotiza tu evento en Sechura, Piura. Respuesta rápida por WhatsApp. Shows, decoración, catering, quinceaños y paquetes completos.';
++
++export async function generateMetadata(): Promise<Metadata> {
++  try {
++    const snap = await getDoc(doc(db, 'site_config', 'seo'));
++    const data = snap.exists() ? snap.data() : {};
++    return {
++      title: data.contactoTitle || DEFAULT_TITLE,
++      description: data.contactoDesc || DEFAULT_DESC,
++    };
++  } catch {
++    return { title: DEFAULT_TITLE, description: DEFAULT_DESC };
+   }
 -  return r;
--}
--
+ }
+ 
 -const TIPOS = ['Shows Infantiles','Hora Loca','Activaciones Empresariales','Catering y Carritos Snacks','Filmación y Fotografía','Decoración Temática','Bautizo','Quinceañero','Matrimonio','Cumpleaños Adulto','Otro'];
 -const PRESUPUESTOS = ['Menos de S/. 500','S/. 500 – S/. 1,000','S/. 1,000 – S/. 2,000','S/. 2,000 – S/. 5,000','Más de S/. 5,000','Por definir'];
 -const INVITADOS    = ['Menos de 30','30 – 60','60 – 100','100 – 200','Más de 200'];
@@ -900,11 +1020,7 @@ index 16bc6c7..15dd999 100644
 -          </div>
 -        </div>
 -      </section>
-+export const metadata: Metadata = {
-+  title: 'Contacto y Cotizaciones | J&M Eventos',
-+  description: 'Cotiza tu evento en Sechura, Piura. Respuesta rápida por WhatsApp. Shows, decoración, catering, quinceaños y paquetes completos.',
-+};
- 
+-
 -      <style>{`
 -        @media(max-width:1023px){ .cp-grid{ grid-template-columns:1fr !important; } }
 -        @media(max-width:480px){
@@ -1779,20 +1895,20 @@ index 0000000..8eb33ba
 +  );
 +}
 diff --git a/apps/web/src/app/galeria/page.tsx b/apps/web/src/app/galeria/page.tsx
-index 8facea0..92970af 100644
+index 8facea0..fc81fac 100644
 --- a/apps/web/src/app/galeria/page.tsx
 +++ b/apps/web/src/app/galeria/page.tsx
-@@ -1,849 +1,11 @@
+@@ -1,849 +1,24 @@
 -'use client';
 -import { useState, useEffect, useRef, useMemo } from 'react';
 -import { collection, query, orderBy, getDocs } from 'firebase/firestore';
--import { db } from '@/lib/firebase';
++import type { Metadata } from 'next';
++import { doc, getDoc } from 'firebase/firestore';
+ import { db } from '@/lib/firebase';
 -import { Search, X } from 'lucide-react';
 -import { cxCard, cxFull, cxVideo, cxShareVideo } from '@/lib/cloudinary';
 -import { ShareBar } from '@/components/ui/ShareBar';
-+import type { Metadata } from 'next';
-+import GaleriaClient from './GaleriaClient';
- 
+-
 -// ── CustomVideoPlayer ──────────────────────────────────────────────
 -const VBTN: React.CSSProperties = {
 -  background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%',
@@ -1800,11 +1916,8 @@ index 8facea0..92970af 100644
 -  display: 'flex', alignItems: 'center', justifyContent: 'center',
 -  fontSize: '1rem', flexShrink: 0,
 -  WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
-+export const metadata: Metadata = {
-+  title: 'Galería de Eventos | J&M Eventos y Decoraciones',
-+  description: 'Fotos y videos reales de shows infantiles, decoración temática, quinceaños y eventos corporativos realizados en Sechura, Piura.',
- };
- 
+-};
+-
 -function fmtTime(s: number) {
 -  if (!isFinite(s) || isNaN(s)) return '0:00';
 -  const m = Math.floor(s / 60);
@@ -1845,7 +1958,19 @@ index 8facea0..92970af 100644
 -      setPlaying(!v.paused);
 -      setCur(v.currentTime);
 -      if (v.duration) setProgress((v.currentTime / v.duration) * 100);
--    };
++import GaleriaClient from './GaleriaClient';
++
++const DEFAULT_TITLE = 'Galería de Eventos | J&M Eventos y Decoraciones';
++const DEFAULT_DESC  = 'Fotos y videos reales de shows infantiles, decoración temática, quinceaños y eventos corporativos realizados en Sechura, Piura.';
++
++export async function generateMetadata(): Promise<Metadata> {
++  try {
++    const snap = await getDoc(doc(db, 'site_config', 'seo'));
++    const data = snap.exists() ? snap.data() : {};
++    return {
++      title: data.galeriaTitle || DEFAULT_TITLE,
++      description: data.galeriaDesc || DEFAULT_DESC,
+     };
 -    const onMeta  = () => setDur(v.duration);
 -    const onPlay  = () => setPlaying(true);
 -    const onPause = () => setPlaying(false);
@@ -2150,15 +2275,17 @@ index 8facea0..92970af 100644
 -    if (item.categoria)    tokens.add(item.categoria);
 -    if (item.subcategoria) tokens.add(item.subcategoria);
 -    (item.alt || '').split(/\s+/).forEach(w => w.length > 3 && tokens.add(w));
--  }
++  } catch {
++    return { title: DEFAULT_TITLE, description: DEFAULT_DESC };
+   }
 -  const first = ql[0]?.[0] ?? '';
 -  const suggestions = [...tokens]
 -    .filter(t => t.toLowerCase().startsWith(first) || ql.some(w => t.toLowerCase().includes(w[0] ?? '')))
 -    .slice(0, 6);
 -
 -  return { results: [], suggestions };
--}
--
+ }
+ 
 -export default function GaleriaPage() {
 -  const [items,     setItems]     = useState<GItem[]>([]);
 -  const [loading,   setLoading]   = useState(true);
@@ -2640,23 +2767,37 @@ index 8facea0..92970af 100644
 +  return <GaleriaClient />;
  }
 diff --git a/apps/web/src/app/page.tsx b/apps/web/src/app/page.tsx
-index 9d5e2c9..33fe436 100644
+index 9d5e2c9..1bf489e 100644
 --- a/apps/web/src/app/page.tsx
 +++ b/apps/web/src/app/page.tsx
-@@ -1,6 +1,11 @@
+@@ -1,6 +1,24 @@
 -'use client';
 +import type { Metadata } from 'next';
++import { doc, getDoc } from 'firebase/firestore';
++import { db } from '@/lib/firebase';
  import HomeClient from './HomeClient';
  
-+export const metadata: Metadata = {
-+  title: 'Shows, Decoración y Catering en Sechura, Piura',
-+  description: 'Organizamos shows infantiles, hora loca, decoración temática y catering en Sechura, Piura. +500 eventos realizados. Cotiza gratis por WhatsApp.',
-+};
++const DEFAULT_TITLE = 'Shows, Decoración y Catering en Sechura, Piura';
++const DEFAULT_DESC  = 'Organizamos shows infantiles, hora loca, decoración temática y catering en Sechura, Piura. +500 eventos realizados. Cotiza gratis por WhatsApp.';
++
++export async function generateMetadata(): Promise<Metadata> {
++  try {
++    const snap = await getDoc(doc(db, 'site_config', 'seo'));
++    const data = snap.exists() ? snap.data() : {};
++    return {
++      title: data.homeTitle || DEFAULT_TITLE,
++      description: data.homeDesc || DEFAULT_DESC,
++    };
++  } catch {
++    return { title: DEFAULT_TITLE, description: DEFAULT_DESC };
++  }
++}
 +
  export default function HomePage() {
    return <HomeClient />;
- }
+-}
 \ No newline at end of file
++}
 diff --git a/apps/web/src/app/servicios/[slug]/ServicioClient.tsx b/apps/web/src/app/servicios/[slug]/ServicioClient.tsx
 new file mode 100644
 index 0000000..ecb0a0e
@@ -6024,17 +6165,16 @@ index 0000000..9592351
 +}
 \ No newline at end of file
 diff --git a/apps/web/src/app/sobre-nosotros/page.tsx b/apps/web/src/app/sobre-nosotros/page.tsx
-index aa84918..4ebf1b7 100644
+index aa84918..5979378 100644
 --- a/apps/web/src/app/sobre-nosotros/page.tsx
 +++ b/apps/web/src/app/sobre-nosotros/page.tsx
-@@ -1,698 +1,11 @@
+@@ -1,698 +1,24 @@
 -'use client';
 -import { useEffect, useRef, useState, useCallback } from 'react';
--import { doc, getDoc } from 'firebase/firestore';
--import { db } from '@/lib/firebase';
 +import type { Metadata } from 'next';
-+import SobreNosotrosClient from './SobreNosotrosClient';
- 
+ import { doc, getDoc } from 'firebase/firestore';
+ import { db } from '@/lib/firebase';
+-
 -/* ── Datos estáticos (fallback) ── */
 -const STATS_DEFAULT = [
 -  { n:'+500', label:'Eventos realizados', icon:'🎉', color:'rgba(212,160,23,0.15)', border:'rgba(212,160,23,0.3)' },
@@ -6042,11 +6182,7 @@ index aa84918..4ebf1b7 100644
 -  { n:'100%', label:'Satisfacción',       icon:'💎', color:'rgba(16,185,129,0.12)', border:'rgba(16,185,129,0.3)' },
 -  { n:'6',    label:'Servicios únicos',   icon:'🎭', color:'rgba(139,92,246,0.12)', border:'rgba(139,92,246,0.3)' },
 -];
-+export const metadata: Metadata = {
-+  title: 'Nuestra Historia | J&M Eventos y Decoraciones',
-+  description: 'Más de 10 años creando experiencias inolvidables en Sechura, Piura. Conoce nuestra trayectoria, valores y equipo.',
-+};
- 
+-
 -const COLORES_STATS = [
 -  { color:'rgba(212,160,23,0.15)', border:'rgba(212,160,23,0.3)' },
 -  { color:'rgba(37,99,235,0.12)',  border:'rgba(37,99,235,0.3)' },
@@ -6112,8 +6248,24 @@ index aa84918..4ebf1b7 100644
 -      ))}
 -    </div>
 -  );
--}
--
++import SobreNosotrosClient from './SobreNosotrosClient';
++
++const DEFAULT_TITLE = 'Nuestra Historia | J&M Eventos y Decoraciones';
++const DEFAULT_DESC  = 'Más de 10 años creando experiencias inolvidables en Sechura, Piura. Conoce nuestra trayectoria, valores y equipo.';
++
++export async function generateMetadata(): Promise<Metadata> {
++  try {
++    const snap = await getDoc(doc(db, 'site_config', 'seo'));
++    const data = snap.exists() ? snap.data() : {};
++    return {
++      title: data.nosotrosTitle || DEFAULT_TITLE,
++      description: data.nosotrosDesc || DEFAULT_DESC,
++    };
++  } catch {
++    return { title: DEFAULT_TITLE, description: DEFAULT_DESC };
++  }
+ }
+ 
 -/* ── Card valor con tilt 3D + hover glow ── */
 -function ValorCard({ v, i }: { v: typeof VALORES_DEFAULT[0]; i: number }) {
 -  const ref = useRef<HTMLDivElement>(null);
