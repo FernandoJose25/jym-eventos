@@ -103,6 +103,94 @@ index 18a28d6..a1fbf5e 100644
                {/* ══════════ ANUNCIA CON NOSOTROS ══════════ */}
                {section === 'anuncia' && (
                  <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
+diff --git a/apps/web/src/app/HomeClient.tsx b/apps/web/src/app/HomeClient.tsx
+index 3ec8ccf..1f3cfd6 100644
+--- a/apps/web/src/app/HomeClient.tsx
++++ b/apps/web/src/app/HomeClient.tsx
+@@ -1,8 +1,4 @@
+ 'use client';
+-import { useEffect, useState } from 'react';
+-import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+-import { db } from '@/lib/firebase';
+-import CapybaraLoader      from '@/components/ui/CapybaraLoader';
+ import HeroSection         from '@/components/sections/HeroSection';
+ import StatsSection        from '@/components/sections/StatsSection';
+ import ServicesSection     from '@/components/sections/ServicesSection';
+@@ -12,22 +8,7 @@ import AboutSection        from '@/components/sections/AboutSection';
+ import TestimonialsSection from '@/components/sections/TestimonialsSection';
+ import BrandsSection       from '@/components/sections/BrandsSection';
+ import ContactSection      from '@/components/sections/ContactSection';
+-
+-function toPlain(data: Record<string,any>): Record<string,any> {
+-  const r: Record<string,any> = {};
+-  for (const [k,v] of Object.entries(data)) {
+-    if (v===null||v===undefined) r[k]=v;
+-    else if (typeof v==='string'||typeof v==='number'||typeof v==='boolean') r[k]=v;
+-    else if (Array.isArray(v)) r[k]=v.map((x:any)=>
+-      typeof x==='string'||typeof x==='number'||typeof x==='boolean' ? x
+-      : typeof x==='object'&&!x?.toDate&&!('seconds' in x) ? toPlain(x) : String(x)
+-    );
+-    else if (v?.toDate) r[k]=v.toDate().toISOString();
+-    else if (typeof v==='object'&&'seconds' in v) r[k]=new Date(v.seconds*1000).toISOString();
+-    else if (typeof v==='object') r[k]=toPlain(v);
+-  }
+-  return r;
+-}
++import type { HomeData }   from '@/lib/homeData';
+ 
+ // Wrapper con animación de entrada al scroll
+ function Section({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+@@ -39,49 +20,7 @@ function Section({ children, className = '', delay = 0 }: { children: React.Reac
+   );
+ }
+ 
+-export default function HomeClient() {
+-  const [data, setData] = useState<any>({
+-    hero:{}, stats:{}, about:{}, contacto:{},
+-    services:[], gallery:[], testimonials:[],
+-    whyUs:null, brands:null, loaded:false,
+-  });
+-
+-  useEffect(() => {
+-    (async () => {
+-      try {
+-        const [heroS,statsS,aboutS,contactoS,whyUsS,brandsS,servicesS,galleryS,testimonialsS] =
+-          await Promise.allSettled([
+-            getDoc(doc(db,'site_config','hero')),
+-            getDoc(doc(db,'site_config','stats')),
+-            getDoc(doc(db,'site_config','about')),
+-            getDoc(doc(db,'site_config','contacto')),
+-            getDoc(doc(db,'site_config','why-us')),
+-            getDoc(doc(db,'site_config','brands')),
+-            getDocs(query(collection(db,'services'),     where('visible','==',true),orderBy('order','asc'))),
+-            getDocs(query(collection(db,'gallery_items'),where('visible','==',true),orderBy('order','asc'))),
+-            getDocs(query(collection(db,'testimonials'), where('visible','==',true),orderBy('order','asc'))),
+-          ]);
+-        setData({
+-          hero:        heroS.status==='fulfilled'&&heroS.value.exists()        ? toPlain(heroS.value.data())        : {},
+-          stats:       statsS.status==='fulfilled'&&statsS.value.exists()      ? toPlain(statsS.value.data())       : {},
+-          about:       aboutS.status==='fulfilled'&&aboutS.value.exists()      ? toPlain(aboutS.value.data())       : {},
+-          contacto:    contactoS.status==='fulfilled'&&contactoS.value.exists()? toPlain(contactoS.value.data())    : {},
+-          whyUs:       whyUsS.status==='fulfilled'&&whyUsS.value.exists()      ? toPlain(whyUsS.value.data())       : null,
+-          brands:      brandsS.status==='fulfilled'&&brandsS.value.exists()    ? toPlain(brandsS.value.data())      : null,
+-          services:    servicesS.status==='fulfilled'    ? servicesS.value.docs.map(d=>toPlain({id:d.id,...d.data()}))    : [],
+-          gallery:     galleryS.status==='fulfilled'     ? galleryS.value.docs.map(d=>toPlain({id:d.id,...d.data()}))     : [],
+-          testimonials:testimonialsS.status==='fulfilled'? testimonialsS.value.docs.map(d=>toPlain({id:d.id,...d.data()})) : [],
+-          loaded:true,
+-        });
+-      } catch(e) {
+-        console.error('[HomeClient]',e);
+-        setData((p:any)=>({...p,loaded:true}));
+-      }
+-    })();
+-  }, []);
+-
+-  if (!data.loaded) return <CapybaraLoader />;
+-
++export default function HomeClient({ data }: { data: HomeData }) {
+   return (
+     <>
+       {/* Hero — sin reveal (es lo primero que se ve) */}
 diff --git a/apps/web/src/app/contacto/ContactoClient.tsx b/apps/web/src/app/contacto/ContactoClient.tsx
 new file mode 100644
 index 0000000..2383ba8
@@ -1041,10 +1129,10 @@ index 16bc6c7..b81355e 100644
  }
 diff --git a/apps/web/src/app/galeria/GaleriaClient.tsx b/apps/web/src/app/galeria/GaleriaClient.tsx
 new file mode 100644
-index 0000000..8eb33ba
+index 0000000..2d09212
 --- /dev/null
 +++ b/apps/web/src/app/galeria/GaleriaClient.tsx
-@@ -0,0 +1,849 @@
+@@ -0,0 +1,885 @@
 +'use client';
 +import { useState, useEffect, useRef, useMemo } from 'react';
 +import { collection, query, orderBy, getDocs } from 'firebase/firestore';
@@ -1052,6 +1140,7 @@ index 0000000..8eb33ba
 +import { Search, X } from 'lucide-react';
 +import { cxCard, cxFull, cxVideo, cxShareVideo } from '@/lib/cloudinary';
 +import { ShareBar } from '@/components/ui/ShareBar';
++import CapybaraLoader from '@/components/ui/CapybaraLoader';
 +
 +// ── CustomVideoPlayer ──────────────────────────────────────────────
 +const VBTN: React.CSSProperties = {
@@ -1422,6 +1511,9 @@ index 0000000..8eb33ba
 +  const [catActiva, setCatActiva] = useState('Todos');
 +  const [subActiva, setSubActiva] = useState('Todos');
 +  const [searchQ,   setSearchQ]   = useState('');
++  const PAGE_SIZE = 24;
++  const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
++  const [loadingMore,  setLoadingMore]  = useState(false);
 +  const [lightbox,  setLightbox]  = useState<number|null>(null);
 +  const searchRef    = useRef<HTMLInputElement>(null);
 +  const autoOpened   = useRef(false);
@@ -1503,6 +1595,10 @@ index 0000000..8eb33ba
 +    window.addEventListener('keydown', h);
 +    return () => window.removeEventListener('keydown', h);
 +  }, [lightbox, visibles.length]);
++
++  useEffect(() => {
++    setVisibleLimit(PAGE_SIZE);
++  }, [catActiva, subActiva, searchQ]);
 +
 +  return (
 +    <>
@@ -1685,7 +1781,7 @@ index 0000000..8eb33ba
 +
 +              {/* Masonry */}
 +              <div style={{ columns:'3 220px', gap:'1.25rem' }}>
-+                {visibles.map((item, i) => {
++                {visibles.slice(0, visibleLimit).map((item, i) => {
 +                  const fp = `${(item.focalX??0.5)*100}% ${(item.focalY??0.5)*100}%`;
 +                  const vid = isVideo(item);
 +                  return (
@@ -1757,6 +1853,34 @@ index 0000000..8eb33ba
 +                  );
 +                })}
 +              </div>
++
++              {/* Cargar más */}
++              {visibleLimit < visibles.length && (
++                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:14, marginTop:'2.5rem' }}>
++                  {loadingMore ? (
++                    <CapybaraLoader inline label="Cargando más fotos..." />
++                  ) : (
++                    <button
++                      onClick={() => {
++                        setLoadingMore(true);
++                        setTimeout(() => {
++                          setVisibleLimit(l => l + PAGE_SIZE);
++                          setLoadingMore(false);
++                        }, 600);
++                      }}
++                      style={{
++                        padding:'0.85rem 2rem', borderRadius:999, border:'1px solid rgba(30,58,95,0.2)',
++                        background:'#fff', color:'#1e3a5f', fontWeight:600, cursor:'pointer',
++                        boxShadow:'0 4px 14px rgba(10,22,40,0.08)', transition:'transform .2s, box-shadow .2s',
++                      }}
++                      onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; }}
++                      onMouseLeave={e => { e.currentTarget.style.transform='translateY(0)'; }}
++                    >
++                      Cargar más fotos ({visibles.length - visibleLimit} restantes)
++                    </button>
++                  )}
++                </div>
++              )}
 +            </>
 +          )}
 +        </div>
@@ -2767,16 +2891,21 @@ index 8facea0..fc81fac 100644
 +  return <GaleriaClient />;
  }
 diff --git a/apps/web/src/app/page.tsx b/apps/web/src/app/page.tsx
-index 9d5e2c9..1bf489e 100644
+index 9d5e2c9..dd2e1c9 100644
 --- a/apps/web/src/app/page.tsx
 +++ b/apps/web/src/app/page.tsx
-@@ -1,6 +1,24 @@
+@@ -1,6 +1,26 @@
 -'use client';
 +import type { Metadata } from 'next';
 +import { doc, getDoc } from 'firebase/firestore';
 +import { db } from '@/lib/firebase';
++import { getHomeData } from '@/lib/homeData';
  import HomeClient from './HomeClient';
  
+-export default function HomePage() {
+-  return <HomeClient />;
+-}
+\ No newline at end of file
 +const DEFAULT_TITLE = 'Shows, Decoración y Catering en Sechura, Piura';
 +const DEFAULT_DESC  = 'Organizamos shows infantiles, hora loca, decoración temática y catering en Sechura, Piura. +500 eventos realizados. Cotiza gratis por WhatsApp.';
 +
@@ -2793,10 +2922,9 @@ index 9d5e2c9..1bf489e 100644
 +  }
 +}
 +
- export default function HomePage() {
-   return <HomeClient />;
--}
-\ No newline at end of file
++export default async function HomePage() {
++  const data = await getHomeData();
++  return <HomeClient data={data} />;
 +}
 diff --git a/apps/web/src/app/servicios/[slug]/ServicioClient.tsx b/apps/web/src/app/servicios/[slug]/ServicioClient.tsx
 new file mode 100644
@@ -6887,3 +7015,214 @@ index aa84918..5979378 100644
 -  );
 -}
 \ No newline at end of file
+diff --git a/apps/web/src/components/sections/AboutSection.tsx b/apps/web/src/components/sections/AboutSection.tsx
+index d9cad67..b9155fa 100644
+--- a/apps/web/src/components/sections/AboutSection.tsx
++++ b/apps/web/src/components/sections/AboutSection.tsx
+@@ -145,7 +145,7 @@ export default function AboutSection({ data }: AboutProps) {
+                                style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                         {img1Sound && <VideoSoundControl videoRef={vid1Ref} position="bottom-left"/>}
+                       </>
+-                    : <img src={img1} alt={h2}
++                    : <img src={img1} alt={h2} loading="lazy" decoding="async"
+                            style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:img1Pos,
+                                      transition:'transform .6s ease',
+                                      transform: imgHover1 ? 'scale(1.06)' : 'scale(1)' }}/>
+@@ -204,7 +204,7 @@ export default function AboutSection({ data }: AboutProps) {
+                                style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                         {img2Sound && <VideoSoundControl videoRef={vid2Ref} position="bottom-right"/>}
+                       </>
+-                    : <img src={img2} alt="Evento J&M"
++                    : <img src={img2} alt="Evento J&M" loading="lazy" decoding="async"
+                            style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:img2Pos }}/>
+                   }
+                   {imgHover2 && (
+diff --git a/apps/web/src/components/sections/ServicesSection.tsx b/apps/web/src/components/sections/ServicesSection.tsx
+index 0772f15..c4855e4 100644
+--- a/apps/web/src/components/sections/ServicesSection.tsx
++++ b/apps/web/src/components/sections/ServicesSection.tsx
+@@ -125,7 +125,7 @@ function AtvCard({ s, idx }: { s: Service; idx: number }) {
+                   )}
+                 </>
+               ) : (
+-                <img src={s.mediaSrc} alt={s.title}
++                <img src={s.mediaSrc} alt={s.title} loading="lazy" decoding="async"
+                      style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>
+               )
+             ) : (
+diff --git a/apps/web/src/components/ui/CapybaraLoader.tsx b/apps/web/src/components/ui/CapybaraLoader.tsx
+index 53b0635..435d51f 100644
+--- a/apps/web/src/components/ui/CapybaraLoader.tsx
++++ b/apps/web/src/components/ui/CapybaraLoader.tsx
+@@ -1,6 +1,40 @@
+ 'use client';
+ 
+-export default function CapybaraLoader({ label = 'Cargando J&M Eventos' }: { label?: string }) {
++export default function CapybaraLoader({ label = 'Cargando J&M Eventos', inline = false }: { label?: string; inline?: boolean }) {
++  if (inline) {
++    return (
++      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
++        <div className="capybaraloader" style={{ transform: 'scale(0.4)', margin: '-3em 0' }}>
++          <div className="capybara">
++            <div className="capyhead">
++              <div className="capyear"><div className="capyear2"></div></div>
++              <div className="capyear"></div>
++              <div className="capymouth">
++                <div className="capylips"></div>
++                <div className="capylips"></div>
++              </div>
++              <div className="capyeye"></div>
++              <div className="capyeye"></div>
++            </div>
++            <div className="capyleg"></div>
++            <div className="capyleg2"></div>
++            <div className="capyleg2"></div>
++            <div className="capy"></div>
++          </div>
++          <div className="loader">
++            <div className="loaderline"></div>
++          </div>
++        </div>
++        {label && (
++          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', letterSpacing: '.1em', textTransform: 'uppercase', fontFamily: 'var(--font-jakarta)', margin: 0 }}>
++            {label}
++          </p>
++        )}
++        <style>{CAPYBARA_CSS}</style>
++      </div>
++    );
++  }
++
+   return (
+     <div style={{
+       minHeight: '100vh',
+@@ -38,7 +72,12 @@ export default function CapybaraLoader({ label = 'Cargando J&M Eventos' }: { lab
+         {label}
+       </p>
+ 
+-      <style>{`
++      <style>{CAPYBARA_CSS}</style>
++    </div>
++  );
++}
++
++const CAPYBARA_CSS = `
+         .capybaraloader {
+           width: 14em; height: 10em; position: relative; z-index: 1;
+           --color: rgb(212,160,23); --color2: rgb(139,90,43);
+@@ -123,7 +162,4 @@ export default function CapybaraLoader({ label = 'Cargando J&M Eventos' }: { lab
+           95%  { opacity: 100%; }
+           100% { opacity: 0%; transform: translateX(-70%); }
+         }
+-      `}</style>
+-    </div>
+-  );
+-}
++      `;
+diff --git a/apps/web/src/lib/cloudinary.ts b/apps/web/src/lib/cloudinary.ts
+index c5186ac..46c9154 100644
+--- a/apps/web/src/lib/cloudinary.ts
++++ b/apps/web/src/lib/cloudinary.ts
+@@ -41,24 +41,24 @@ function buildVideoUrl(url: string, transforms: string): string {
+ 
+ /* ─── Image presets ──────────────────────────────────── */
+ 
+-/** Gallery masonry card — retina, max quality, progressive JPEG fallback */
++/** Gallery masonry card — retina, calidad óptima automática, progressive JPEG fallback */
+ export function cxCard(url: string): string {
+   if (!url) return '';
+-  const t = 'q_100,f_auto,fl_progressive:semi,dpr_auto,w_1400,c_limit';
++  const t = 'q_auto:best,f_auto,fl_progressive:semi,dpr_auto,w_1400,c_limit';
+   return buildImageUrl(url, t);
+ }
+ 
+-/** Lightbox / full-screen — native resolution, truly lossless */
++/** Lightbox / full-screen — native resolution, calidad óptima automática */
+ export function cxFull(url: string): string {
+   if (!url) return '';
+-  const t = 'q_100,f_auto,fl_progressive:steep,dpr_auto';
++  const t = 'q_auto:best,f_auto,fl_progressive:steep,dpr_auto';
+   return buildImageUrl(url, t);
+ }
+ 
+-/** Service page hero — wide, high quality */
++/** Service page hero — wide, calidad óptima automática */
+ export function cxHero(url: string): string {
+   if (!url) return '';
+-  const t = 'q_100,f_auto,fl_progressive:semi,dpr_auto,w_2400,c_limit';
++  const t = 'q_auto:best,f_auto,fl_progressive:semi,dpr_auto,w_2400,c_limit';
+   return buildImageUrl(url, t);
+ }
+ 
+diff --git a/apps/web/src/lib/homeData.ts b/apps/web/src/lib/homeData.ts
+new file mode 100644
+index 0000000..2893cb8
+--- /dev/null
++++ b/apps/web/src/lib/homeData.ts
+@@ -0,0 +1,66 @@
++import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
++import { db } from '@/lib/firebase';
++
++export function toPlain(data: Record<string, any>): Record<string, any> {
++  const r: Record<string, any> = {};
++  for (const [k, v] of Object.entries(data)) {
++    if (v === null || v === undefined) r[k] = v;
++    else if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') r[k] = v;
++    else if (Array.isArray(v)) r[k] = v.map((x: any) =>
++      typeof x === 'string' || typeof x === 'number' || typeof x === 'boolean' ? x
++      : typeof x === 'object' && !x?.toDate && !('seconds' in x) ? toPlain(x) : String(x)
++    );
++    else if (v?.toDate) r[k] = v.toDate().toISOString();
++    else if (typeof v === 'object' && 'seconds' in v) r[k] = new Date(v.seconds * 1000).toISOString();
++    else if (typeof v === 'object') r[k] = toPlain(v);
++  }
++  return r;
++}
++
++export type HomeData = {
++  hero: any; stats: any; about: any; contacto: any;
++  services: any[]; gallery: any[]; testimonials: any[];
++  whyUs: any; brands: any; loaded: true;
++};
++
++/**
++ * Trae todo el contenido de la Home directamente en el servidor
++ * (Server Component), para que el HTML llegue ya completo — sin
++ * pantalla de carga y visible para buscadores/bots.
++ */
++export async function getHomeData(): Promise<HomeData> {
++  try {
++    const [heroS, statsS, aboutS, contactoS, whyUsS, brandsS, servicesS, galleryS, testimonialsS] =
++      await Promise.allSettled([
++        getDoc(doc(db, 'site_config', 'hero')),
++        getDoc(doc(db, 'site_config', 'stats')),
++        getDoc(doc(db, 'site_config', 'about')),
++        getDoc(doc(db, 'site_config', 'contacto')),
++        getDoc(doc(db, 'site_config', 'why-us')),
++        getDoc(doc(db, 'site_config', 'brands')),
++        getDocs(query(collection(db, 'services'), where('visible', '==', true), orderBy('order', 'asc'))),
++        getDocs(query(collection(db, 'gallery_items'), where('visible', '==', true), orderBy('order', 'asc'))),
++        getDocs(query(collection(db, 'testimonials'), where('visible', '==', true), orderBy('order', 'asc'))),
++      ]);
++
++    return {
++      hero:         heroS.status === 'fulfilled' && heroS.value.exists()         ? toPlain(heroS.value.data())         : {},
++      stats:        statsS.status === 'fulfilled' && statsS.value.exists()       ? toPlain(statsS.value.data())        : {},
++      about:        aboutS.status === 'fulfilled' && aboutS.value.exists()       ? toPlain(aboutS.value.data())        : {},
++      contacto:     contactoS.status === 'fulfilled' && contactoS.value.exists() ? toPlain(contactoS.value.data())     : {},
++      whyUs:        whyUsS.status === 'fulfilled' && whyUsS.value.exists()       ? toPlain(whyUsS.value.data())        : null,
++      brands:       brandsS.status === 'fulfilled' && brandsS.value.exists()     ? toPlain(brandsS.value.data())       : null,
++      services:     servicesS.status === 'fulfilled'      ? servicesS.value.docs.map(d => toPlain({ id: d.id, ...d.data() }))      : [],
++      gallery:      galleryS.status === 'fulfilled'       ? galleryS.value.docs.map(d => toPlain({ id: d.id, ...d.data() }))       : [],
++      testimonials: testimonialsS.status === 'fulfilled'  ? testimonialsS.value.docs.map(d => toPlain({ id: d.id, ...d.data() }))  : [],
++      loaded: true,
++    };
++  } catch (e) {
++    console.error('[getHomeData]', e);
++    return {
++      hero: {}, stats: {}, about: {}, contacto: {},
++      services: [], gallery: [], testimonials: [],
++      whyUs: null, brands: null, loaded: true,
++    };
++  }
++}
