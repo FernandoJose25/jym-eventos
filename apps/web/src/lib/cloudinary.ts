@@ -41,24 +41,24 @@ function buildVideoUrl(url: string, transforms: string): string {
 
 /* ─── Image presets ──────────────────────────────────── */
 
-/** Gallery masonry card — retina, max quality, progressive JPEG fallback */
+/** Gallery masonry card — retina, calidad óptima automática, progressive JPEG fallback */
 export function cxCard(url: string): string {
   if (!url) return '';
-  const t = 'q_100,f_auto,fl_progressive:semi,dpr_auto,w_1400,c_limit';
+  const t = 'q_auto:best,f_auto,fl_progressive:semi,dpr_auto,w_1400,c_limit';
   return buildImageUrl(url, t);
 }
 
-/** Lightbox / full-screen — native resolution, truly lossless */
+/** Lightbox / full-screen — native resolution, calidad óptima automática */
 export function cxFull(url: string): string {
   if (!url) return '';
-  const t = 'q_100,f_auto,fl_progressive:steep,dpr_auto';
+  const t = 'q_auto:best,f_auto,fl_progressive:steep,dpr_auto';
   return buildImageUrl(url, t);
 }
 
-/** Service page hero — wide, high quality */
+/** Service page hero — wide, calidad óptima automática */
 export function cxHero(url: string): string {
   if (!url) return '';
-  const t = 'q_100,f_auto,fl_progressive:semi,dpr_auto,w_2400,c_limit';
+  const t = 'q_auto:best,f_auto,fl_progressive:semi,dpr_auto,w_2400,c_limit';
   return buildImageUrl(url, t);
 }
 
