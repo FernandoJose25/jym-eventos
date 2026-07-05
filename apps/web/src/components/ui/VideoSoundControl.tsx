@@ -7,17 +7,17 @@ interface Props {
 }
 
 export default function VideoSoundControl({ videoRef, position = 'bottom-right' }: Props) {
-  const [muted,   setMuted]   = useState(true);
-  const [volume,  setVolume]  = useState(0.6);
+  const [muted, setMuted] = useState(true);
+  const [volume, setVolume] = useState(0.6);
   const [showSlider, setShowSlider] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const posStyle: React.CSSProperties = {
     position: 'absolute', zIndex: 10,
     ...(position === 'bottom-right' && { bottom: 12, right: 12 }),
-    ...(position === 'bottom-left'  && { bottom: 12, left:  12 }),
-    ...(position === 'top-right'    && { top:    12, right: 12 }),
-    ...(position === 'top-left'     && { top:    12, left:  12 }),
+    ...(position === 'bottom-left' && { bottom: 12, left: 12 }),
+    ...(position === 'top-right' && { top: 12, right: 12 }),
+    ...(position === 'top-left' && { top: 12, left: 12 }),
   };
 
   const scheduleHide = () => {
@@ -29,7 +29,7 @@ export default function VideoSoundControl({ videoRef, position = 'bottom-right' 
     const vid = videoRef.current;
     if (!vid) return;
     const next = !muted;
-    vid.muted  = next;
+    vid.muted = next;
     vid.volume = next ? 0 : volume;
     setMuted(next);
     setShowSlider(!next);
@@ -41,8 +41,8 @@ export default function VideoSoundControl({ videoRef, position = 'bottom-right' 
     if (!vid) return;
     setVolume(v);
     vid.volume = v;
-    if (v === 0) { vid.muted = true;  setMuted(true); }
-    else         { vid.muted = false; setMuted(false); }
+    if (v === 0) { vid.muted = true; setMuted(true); }
+    else { vid.muted = false; setMuted(false); }
     scheduleHide();
   };
 
@@ -50,7 +50,7 @@ export default function VideoSoundControl({ videoRef, position = 'bottom-right' 
 
   return (
     <div style={posStyle}
-      onMouseEnter={() => { if (hideTimer.current) clearTimeout(hideTimer.current); setShowSlider(true); }}
+      onMouseEnter={() => { ...; setShowSlider(true); }}
       onMouseLeave={() => scheduleHide()}
     >
       <div style={{

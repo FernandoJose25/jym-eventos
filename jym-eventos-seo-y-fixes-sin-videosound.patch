@@ -1,0 +1,261 @@
+diff --git a/apps/web/src/app/layout.tsx b/apps/web/src/app/layout.tsx
+index f018cb7..9eb9c1a 100644
+--- a/apps/web/src/app/layout.tsx
++++ b/apps/web/src/app/layout.tsx
+@@ -5,9 +5,11 @@ import Footer          from '@/components/layout/Footer';
+ import MotionProvider  from '@/components/ui/MotionProvider';
+ import CookieBanner    from '@/components/ui/CookieBanner';
+ import WhatsAppWidget  from '@/components/ui/WhatsAppWidget';
++import JsonLd          from '@/components/ui/JsonLd';
+ import { Analytics } from '@vercel/analytics/next';
+ import { db } from '@/lib/firebase';
+ import { getDoc, doc } from 'firebase/firestore';
++import { SITE_URL } from '@/lib/site';
+ import './globals.css';
+ import '../styles/animations.css';
+ 
+@@ -19,30 +21,64 @@ const jakarta = Plus_Jakarta_Sans({
+   weight:   ['400','500','600','700'],
+ });
+ 
+-export async function generateMetadata(): Promise<Metadata> {
+-  let iconUrl: string | undefined;
++// Se llama desde generateMetadata() y desde el layout — Firestore la resuelve una sola vez por request
++async function getNavbarLogo(): Promise<string | undefined> {
+   try {
+     const snap = await getDoc(doc(db, 'site_config', 'navbar'));
+-    if (snap.exists()) iconUrl = snap.data().logo || undefined;
++    if (snap.exists()) return snap.data().logo || undefined;
+   } catch {}
++  return undefined;
++}
++
++export async function generateMetadata(): Promise<Metadata> {
++  const iconUrl = await getNavbarLogo();
+ 
+   return {
++    metadataBase: new URL(SITE_URL),
+     title: {
+       default:  'J&M Eventos y Decoraciones — Sechura, Piura',
+       template: '%s | J&M Eventos',
+     },
+     description: 'Organizamos eventos únicos en Sechura, Piura. Shows infantiles, hora loca, decoración temática, catering y fotografía profesional.',
++    alternates: { canonical: SITE_URL },
+     ...(iconUrl && { icons: { icon: iconUrl, apple: iconUrl } }),
+   };
+ }
+ 
+-export default function RootLayout({ children }: { children: React.ReactNode }) {
++export default async function RootLayout({ children }: { children: React.ReactNode }) {
++  const logoUrl = await getNavbarLogo();
++
++  const localBusinessSchema = {
++    '@context': 'https://schema.org',
++    '@type': 'EventPlanner',
++    name: 'J&M Eventos y Decoraciones',
++    ...(logoUrl && { image: logoUrl, logo: logoUrl }),
++    url: SITE_URL,
++    telephone: '+51945203708',
++    address: {
++      '@type': 'PostalAddress',
++      addressLocality: 'Sechura',
++      addressRegion: 'Piura',
++      addressCountry: 'PE',
++    },
++    areaServed: {
++      '@type': 'City',
++      name: 'Sechura, Piura, Perú',
++    },
++    priceRange: '$$',
++    sameAs: [
++      'https://www.instagram.com/jmdecoracionesyeventos1',
++      'https://www.tiktok.com/@jmdecoraciones.18',
++    ],
++  };
++
+   return (
+     <html lang="es" className={`${playfair.variable} ${jakarta.variable}`}>
+       <head>
+         {/* Preconnect para fonts */}
+         <link rel="preconnect" href="https://fonts.googleapis.com"/>
+         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"/>
++        <JsonLd data={localBusinessSchema} />
+       </head>
+       <body>
+         <MotionProvider>
+diff --git a/apps/web/src/app/robots.ts b/apps/web/src/app/robots.ts
+new file mode 100644
+index 0000000..13c6d0f
+--- /dev/null
++++ b/apps/web/src/app/robots.ts
+@@ -0,0 +1,13 @@
++import type { MetadataRoute } from 'next';
++import { SITE_URL } from '@/lib/site';
++
++export default function robots(): MetadataRoute.Robots {
++  return {
++    rules: {
++      userAgent: '*',
++      allow: '/',
++      disallow: ['/api/'],
++    },
++    sitemap: `${SITE_URL}/sitemap.xml`,
++  };
++}
+diff --git a/apps/web/src/app/servicios/[slug]/page.tsx b/apps/web/src/app/servicios/[slug]/page.tsx
+index c021608..8deb04d 100644
+--- a/apps/web/src/app/servicios/[slug]/page.tsx
++++ b/apps/web/src/app/servicios/[slug]/page.tsx
+@@ -1,15 +1,46 @@
+ import type { Metadata } from 'next';
++import { collection, getDocs, query, where } from 'firebase/firestore';
++import { db } from '@/lib/firebase';
+ import ServicioClient, { SERVICIOS_DATA } from './ServicioClient';
+ 
++async function findServicio(slug: string) {
++  const snap = await getDocs(query(collection(db, 'services'), where('visible', '==', true)));
++  const match = snap.docs.find(d => {
++    const link = d.data().link || '';
++    const docSlug = link.replace('servicios/', '').replace('.html', '');
++    return docSlug === slug || d.id === slug;
++  });
++  return match ? match.data() : null;
++}
++
+ export async function generateStaticParams() {
+-  return Object.keys(SERVICIOS_DATA).map((slug) => ({ slug }));
++  // Genera las páginas estáticas a partir de los servicios reales en Firestore
++  try {
++    const snap = await getDocs(collection(db, 'services'));
++    const slugs = snap.docs.map(d => {
++      const link = d.data().link || '';
++      return link.replace('servicios/', '').replace('.html', '') || d.id;
++    });
++    return slugs.map((slug) => ({ slug }));
++  } catch {
++    // Respaldo si Firestore no responde en build time
++    return Object.keys(SERVICIOS_DATA).map((slug) => ({ slug }));
++  }
+ }
+ 
+ export async function generateMetadata(
+   { params }: { params: Promise<{ slug: string }> }
+ ): Promise<Metadata> {
+   const { slug } = await params;
+-  const data = SERVICIOS_DATA[slug];
++
++  // Fuente de verdad real: Firestore (lo mismo que usa la página para el contenido visible)
++  let data: any = null;
++  try {
++    data = await findServicio(slug);
++  } catch {}
++
++  // Respaldo legado por si el servicio todavía no está en Firestore
++  if (!data) data = SERVICIOS_DATA[slug];
+ 
+   if (!data) {
+     return {
+@@ -18,13 +49,20 @@ export async function generateMetadata(
+     };
+   }
+ 
++  const title = data.title;
++  const desc  = data.desc || data.detail?.hero_desc || data.hero
++    || `${title} para tu evento en Sechura, Piura. Cotiza gratis con J&M Eventos.`;
++  const img   = (data.mediaType === 'image' && data.mediaSrc) ? data.mediaSrc
++    : (data.heroMediaType === 'image' && data.heroMediaSrc) ? data.heroMediaSrc
++    : data.img;
++
+   return {
+-    title: `${data.title} en Sechura, Piura`,
+-    description: data.hero ?? `${data.title} para tu evento en Sechura, Piura. Cotiza gratis con J&M Eventos.`,
++    title: `${title} en Sechura, Piura`,
++    description: desc,
+     openGraph: {
+-      title: `${data.title} | J&M Eventos`,
+-      description: data.hero,
+-      images: data.img ? [{ url: data.img }] : undefined,
++      title: `${title} | J&M Eventos`,
++      description: desc,
++      images: img ? [{ url: img }] : undefined,
+     },
+   };
+ }
+diff --git a/apps/web/src/app/sitemap.ts b/apps/web/src/app/sitemap.ts
+new file mode 100644
+index 0000000..de2e0f4
+--- /dev/null
++++ b/apps/web/src/app/sitemap.ts
+@@ -0,0 +1,38 @@
++import type { MetadataRoute } from 'next';
++import { collection, getDocs } from 'firebase/firestore';
++import { db } from '@/lib/firebase';
++import { SITE_URL } from '@/lib/site';
++
++// Se regenera al menos una vez por hora, incluyendo los servicios que hayas
++// agregado, editado o borrado desde el panel admin — sin tocar código.
++export const revalidate = 3600;
++
++export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
++  const staticRoutes: MetadataRoute.Sitemap = [
++    { url: `${SITE_URL}/`,                       changeFrequency: 'weekly',  priority: 1.0 },
++    { url: `${SITE_URL}/sobre-nosotros`,         changeFrequency: 'monthly', priority: 0.7 },
++    { url: `${SITE_URL}/galeria`,                changeFrequency: 'weekly',  priority: 0.7 },
++    { url: `${SITE_URL}/contacto`,               changeFrequency: 'monthly', priority: 0.6 },
++    { url: `${SITE_URL}/anuncia-con-nosotros`,   changeFrequency: 'monthly', priority: 0.4 },
++  ];
++
++  let serviceRoutes: MetadataRoute.Sitemap = [];
++  try {
++    const snap = await getDocs(collection(db, 'services'));
++    serviceRoutes = snap.docs
++      .filter(d => d.data().visible !== false)
++      .map(d => {
++        const link = d.data().link || '';
++        const slug = link.replace('servicios/', '').replace('.html', '') || d.id;
++        return {
++          url: `${SITE_URL}/servicios/${slug}`,
++          changeFrequency: 'monthly' as const,
++          priority: 0.8,
++        };
++      });
++  } catch (e) {
++    console.error('[sitemap] Error leyendo servicios de Firestore:', e);
++  }
++
++  return [...staticRoutes, ...serviceRoutes];
++}
+diff --git a/apps/web/src/components/layout/Navbar.tsx b/apps/web/src/components/layout/Navbar.tsx
+index b026d4b..c8dcc77 100644
+--- a/apps/web/src/components/layout/Navbar.tsx
++++ b/apps/web/src/components/layout/Navbar.tsx
+@@ -33,9 +33,19 @@ export default function Navbar() {
+   ), []);
+ 
+   useEffect(() => {
++    // Muestra el último logo conocido al instante (evita el flash del ícono por defecto)
++    try {
++      const cached = localStorage.getItem('navConfigCache');
++      if (cached) setNavConfig(JSON.parse(cached));
++    } catch {}
++
+     getDoc(doc(db, 'site_config', 'navbar')).then(snap => {
+-      if (snap.exists()) setNavConfig(snap.data() as NavConfig);
+-    });
++      if (snap.exists()) {
++        const data = snap.data() as NavConfig;
++        setNavConfig(data);
++        try { localStorage.setItem('navConfigCache', JSON.stringify(data)); } catch {}
++      }
++    }).catch(err => console.error('Error cargando config del navbar:', err));
+   }, []);
+ 
+   useEffect(() => {
+diff --git a/apps/web/src/lib/site.ts b/apps/web/src/lib/site.ts
+new file mode 100644
+index 0000000..1d81999
+--- /dev/null
++++ b/apps/web/src/lib/site.ts
+@@ -0,0 +1,2 @@
++// Dominio oficial de producción — todo el SEO (canonical, sitemap, OG, JSON-LD) usa esta URL.
++export const SITE_URL = 'https://jym-eventos-web.vercel.app';
