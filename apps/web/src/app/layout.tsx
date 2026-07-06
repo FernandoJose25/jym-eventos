@@ -88,9 +88,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* Preconnect para fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <JsonLd data={localBusinessSchema} />
       </head>
       <body>
+        <JsonLd data={localBusinessSchema} />
         <MotionProvider>
           <Navbar />
           <main>{children}</main>
