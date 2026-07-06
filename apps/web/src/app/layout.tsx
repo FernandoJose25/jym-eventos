@@ -7,8 +7,7 @@ import CookieBanner from '@/components/ui/CookieBanner';
 import WhatsAppWidget from '@/components/ui/WhatsAppWidget';
 import JsonLd from '@/components/ui/JsonLd';
 import { Analytics } from '@vercel/analytics/next';
-import { db } from '@/lib/firebase';
-import { getDoc, doc } from 'firebase/firestore';
+import { adminDb } from '@/lib/firebase-admin';
 import { unstable_cache } from 'next/cache';
 import { SITE_URL } from '@/lib/site';
 import './globals.css';
@@ -23,8 +22,8 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 async function fetchNavbarLogo(): Promise<string | undefined> {
-  const snap = await getDoc(doc(db, 'site_config', 'navbar'));
-  return snap.exists() ? (snap.data().logo || undefined) : undefined;
+  const snap = await adminDb.collection('site_config').doc('navbar').get();
+  return snap.exists ? (snap.data()?.logo || undefined) : undefined;
 }
 
 // Se cachea 1 hora: si Firestore falla momentáneamente en una request puntual,

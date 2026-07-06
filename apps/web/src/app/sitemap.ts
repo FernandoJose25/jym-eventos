@@ -1,6 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import { SITE_URL } from '@/lib/site';
 
 // Se regenera al menos una vez por hora, incluyendo los servicios que hayas
@@ -9,16 +8,16 @@ export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: `${SITE_URL}/`,                       changeFrequency: 'weekly',  priority: 1.0 },
-    { url: `${SITE_URL}/sobre-nosotros`,         changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${SITE_URL}/galeria`,                changeFrequency: 'weekly',  priority: 0.7 },
-    { url: `${SITE_URL}/contacto`,               changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${SITE_URL}/anuncia-con-nosotros`,   changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${SITE_URL}/`, changeFrequency: 'weekly', priority: 1.0 },
+    { url: `${SITE_URL}/sobre-nosotros`, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${SITE_URL}/galeria`, changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${SITE_URL}/contacto`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${SITE_URL}/anuncia-con-nosotros`, changeFrequency: 'monthly', priority: 0.4 },
   ];
 
   let serviceRoutes: MetadataRoute.Sitemap = [];
   try {
-    const snap = await getDocs(collection(db, 'services'));
+    const snap = await adminDb.collection('services').get();
     serviceRoutes = snap.docs
       .filter(d => d.data().visible !== false)
       .map(d => {
