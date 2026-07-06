@@ -317,17 +317,20 @@ function useCounter(target: number, duration = 1800, start = false) {
   return count;
 }
 
-export default function ServicioClient() {
+export default function ServicioClient({ initialData = null }: { initialData?: any } = {}) {
   const params = useParams();
   const rawSlug = params?.slug as string;
-  const [servicio, setServicio] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  // initialData viene del servidor (page.tsx ya lo obtuvo para generateMetadata).
+  // Arrancamos con contenido real en vez de null para que el primer render
+  // (y el HTML que ve un crawler) no dependa de que el useEffect termine.
+  const [servicio, setServicio] = useState<any>(initialData);
+  const [loading, setLoading] = useState(!initialData);
   const [mediaError, setMediaError] = useState(false);
   const [statsVisible, setStatsVisible] = useState(false);
   const [visibleCards, setVisibleCards] = useState<Set<string>>(new Set());
   const [otrosServicios, setOtrosServicios] = useState<any[]>([]);
-  const statsRef   = useRef<HTMLDivElement>(null);
-  const videoRef   = useRef<HTMLVideoElement>(null);
+  const statsRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const c1 = useCounter(200, 1600, statsVisible);
   const c2 = useCounter(5, 1200, statsVisible);
@@ -355,8 +358,8 @@ export default function ServicioClient() {
           .map(d => {
             const dt = d.data();
             const img =
-              (dt.mediaType    === 'image' && dt.mediaSrc)    ? dt.mediaSrc    :
-              (dt.heroMediaType === 'image' && dt.heroMediaSrc) ? dt.heroMediaSrc : '';
+              (dt.mediaType === 'image' && dt.mediaSrc) ? dt.mediaSrc :
+                (dt.heroMediaType === 'image' && dt.heroMediaSrc) ? dt.heroMediaSrc : '';
             return { id: d.id, title: dt.title || '', icon: dt.icon || '🎉', link: dt.link || '', img };
           })
           .filter((s: any) => s.title);
@@ -413,24 +416,24 @@ export default function ServicioClient() {
   // detail map lives inside the Firestore document (like Shows Infantiles)
   const dt = servicio?.detail || {};
 
-  const title   = servicio?.title || sd.title || rawSlug;
-  const desc    = dt.hero_desc || servicio?.desc || sd.hero || '';
+  const title = servicio?.title || sd.title || rawSlug;
+  const desc = dt.hero_desc || servicio?.desc || sd.hero || '';
 
   // heroMediaSrc es el hero de la página detalle — totalmente independiente de mediaSrc (tarjeta inicio)
-  const rawMedia     = servicio?.heroMediaSrc || '';
+  const rawMedia = servicio?.heroMediaSrc || '';
   const rawMediaType = servicio?.heroMediaType || 'image';
   const firestoreMedia = rawMedia;
-  const firestoreType  = rawMediaType;
+  const firestoreType = rawMediaType;
   const mediaSrc = (firestoreMedia && !mediaError) ? firestoreMedia : (sd.img || '');
-  const isVideo  = firestoreMedia && !mediaError && firestoreType === 'video';
+  const isVideo = firestoreMedia && !mediaError && firestoreType === 'video';
 
   // Rich content — Firestore detail map first, then static fallback
-  const h2content  = dt.longDescH2 || sd.h2 || '';
+  const h2content = dt.longDescH2 || sd.h2 || '';
   // longDesc is the full paragraph; split it roughly into p1/p2 using '. '
   const longDescFull = dt.longDesc || '';
-  const splitIdx   = longDescFull.indexOf('. ', longDescFull.length / 2);
-  const p1content  = longDescFull ? (splitIdx > 0 ? longDescFull.slice(0, splitIdx + 1) : longDescFull) : (sd.p1 || '');
-  const p2content  = longDescFull && splitIdx > 0 ? longDescFull.slice(splitIdx + 2) : (sd.p2 || '');
+  const splitIdx = longDescFull.indexOf('. ', longDescFull.length / 2);
+  const p1content = longDescFull ? (splitIdx > 0 ? longDescFull.slice(0, splitIdx + 1) : longDescFull) : (sd.p1 || '');
+  const p2content = longDescFull && splitIdx > 0 ? longDescFull.slice(splitIdx + 2) : (sd.p2 || '');
 
   // includes: from Firestore detail.includes (filtered visible), else static
   const firestoreIncludes = (dt.includes || []).filter((i: any) => i.visible !== false);
@@ -456,12 +459,12 @@ export default function ServicioClient() {
   })();
 
   // CTA texts — from Firestore detail or static
-  const ctaH2text  = dt.ctaH2  || sd.cta    || '¿Listo para reservar?';
-  const ctaPtext   = dt.ctaP   || sd.ctaDesc || 'Contáctanos hoy y preparamos una propuesta personalizada sin compromiso.';
+  const ctaH2text = dt.ctaH2 || sd.cta || '¿Listo para reservar?';
+  const ctaPtext = dt.ctaP || sd.ctaDesc || 'Contáctanos hoy y preparamos una propuesta personalizada sin compromiso.';
 
-  const waText      = sd.waText || `Hola, me interesa ${title}`;
-  const accentColor = sd.color  || '#d4a017';
-  const ctaLabel    = dt.btn1Text || (rawSlug === 'decoracion-tematica' ? 'Cotizar Decoración' : rawSlug === 'shows-infantiles' ? 'Cotizar Show' : 'Cotizar Ahora');
+  const waText = sd.waText || `Hola, me interesa ${title}`;
+  const accentColor = sd.color || '#d4a017';
+  const ctaLabel = dt.btn1Text || (rawSlug === 'decoracion-tematica' ? 'Cotizar Decoración' : rawSlug === 'shows-infantiles' ? 'Cotizar Show' : 'Cotizar Ahora');
 
   if (!h2content && !servicio) return (
     <div style={{ minHeight: '100vh', paddingTop: '8rem', textAlign: 'center', fontFamily: 'var(--font-jakarta)' }}>
@@ -489,7 +492,7 @@ export default function ServicioClient() {
           overflow: 'hidden',
         }}>
           {/* Dot-grid subtle texture */}
-          <div style={{ position:'absolute', inset:0, backgroundImage:`radial-gradient(rgba(212,160,23,0.07) 1px,transparent 1px)`, backgroundSize:'28px 28px', pointerEvents:'none' }} />
+          <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(rgba(212,160,23,0.07) 1px,transparent 1px)`, backgroundSize: '28px 28px', pointerEvents: 'none' }} />
 
           {/* Animated glow orbs */}
           <div style={{
@@ -506,14 +509,14 @@ export default function ServicioClient() {
           }} />
 
           {/* Breadcrumb */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: '2rem', animation: 'fadeSlideUp .5s ease both', position:'relative', zIndex:2 }}>
+          <nav style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: '2rem', animation: 'fadeSlideUp .5s ease both', position: 'relative', zIndex: 2 }}>
             {[['Inicio', '/'], ['Servicios', '/#servicios'], [title, null]].map(([label, href], i) => (
               <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {i > 0 && <span style={{ color: 'rgba(212,160,23,0.4)', fontSize: '0.65rem' }}>›</span>}
                 {href
                   ? <a href={String(href)} style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.72rem', textDecoration: 'none', fontFamily: 'var(--font-jakarta)', letterSpacing: '.05em', transition: 'color .2s' }}
-                       onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#f5c842'}
-                       onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.35)'}>{label}</a>
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#f5c842'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.35)'}>{label}</a>
                   : <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.72rem', fontFamily: 'var(--font-jakarta)', fontWeight: 600, letterSpacing: '.05em' }}>{label}</span>}
               </span>
             ))}
@@ -529,7 +532,7 @@ export default function ServicioClient() {
               textTransform: 'uppercase', letterSpacing: '.15em', fontFamily: 'var(--font-jakarta)',
               animation: 'fadeSlideUp .5s .08s ease both', position: 'relative', zIndex: 2,
             }}>
-              <span style={{ width:5, height:5, borderRadius:'50%', background:'#f5c842', boxShadow:'0 0 8px #f5c842', animation:'pulse 2s infinite', display:'inline-block' }} />
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f5c842', boxShadow: '0 0 8px #f5c842', animation: 'pulse 2s infinite', display: 'inline-block' }} />
               {sd.badge}
             </div>
           )}
@@ -548,7 +551,7 @@ export default function ServicioClient() {
           </h1>
 
           {/* Accent bar */}
-          <div style={{ display: 'flex', gap: 4, marginBottom: '1.5rem', animation: 'fadeSlideUp .5s .22s ease both', position:'relative', zIndex:2 }}>
+          <div style={{ display: 'flex', gap: 4, marginBottom: '1.5rem', animation: 'fadeSlideUp .5s .22s ease both', position: 'relative', zIndex: 2 }}>
             <div style={{ width: 44, height: 3, borderRadius: 2, background: `linear-gradient(90deg,${accentColor},#f5c842)` }} />
             <div style={{ width: 10, height: 3, borderRadius: 2, background: `${accentColor}50` }} />
             <div style={{ width: 5, height: 3, borderRadius: 2, background: `${accentColor}25` }} />
@@ -566,36 +569,36 @@ export default function ServicioClient() {
           </p>
 
           {/* CTAs */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.875rem', animation: 'fadeSlideUp .55s .36s ease both', position:'relative', zIndex:2 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.875rem', animation: 'fadeSlideUp .55s .36s ease both', position: 'relative', zIndex: 2 }}>
             <a href="/contacto"
-               style={{
-                 display: 'inline-flex', alignItems: 'center', gap: 10,
-                 padding: '0.9rem 2.1rem', borderRadius: 999,
-                 background: 'linear-gradient(135deg,#b8860b,#f5c842)',
-                 color: '#0a1628', fontWeight: 800, fontSize: '0.88rem', textDecoration: 'none',
-                 fontFamily: 'var(--font-jakarta)', letterSpacing: '.04em',
-                 boxShadow: '0 4px 24px rgba(212,160,23,0.45)',
-                 transition: 'all .3s cubic-bezier(.34,1.4,.64,1)',
-                 position: 'relative', overflow: 'hidden',
-               }}
-               className="srv-cta-dark"
-               onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-3px) scale(1.03)'; el.style.boxShadow = '0 12px 36px rgba(212,160,23,0.6)'; }}
-               onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 24px rgba(212,160,23,0.45)'; }}>
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 10,
+                padding: '0.9rem 2.1rem', borderRadius: 999,
+                background: 'linear-gradient(135deg,#b8860b,#f5c842)',
+                color: '#0a1628', fontWeight: 800, fontSize: '0.88rem', textDecoration: 'none',
+                fontFamily: 'var(--font-jakarta)', letterSpacing: '.04em',
+                boxShadow: '0 4px 24px rgba(212,160,23,0.45)',
+                transition: 'all .3s cubic-bezier(.34,1.4,.64,1)',
+                position: 'relative', overflow: 'hidden',
+              }}
+              className="srv-cta-dark"
+              onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-3px) scale(1.03)'; el.style.boxShadow = '0 12px 36px rgba(212,160,23,0.6)'; }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 24px rgba(212,160,23,0.45)'; }}>
               {ctaLabel} →
             </a>
             <a href={`https://wa.me/51945203708?text=${encodeURIComponent(waText)}`}
-               target="_blank" rel="noopener noreferrer"
-               style={{
-                 display: 'inline-flex', alignItems: 'center', gap: 8,
-                 padding: '0.9rem 2.1rem', borderRadius: 999,
-                 background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.85)',
-                 fontWeight: 600, fontSize: '0.88rem', textDecoration: 'none',
-                 fontFamily: 'var(--font-jakarta)', letterSpacing: '.04em',
-                 border: '1.5px solid rgba(255,255,255,0.15)',
-                 transition: 'all .3s cubic-bezier(.34,1.4,.64,1)',
-               }}
-               onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#25d366'; el.style.color = '#fff'; el.style.background = 'rgba(37,211,102,0.15)'; el.style.transform = 'translateY(-3px) scale(1.02)'; }}
-               onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.15)'; el.style.color = 'rgba(255,255,255,0.85)'; el.style.background = 'rgba(255,255,255,0.06)'; el.style.transform = ''; }}>
+              target="_blank" rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '0.9rem 2.1rem', borderRadius: 999,
+                background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.85)',
+                fontWeight: 600, fontSize: '0.88rem', textDecoration: 'none',
+                fontFamily: 'var(--font-jakarta)', letterSpacing: '.04em',
+                border: '1.5px solid rgba(255,255,255,0.15)',
+                transition: 'all .3s cubic-bezier(.34,1.4,.64,1)',
+              }}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#25d366'; el.style.color = '#fff'; el.style.background = 'rgba(37,211,102,0.15)'; el.style.transform = 'translateY(-3px) scale(1.02)'; }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.15)'; el.style.color = 'rgba(255,255,255,0.85)'; el.style.background = 'rgba(255,255,255,0.06)'; el.style.transform = ''; }}>
               💬 WhatsApp
             </a>
           </div>
@@ -606,16 +609,16 @@ export default function ServicioClient() {
           {/* Media — with fallback on error */}
           {isVideo ? (
             <video ref={videoRef} autoPlay muted loop playsInline
-                   onError={() => setMediaError(true)}
-                   style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}>
+              onError={() => setMediaError(true)}
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}>
               <source src={cxVideo(mediaSrc)} type="video/mp4" />
               <source src={cxVideo(mediaSrc)} type="video/webm" />
             </video>
           ) : mediaSrc ? (
             <img src={cxHero(mediaSrc)} alt={title}
-                 onError={() => setMediaError(true)}
-                 decoding="async"
-                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 10s ease', animation: 'imgZoom 10s ease forwards' }} />
+              onError={() => setMediaError(true)}
+              decoding="async"
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 10s ease', animation: 'imgZoom 10s ease forwards' }} />
           ) : (
             /* Placeholder when no media */
             <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, #0c1e30, ${accentColor}30)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -688,13 +691,13 @@ export default function ServicioClient() {
                 { val: 'Piura', label: 'Cobertura Regional', suffix: '', static: true },
               ].map((s, i) => (
                 <div key={i}
-                     style={{
-                       padding: '2.25rem 1.5rem', textAlign: 'center',
-                       borderRight: i < 3 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                       position: 'relative', transition: 'background .4s',
-                     }}
-                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${accentColor}0a`}
-                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+                  style={{
+                    padding: '2.25rem 1.5rem', textAlign: 'center',
+                    borderRight: i < 3 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                    position: 'relative', transition: 'background .4s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${accentColor}0a`}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
                   <p style={{
                     fontFamily: 'var(--font-playfair)',
                     fontSize: 'clamp(1.7rem,2.5vw,2.4rem)',
@@ -726,7 +729,7 @@ export default function ServicioClient() {
           <div className="container">
             {/* Header */}
             <div style={{ textAlign: 'center', marginBottom: 'clamp(3rem,6vw,5rem)' }}
-                 data-reveal="desc-header">
+              data-reveal="desc-header">
               <div style={{
                 opacity: isVisible('desc-header') ? 1 : 0,
                 transform: isVisible('desc-header') ? 'none' : 'translateY(24px)',
@@ -775,18 +778,18 @@ export default function ServicioClient() {
                     Cotizar Ahora
                   </a>
                   <a href={`https://wa.me/51945203708?text=${encodeURIComponent(waText)}`}
-                     target="_blank" rel="noopener noreferrer"
-                     style={{
-                       display: 'inline-flex', alignItems: 'center', gap: 8,
-                       padding: '0.85rem 2rem', borderRadius: 999,
-                       background: '#25d366', color: '#fff',
-                       fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none',
-                       fontFamily: 'var(--font-jakarta)',
-                       boxShadow: '0 4px 20px rgba(37,211,102,0.3)',
-                       transition: 'all .3s cubic-bezier(.34,1.4,.64,1)',
-                     }}
-                     onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-3px)'; el.style.boxShadow = '0 10px 28px rgba(37,211,102,0.45)'; }}
-                     onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 20px rgba(37,211,102,0.3)'; }}>
+                    target="_blank" rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 8,
+                      padding: '0.85rem 2rem', borderRadius: 999,
+                      background: '#25d366', color: '#fff',
+                      fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none',
+                      fontFamily: 'var(--font-jakarta)',
+                      boxShadow: '0 4px 20px rgba(37,211,102,0.3)',
+                      transition: 'all .3s cubic-bezier(.34,1.4,.64,1)',
+                    }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-3px)'; el.style.boxShadow = '0 10px 28px rgba(37,211,102,0.45)'; }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 20px rgba(37,211,102,0.3)'; }}>
                     💬 WhatsApp
                   </a>
                 </div>
@@ -797,16 +800,16 @@ export default function ServicioClient() {
                 <div data-reveal="desc-right" style={{ opacity: isVisible('desc-right') ? 1 : 0, transform: isVisible('desc-right') ? 'none' : 'translateX(30px)', transition: 'all .75s .2s ease' }}>
                   {featuresList.map((f: any, i: number) => (
                     <div key={i} className={`srv-feature-item`}
-                         style={{
-                           display: 'flex', alignItems: 'flex-start', gap: '1rem',
-                           padding: '0.875rem 0.75rem',
-                           borderBottom: i < featuresList.length - 1 ? '1px solid #f0f3f7' : 'none',
-                           borderRadius: 8,
-                           transition: 'all .22s ease',
-                           cursor: 'default',
-                         }}
-                         onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = `${accentColor}08`; el.style.paddingLeft = '1.25rem'; el.style.borderBottom = i < featuresList.length - 1 ? `1px solid ${accentColor}20` : 'none'; }}
-                         onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'transparent'; el.style.paddingLeft = '0.75rem'; el.style.borderBottom = i < featuresList.length - 1 ? '1px solid #f0f3f7' : 'none'; }}>
+                      style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '1rem',
+                        padding: '0.875rem 0.75rem',
+                        borderBottom: i < featuresList.length - 1 ? '1px solid #f0f3f7' : 'none',
+                        borderRadius: 8,
+                        transition: 'all .22s ease',
+                        cursor: 'default',
+                      }}
+                      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = `${accentColor}08`; el.style.paddingLeft = '1.25rem'; el.style.borderBottom = i < featuresList.length - 1 ? `1px solid ${accentColor}20` : 'none'; }}
+                      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'transparent'; el.style.paddingLeft = '0.75rem'; el.style.borderBottom = i < featuresList.length - 1 ? '1px solid #f0f3f7' : 'none'; }}>
                       <span style={{
                         minWidth: 28, height: 20, borderRadius: 999,
                         background: `${accentColor}18`, border: `1px solid ${accentColor}35`,
@@ -851,27 +854,27 @@ export default function ServicioClient() {
                 const rid = `inc-${i}`;
                 return (
                   <div key={i} data-reveal={rid}
-                       style={{
-                         background: '#fff', borderRadius: 18,
-                         border: '1.5px solid #ece9e2',
-                         padding: '1.6rem',
-                         opacity: isVisible(rid) ? 1 : 0,
-                         transform: isVisible(rid) ? 'none' : 'translateY(28px)',
-                         transition: `all .6s ${i * 0.08}s ease`,
-                         cursor: 'default', position: 'relative', overflow: 'hidden',
-                       }}
-                       onMouseEnter={e => {
-                         const el = e.currentTarget as HTMLElement;
-                         el.style.borderColor = accentColor + '70';
-                         el.style.transform = 'translateY(-6px)';
-                         el.style.boxShadow = `0 16px 40px rgba(12,30,48,0.1), 0 0 0 1px ${accentColor}30`;
-                       }}
-                       onMouseLeave={e => {
-                         const el = e.currentTarget as HTMLElement;
-                         el.style.borderColor = '#ece9e2';
-                         el.style.transform = '';
-                         el.style.boxShadow = '';
-                       }}>
+                    style={{
+                      background: '#fff', borderRadius: 18,
+                      border: '1.5px solid #ece9e2',
+                      padding: '1.6rem',
+                      opacity: isVisible(rid) ? 1 : 0,
+                      transform: isVisible(rid) ? 'none' : 'translateY(28px)',
+                      transition: `all .6s ${i * 0.08}s ease`,
+                      cursor: 'default', position: 'relative', overflow: 'hidden',
+                    }}
+                    onMouseEnter={e => {
+                      const el = e.currentTarget as HTMLElement;
+                      el.style.borderColor = accentColor + '70';
+                      el.style.transform = 'translateY(-6px)';
+                      el.style.boxShadow = `0 16px 40px rgba(12,30,48,0.1), 0 0 0 1px ${accentColor}30`;
+                    }}
+                    onMouseLeave={e => {
+                      const el = e.currentTarget as HTMLElement;
+                      el.style.borderColor = '#ece9e2';
+                      el.style.transform = '';
+                      el.style.boxShadow = '';
+                    }}>
                     {/* Hover gradient top */}
                     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${accentColor},${accentColor}60,transparent)`, opacity: 0, transition: 'opacity .3s' }} className="srv-card-top" />
                     <div style={{
@@ -917,15 +920,15 @@ export default function ServicioClient() {
                 const rid = `tem-${i}`;
                 return (
                   <div key={i} data-reveal={rid}
-                       style={{
-                         padding: '1.75rem', borderRadius: 20,
-                         background: p.bg, border: `1.5px solid ${p.border}60`,
-                         opacity: isVisible(rid) ? 1 : 0,
-                         transform: isVisible(rid) ? 'none' : 'translateY(24px)',
-                         transition: `all .6s ${i * 0.07}s ease`,
-                       }}
-                       onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-5px) scale(1.01)'; el.style.boxShadow = `0 12px 36px ${p.border}40`; el.style.borderColor = p.border; }}
-                       onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = ''; el.style.borderColor = `${p.border}60`; }}>
+                    style={{
+                      padding: '1.75rem', borderRadius: 20,
+                      background: p.bg, border: `1.5px solid ${p.border}60`,
+                      opacity: isVisible(rid) ? 1 : 0,
+                      transform: isVisible(rid) ? 'none' : 'translateY(24px)',
+                      transition: `all .6s ${i * 0.07}s ease`,
+                    }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-5px) scale(1.01)'; el.style.boxShadow = `0 12px 36px ${p.border}40`; el.style.borderColor = p.border; }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = ''; el.style.borderColor = `${p.border}60`; }}>
                     <div style={{ fontSize: '2.2rem', marginBottom: '0.875rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>{t.icon}</div>
                     <h3 style={{ color: '#0c1e30', fontSize: '0.9rem', fontFamily: 'var(--font-playfair)', fontWeight: 700, margin: '0 0 7px' }}>{t.title}</h3>
                     <p style={{ color: '#64748b', fontSize: '0.8rem', lineHeight: 1.65, margin: 0, fontFamily: 'var(--font-jakarta)' }}>{t.desc}</p>
@@ -965,12 +968,12 @@ export default function ServicioClient() {
                   const rid = `step-${i}`;
                   return (
                     <div key={i} data-reveal={rid}
-                         style={{
-                           display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-                           opacity: isVisible(rid) ? 1 : 0,
-                           transform: isVisible(rid) ? 'none' : 'translateY(28px)',
-                           transition: `all .65s ${i * 0.12}s ease`,
-                         }}>
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+                        opacity: isVisible(rid) ? 1 : 0,
+                        transform: isVisible(rid) ? 'none' : 'translateY(28px)',
+                        transition: `all .65s ${i * 0.12}s ease`,
+                      }}>
                       {/* Circle */}
                       <div style={{
                         width: 48, height: 48, borderRadius: '50%',
@@ -1023,11 +1026,13 @@ export default function ServicioClient() {
               transform: isVisible('rel-header') ? 'none' : 'translateY(24px)',
               transition: 'all .7s ease',
             }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: '1rem',
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: '1rem',
                 padding: '0.35rem 1.1rem', borderRadius: 9999,
                 background: `${accentColor}15`, border: `1px solid ${accentColor}35`,
                 color: '#f5c842', fontSize: '0.62rem', fontWeight: 700,
-                textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)' }}>
+                textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)'
+              }}>
                 <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#f5c842', display: 'inline-block' }} />
                 Otros Servicios
               </div>
@@ -1041,7 +1046,7 @@ export default function ServicioClient() {
               {otrosServicios.map((r: any, i: number) => {
                 const rid = `rel-${i}`;
                 const relSlug = (r.link || '').replace('servicios/', '').replace('.html', '');
-                const relImg  = r.img ?? '';
+                const relImg = r.img ?? '';
                 const relColor = accentColor;
                 return (
                   <a key={i} href={`/servicios/${relSlug}`} style={{ textDecoration: 'none', display: 'block' }} data-reveal={rid}>
@@ -1091,7 +1096,7 @@ export default function ServicioClient() {
                       {/* Background image */}
                       {relImg ? (
                         <img className="rel-img" src={cxCard(relImg)} alt={r.title} loading="lazy" decoding="async"
-                             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .6s cubic-bezier(.25,.46,.45,.94)' }} />
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .6s cubic-bezier(.25,.46,.45,.94)' }} />
                       ) : (
                         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,#0c1e30,${relColor}30)` }} />
                       )}
@@ -1211,18 +1216,18 @@ export default function ServicioClient() {
                 Solicitar Cotización →
               </a>
               <a href={`https://wa.me/51945203708?text=${encodeURIComponent(waText)}`}
-                 target="_blank" rel="noopener noreferrer"
-                 style={{
-                   display: 'inline-flex', alignItems: 'center', gap: 10,
-                   padding: '1.05rem 2.5rem', borderRadius: 999,
-                   background: '#25d366', color: '#fff',
-                   fontWeight: 800, fontSize: '0.95rem', textDecoration: 'none',
-                   fontFamily: 'var(--font-jakarta)', letterSpacing: '.04em',
-                   boxShadow: '0 6px 30px rgba(37,211,102,0.4)',
-                   transition: 'all .3s cubic-bezier(.34,1.4,.64,1)',
-                 }}
-                 onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-4px) scale(1.03)'; el.style.boxShadow = '0 14px 40px rgba(37,211,102,0.55)'; }}
-                 onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 6px 30px rgba(37,211,102,0.4)'; }}>
+                target="_blank" rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 10,
+                  padding: '1.05rem 2.5rem', borderRadius: 999,
+                  background: '#25d366', color: '#fff',
+                  fontWeight: 800, fontSize: '0.95rem', textDecoration: 'none',
+                  fontFamily: 'var(--font-jakarta)', letterSpacing: '.04em',
+                  boxShadow: '0 6px 30px rgba(37,211,102,0.4)',
+                  transition: 'all .3s cubic-bezier(.34,1.4,.64,1)',
+                }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-4px) scale(1.03)'; el.style.boxShadow = '0 14px 40px rgba(37,211,102,0.55)'; }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 6px 30px rgba(37,211,102,0.4)'; }}>
                 💬 WhatsApp
               </a>
             </div>
