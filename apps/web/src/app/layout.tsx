@@ -60,7 +60,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   const localBusinessSchema = {
     '@context': 'https://schema.org',
-    '@type': 'EventPlanner',
+    '@type': ['LocalBusiness', 'EventPlanner'],
     name: 'J&M Eventos y Decoraciones',
     ...(logoUrl && { image: logoUrl, logo: logoUrl }),
     url: SITE_URL,
