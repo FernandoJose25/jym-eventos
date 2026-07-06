@@ -9,8 +9,8 @@
     "public": "public",
     "redirects": [
       {
-        "source": "**",
-        "destination": "https://jym-eventos-web.vercel.app/:splat",
+        "source": "/:path*",
+        "destination": "https://jym-eventos-web.vercel.app/:path*",
         "type": 301
       }
     ]
