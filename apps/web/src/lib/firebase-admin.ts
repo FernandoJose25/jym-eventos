@@ -32,9 +32,9 @@ function getServiceAccount() {
 const adminApp = getApps().length
   ? getApps()[0]
   : initializeApp({
-      credential: cert(getServiceAccount()),
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    });
+    credential: cert(getServiceAccount()),
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  });
 
 export const adminDb = getFirestore(adminApp);
 export default adminApp;
