@@ -9,6 +9,7 @@ import JsonLd from '@/components/ui/JsonLd';
 import { Analytics } from '@vercel/analytics/next';
 import { db } from '@/lib/firebase';
 import { getDoc, doc } from 'firebase/firestore';
+import { unstable_cache } from 'next/cache';
 import { SITE_URL } from '@/lib/site';
 import './globals.css';
 import '../styles/animations.css';
@@ -21,14 +22,20 @@ const jakarta = Plus_Jakarta_Sans({
   weight: ['400', '500', '600', '700'],
 });
 
-// Se llama desde generateMetadata() y desde el layout — Firestore la resuelve una sola vez por request
-async function getNavbarLogo(): Promise<string | undefined> {
-  try {
-    const snap = await getDoc(doc(db, 'site_config', 'navbar'));
-    if (snap.exists()) return snap.data().logo || undefined;
-  } catch { }
-  return undefined;
+async function fetchNavbarLogo(): Promise<string | undefined> {
+  const snap = await getDoc(doc(db, 'site_config', 'navbar'));
+  return snap.exists() ? (snap.data().logo || undefined) : undefined;
 }
+
+// Se cachea 1 hora: si Firestore falla momentáneamente en una request puntual,
+// se sigue sirviendo el último logo bueno en vez de quedarse sin ícono (el "mundo" del navegador).
+const getNavbarLogo = unstable_cache(
+  async () => {
+    try { return (await fetchNavbarLogo()) ?? null; } catch { return null; }
+  },
+  ['navbar-logo'],
+  { revalidate: 3600 }
+);
 
 export async function generateMetadata(): Promise<Metadata> {
   const iconUrl = await getNavbarLogo();
@@ -44,6 +51,7 @@ export async function generateMetadata(): Promise<Metadata> {
     verification: {
       google: 'MRy0O_zkW6ZNsC_CnEB5krGekfmnAjcB3dKlhxeKwUA',
     },
+    ...(iconUrl && { icons: { icon: iconUrl, apple: iconUrl } }),
   };
 }
 
