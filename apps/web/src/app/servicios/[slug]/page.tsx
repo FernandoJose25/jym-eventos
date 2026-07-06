@@ -86,5 +86,13 @@ export default async function Page(
   } catch { }
   if (!initialData) initialData = SERVICIOS_DATA[slug] ?? null;
 
+  // Los campos Timestamp que devuelve firebase-admin (createdAt, updatedAt, etc.)
+  // son instancias de clase, no objetos planos — Next.js no permite pasar eso
+  // de un Server Component a un Client Component. Este JSON.parse/stringify
+  // los convierte a datos planos serializables.
+  if (initialData) {
+    initialData = JSON.parse(JSON.stringify(initialData));
+  }
+
   return <ServicioClient initialData={initialData} />;
 }
