@@ -655,7 +655,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
               </p>
             </div>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', margin: 0, fontFamily: 'var(--font-jakarta)' }}>
-              J&amp;M Eventos · Sechura, Piura
+              J&amp;M Decoraciones y Eventos · Sechura, Piura
             </p>
           </div>
 
