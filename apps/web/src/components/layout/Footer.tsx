@@ -55,7 +55,7 @@ export default function Footer() {
               </div>
               <div>
                 <p style={{ color:'#fff', fontFamily:'var(--font-playfair)', fontWeight:700, fontSize:'1.1rem', margin:0, lineHeight:1.2 }}>
-                  {footer.legalName || 'J&M Eventos y Decoraciones'}
+                  {footer.legalName || 'J&M Decoraciones y Eventos'}
                 </p>
                 <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.65rem', margin:0, textTransform:'uppercase', letterSpacing:'.1em' }}>
                   {footer.tagline || 'Sechura'}
@@ -66,7 +66,7 @@ export default function Footer() {
               {footer.desc || 'En cada evento, cuidamos cada detalle para que tú solo te encargues de disfrutar. Ofrecemos una gama completa de servicios para hacer de tu celebración una experiencia única.'}
             </p>
             <p style={{ fontFamily:'var(--font-playfair)', fontStyle:'italic', color:'rgba(255,255,255,0.3)', fontSize:'0.88rem' }}>
-              {footer.quote || 'J&M Eventos y Decoraciones'}
+              {footer.quote || 'J&M Decoraciones y Eventos'}
             </p>
           </div>
 
@@ -201,7 +201,7 @@ export default function Footer() {
                        display:'flex', justifyContent:'space-between', alignItems:'center',
                        flexWrap:'wrap', gap:12 }}>
           <p style={{ fontSize:'0.78rem', color:'rgba(255,255,255,0.3)', margin:0 }}>
-            © {footer.foundedYear || '2018'} – {year} {footer.legalName || 'J&M Eventos y Decoraciones'} | Todos los derechos reservados.
+            © {footer.foundedYear || '2018'} – {year} {footer.legalName || 'J&M Decoraciones y Eventos'} | Todos los derechos reservados.
           </p>
           <div style={{ display:'flex', gap:20 }}>
             {[

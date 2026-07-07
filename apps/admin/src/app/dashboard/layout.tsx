@@ -76,7 +76,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                          display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.1rem',
                          boxShadow:'0 4px 12px rgba(212,160,23,0.35)', flexShrink:0 }}>🎉</div>
           <div>
-            <p style={{ color:'#fff', fontFamily:'var(--font-playfair)', fontWeight:700, fontSize:'0.95rem', lineHeight:1.2, margin:0 }}>J&M Eventos</p>
+            <p style={{ color:'#fff', fontFamily:'var(--font-playfair)', fontWeight:700, fontSize:'0.95rem', lineHeight:1.2, margin:0 }}>J&M Decoraciones y Eventos</p>
             <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.65rem', margin:0 }}>Panel Admin</p>
           </div>
         </div>
@@ -232,7 +232,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span style={{ position:'absolute', top:3, right:3, width:7, height:7, borderRadius:'50%', background:'#ef4444' }}/>
               </Link>
             )}
-            <a href="https://jym-eventos-web.vercel.app" target="_blank" rel="noopener noreferrer"
+            <a href="https://jm-decoraciones-eventos.vercel.app" target="_blank" rel="noopener noreferrer"
                className="topbar-web-btn"
                style={{ display:'flex', alignItems:'center', gap:5, padding:'0.4rem 0.875rem',
                          background:'linear-gradient(135deg,#b8860b,#f5c842)', borderRadius:8,

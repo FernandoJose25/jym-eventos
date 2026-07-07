@@ -63,7 +63,7 @@ function WhyCard({ item, i }: { item: typeof DEFAULT_ITEMS[0]; i: number }) {
         transition: 'all 0.5s ease-in-out',
         whiteSpace: 'nowrap', zIndex: 6,
       }}>
-        J&M Eventos y Decoraciones
+        J&M Decoraciones y Eventos
       </span>
 
       {/* ── Contenido central ── */}

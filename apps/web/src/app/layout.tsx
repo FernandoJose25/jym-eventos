@@ -42,8 +42,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(SITE_URL),
     title: {
-      default: 'J&M Eventos y Decoraciones — Sechura, Piura',
-      template: '%s | J&M Eventos',
+      default: 'J&M Decoraciones y Eventos — Sechura, Piura',
+      template: '%s | J&M Decoraciones y Eventos',
     },
     description: 'Organizamos eventos únicos en Sechura, Piura. Shows infantiles, hora loca, decoración temática, catering y fotografía profesional.',
     alternates: { canonical: SITE_URL },
@@ -60,7 +60,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const localBusinessSchema = {
     '@context': 'https://schema.org',
     '@type': ['LocalBusiness', 'EventPlanner'],
-    name: 'J&M Eventos y Decoraciones',
+    name: 'J&M Decoraciones y Eventos',
     ...(logoUrl && { image: logoUrl, logo: logoUrl }),
     url: SITE_URL,
     telephone: '+51945203708',

@@ -116,7 +116,7 @@ export default function DisenoPage() {
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <div style={{ width:40, height:40, borderRadius:10, background:`linear-gradient(135deg,${colors.secondaryDark},${colors.secondaryLight})`,
                            display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.2rem' }}>🎉</div>
-            <span style={{ color:'#fff', fontFamily:'var(--font-playfair)', fontWeight:700, fontSize:'1rem' }}>J&M Eventos</span>
+            <span style={{ color:'#fff', fontFamily:'var(--font-playfair)', fontWeight:700, fontSize:'1rem' }}>J&M Decoraciones y Eventos</span>
             <div style={{ flex:1 }}/>
             <div style={{ padding:'0.4rem 1rem', borderRadius:9999, background:`linear-gradient(135deg,${colors.secondaryDark},${colors.secondaryLight})`,
                            color:colors.dark, fontSize:'0.8rem', fontWeight:700 }}>Cotizar</div>

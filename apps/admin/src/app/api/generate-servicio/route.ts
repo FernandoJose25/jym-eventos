@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth-server';
 
 const PROMPT = (nombre: string, instrucciones?: string) => `Eres copywriter especializado en empresas de eventos y decoraciones peruanas.
-Escribe para J&M Eventos y Decoraciones de Sechura, Piura.
+Escribe para J&M Decoraciones y Eventos de Sechura, Piura.
 Tono: emotivo, cálido, familiar. Español peruano natural.
 RESPONDE ÚNICAMENTE con JSON válido, sin markdown ni texto extra.
 ${instrucciones ? `\nInstrucciones adicionales del cliente:\n${instrucciones}\n` : ''}

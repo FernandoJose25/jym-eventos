@@ -10,12 +10,12 @@
     "redirects": [
       {
         "source": "/:path*",
-        "destination": "https://jym-eventos-web.vercel.app/:path",
+        "destination": "https://jm-decoraciones-eventos.vercel.app/:path",
         "type": 301
       },
       {
         "source": "**",
-        "destination": "https://jym-eventos-web.vercel.app",
+        "destination": "https://jm-decoraciones-eventos.vercel.app",
         "type": 301
       }
     ]

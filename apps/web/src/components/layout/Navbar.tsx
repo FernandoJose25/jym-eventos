@@ -105,7 +105,7 @@ export default function Navbar() {
                 : '🎉'}
             </div>
             <div>
-              <p style={{ color: '#fff', fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: '1.05rem', lineHeight: 1.2, margin: 0 }}>{navConfig.nombre || 'J&M Eventos'}</p>
+              <p style={{ color: '#fff', fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: '1.05rem', lineHeight: 1.2, margin: 0 }}>{navConfig.nombre || 'J&M Decoraciones y Eventos'}</p>
               <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', margin: 0, letterSpacing: '.06em' }}>{navConfig.tagline || 'Decoraciones & Eventos'}</p>
             </div>
           </Link>
