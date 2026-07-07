@@ -20,7 +20,7 @@ export default function WhatsAppWidget() {
         const buttonColor  = wa.buttonColor   || '#1c9247';
         const promptText   = wa.promptText    || '👋 Hola, resuelve la duda que tengas';
         const promptDelay  = wa.promptDelay   ?? 5;
-        const popupTitle   = wa.popupTitle    || 'J&M Eventos y Decoraciones';
+        const popupTitle   = wa.popupTitle    || 'J&M Decoraciones y Eventos';
         const popupSub     = wa.popupSubtitle || 'Usualmente responde en 1 hora';
         const welcomeText  = wa.welcomeText   || '👋 Hola, ¿en qué podemos ayudarte?';
         const customerText = wa.customerText  || 'Hola, quiero cotizar un evento';

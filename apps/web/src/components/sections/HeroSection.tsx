@@ -41,7 +41,7 @@ export default function HeroSection({ data }: { data: HeroData }) {
     'Hacemos que cada celebración sea <em style="color:#f5c842;font-style:italic;">Mágica</em>';
 
   const eyebrow =
-    data.eyebrow || 'J&M Eventos y Decoraciones';
+    data.eyebrow || 'J&M Decoraciones y Eventos';
 
   const desc =
     data.desc ||

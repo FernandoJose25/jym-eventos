@@ -72,7 +72,7 @@ export default function DashboardPage() {
           Panel de Control
         </h1>
         <p className="page-h1-sub" style={{ color: '#64748b', fontSize: '0.9rem', margin: '4px 0 0', fontFamily: 'var(--font-jakarta)' }}>
-          Resumen general de J&M Eventos
+          Resumen general de J&M Decoraciones y Eventos
         </p>
       </div>
 

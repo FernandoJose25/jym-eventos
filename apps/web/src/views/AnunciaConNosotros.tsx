@@ -331,7 +331,7 @@ const DEFAULT_STATS = [
 ];
 const DEFAULT_BENEFITS = [
   { icon:'🎯', title:'Audiencia segmentada', desc:'Llegás directamente a personas que están buscando proveedores de eventos. No es tráfico frío — son familias con intención de compra activa.' },
-  { icon:'✨', title:'Presencia premium', desc:'Tu marca se asocia con J&M Eventos, una empresa reconocida por lujo y elegancia en decoraciones. El contexto eleva tu percepción de marca.' },
+  { icon:'✨', title:'Presencia premium', desc:'Tu marca se asocia con J&M Decoraciones y Eventos, una empresa reconocida por lujo y elegancia en decoraciones. El contexto eleva tu percepción de marca.' },
   { icon:'📊', title:'ROI medible', desc:'Rastreamos las consultas generadas desde tu espacio publicitario. Cada mes recibirás un reporte de alcance, clics e interacciones.' },
 ];
 const DEFAULT_TIERS = [

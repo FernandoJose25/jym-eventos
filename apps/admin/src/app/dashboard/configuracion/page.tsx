@@ -35,11 +35,11 @@ const DEFAULT_WHY_ITEMS = [
 const DEFAULT_SEO = {
   homeTitle:      'Shows, Decoración y Catering en Sechura, Piura',
   homeDesc:       'Organizamos shows infantiles, hora loca, decoración temática y catering en Sechura, Piura. +500 eventos realizados. Cotiza gratis por WhatsApp.',
-  contactoTitle:  'Contacto y Cotizaciones | J&M Eventos',
+  contactoTitle:  'Contacto y Cotizaciones',
   contactoDesc:   'Cotiza tu evento en Sechura, Piura. Respuesta rápida por WhatsApp. Shows, decoración, catering, quinceaños y paquetes completos.',
-  galeriaTitle:   'Galería de Eventos | J&M Eventos y Decoraciones',
+  galeriaTitle:   'Galería de Eventos',
   galeriaDesc:    'Fotos y videos reales de shows infantiles, decoración temática, quinceaños y eventos corporativos realizados en Sechura, Piura.',
-  nosotrosTitle:  'Nuestra Historia | J&M Eventos y Decoraciones',
+  nosotrosTitle:  'Nuestra Historia',
   nosotrosDesc:   'Más de 10 años creando experiencias inolvidables en Sechura, Piura. Conoce nuestra trayectoria, valores y equipo.',
 };
 
@@ -48,7 +48,7 @@ const DEFAULT_SEO = {
    el documento todavía (mismos valores que usa la web).
 ───────────────────────────────────────────────────── */
 const DEFAULT_HERO = {
-  eyebrow:  'J&M Eventos y Decoraciones',
+  eyebrow:  'J&M Decoraciones y Eventos',
   h1:       'Hacemos que cada celebración sea <em style="color:#f5c842;font-style:italic;">Mágica</em>',
   desc:     'Organizamos y diseñamos eventos personalizados para bodas, quinceaños, cumpleaños y fiestas temáticas.',
   btn1Text: 'Cotizar Ahora',
@@ -75,15 +75,15 @@ const DEFAULT_ABOUT = {
 };
 
 const DEFAULT_NAVBAR = {
-  nombre:  'J&M Eventos',
+  nombre:  'J&M Decoraciones y Eventos',
   tagline: 'Decoraciones & Eventos',
 };
 
 const DEFAULT_FOOTER = {
-  legalName:   'J&M Eventos y Decoraciones',
+  legalName:   'J&M Decoraciones y Eventos',
   tagline:     'Sechura',
   desc:        'En cada evento, cuidamos cada detalle para que tú solo te encargues de disfrutar. Ofrecemos una gama completa de servicios para hacer de tu celebración una experiencia única.',
-  quote:       'J&M Eventos y Decoraciones',
+  quote:       'J&M Decoraciones y Eventos',
   foundedYear: '2018',
 };
 
@@ -108,7 +108,7 @@ const DEFAULT_WHATSAPP = {
   logoUrl:        'https://res.cloudinary.com/dvcmazqtp/image/upload/v1780101985/logos/feuzcxtlvcwov5fefinu.webp',
   promptText:     '👋 Hola, resuelve la duda que tengas',
   promptDelay:    5,
-  popupTitle:     'J&M Eventos y Decoraciones',
+  popupTitle:     'J&M Decoraciones y Eventos',
   popupSubtitle:  'Usualmente responde en 1 hora',
   welcomeText:    '👋 Hola, ¿en qué podemos ayudarte?',
   customerText:   'Hola, quiero cotizar un evento',
@@ -143,7 +143,7 @@ const DEFAULT_NOSOTROS = {
   ],
   misionSubtitle: 'Por qué existimos',
   misionH2:       'Creamos recuerdos que duran toda la vida',
-  misionP1:       'En J&M Eventos no solo organizamos celebraciones — diseñamos experiencias. Cada detalle está pensado para que tus invitados vivan momentos únicos.',
+  misionP1:       'En J&M Decoraciones y Eventos no solo organizamos celebraciones — diseñamos experiencias. Cada detalle está pensado para que tus invitados vivan momentos únicos.',
   misionP2:       'Más de una década en Sechura nos ha enseñado que la clave está en escuchar tus sueños y convertirlos en realidad.',
   misionCards: [
     { icon:'🎭', title:'Shows con personajes únicos',       desc:'Animadores que hacen vivir los personajes favoritos de los niños.',          visible:true },
@@ -175,7 +175,7 @@ const DEFAULT_ANUNCIA = {
   benefitsTitle: 'Tu marca, en el momento exacto',
   anunciaBenefits: [
     { icon:'🎯', title:'Audiencia segmentada', desc:'Llegás directamente a personas que están buscando proveedores de eventos en tu zona.',                         visible:true },
-    { icon:'✨', title:'Presencia premium',    desc:'Tu marca se asocia con J&M Eventos, una empresa reconocida por calidad y confianza.',                          visible:true },
+    { icon:'✨', title:'Presencia premium',    desc:'Tu marca se asocia con J&M Decoraciones y Eventos, una empresa reconocida por calidad y confianza.',                          visible:true },
     { icon:'📊', title:'ROI medible',          desc:'Rastreamos las consultas generadas desde tu espacio publicitario para que puedas medir el impacto.',           visible:true },
   ],
   tiersTitle: 'Planes de publicidad',
@@ -194,17 +194,17 @@ const DEFAULT_ANUNCIA = {
 
 const DEFAULT_LEGAL = {
   privacidad: [
-    { title:'1. Responsable del Tratamiento', content:'J&M Eventos y Decoraciones, con domicilio en Sechura, Piura, Perú, es responsable del tratamiento de los datos personales recabados a través de este sitio web.' },
+    { title:'1. Responsable del Tratamiento', content:'J&M Decoraciones y Eventos, con domicilio en Sechura, Piura, Perú, es responsable del tratamiento de los datos personales recabados a través de este sitio web.' },
     { title:'2. Datos que Recopilamos',       content:'Recopilamos nombre, teléfono y correo electrónico cuando envías un formulario de contacto o cotización. No recopilamos datos de pago ni información sensible.' },
     { title:'3. Uso de los Datos',            content:'Los datos son utilizados exclusivamente para responder tu consulta, preparar cotizaciones y brindarte información sobre nuestros servicios. No los vendemos ni cedemos a terceros.' },
     { title:'4. Tus Derechos',               content:'Puedes solicitar acceso, rectificación o eliminación de tus datos contactándonos a jmdecoracionesyeventossechura@gmail.com o por WhatsApp al +51 945 203 708.' },
   ],
   terminos: [
     { title:'1. Aceptación de Términos', content:'Al utilizar este sitio web, aceptas los presentes Términos del Servicio. Si no estás de acuerdo, te pedimos que no utilices nuestros servicios.' },
-    { title:'2. Servicios Ofrecidos',    content:'J&M Eventos y Decoraciones ofrece servicios de organización, decoración y animación de eventos en Sechura, Piura y alrededores. Los precios y disponibilidad están sujetos a cambios.' },
+    { title:'2. Servicios Ofrecidos',    content:'J&M Decoraciones y Eventos ofrece servicios de organización, decoración y animación de eventos en Sechura, Piura y alrededores. Los precios y disponibilidad están sujetos a cambios.' },
     { title:'3. Cotizaciones y Reservas',content:'Las cotizaciones son válidas por 7 días. La reserva del servicio requiere un adelanto del 50% del total acordado. El saldo restante se abona el día del evento.' },
     { title:'4. Cancelaciones',          content:'Cancelaciones con más de 72 horas de anticipación: reembolso del 80% del adelanto. Cancelaciones con menos de 72 horas: sin reembolso del adelanto.' },
-    { title:'5. Responsabilidades',      content:'J&M Eventos no se hace responsable por daños causados por terceros, condiciones climáticas extremas u otros factores de fuerza mayor que impidan la realización del evento.' },
+    { title:'5. Responsabilidades',      content:'J&M Decoraciones y Eventos no se hace responsable por daños causados por terceros, condiciones climáticas extremas u otros factores de fuerza mayor que impidan la realización del evento.' },
   ],
   cookies: [
     { title:'1. ¿Qué son las Cookies?',  content:'Las cookies son pequeños archivos de texto que se almacenan en tu dispositivo cuando visitas un sitio web. Nos ayudan a mejorar tu experiencia de navegación.' },
@@ -1207,7 +1207,7 @@ export default function ConfiguracionPage() {
               {/* ══════════ NAVBAR ══════════ */}
               {section === 'navbar' && (
                 <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
-                  <F label="Nombre en el navbar" fieldKey="nombre" value={data.nombre||''} onChange={handleField} placeholder="J&M Eventos"/>
+                  <F label="Nombre en el navbar" fieldKey="nombre" value={data.nombre||''} onChange={handleField} placeholder="J&M Decoraciones y Eventos"/>
                   <F label="Tagline" fieldKey="tagline" value={data.tagline||''} onChange={handleField} placeholder="Decoraciones y Eventos"/>
                   <ImageUploader label="Logo (se muestra en navbar y footer — máx 200MB)" folder="logos"
                     value={data.logo} focal={{ x:0.5, y:0.5 }} acceptVideo={false}
@@ -1217,7 +1217,7 @@ export default function ConfiguracionPage() {
                     <div style={{ background:'#0a1628', borderRadius:12, padding:'1rem 1.5rem', display:'flex', alignItems:'center', gap:12 }}>
                       <img src={data.logo} alt="Logo preview" style={{ height:48, objectFit:'contain' }}/>
                       <div>
-                        <p style={{ color:'#fff', fontFamily:'var(--font-playfair)', fontWeight:700, fontSize:'1rem', margin:0 }}>{data.nombre||'J&M Eventos'}</p>
+                        <p style={{ color:'#fff', fontFamily:'var(--font-playfair)', fontWeight:700, fontSize:'1rem', margin:0 }}>{data.nombre||'J&M Decoraciones y Eventos'}</p>
                         <p style={{ color:'rgba(255,255,255,.5)', fontSize:'0.7rem', margin:0 }}>{data.tagline||'Decoraciones y Eventos'}</p>
                       </div>
                     </div>
@@ -1240,12 +1240,12 @@ export default function ConfiguracionPage() {
                     <F label="Localidad (ej: Sechura)" fieldKey="tagline" value={data.tagline||''} onChange={handleField} placeholder="Sechura"/>
                     <F label="Año de fundación" fieldKey="foundedYear" value={data.foundedYear||''} onChange={handleField} placeholder="2018"/>
                   </div>
-                  <F label="Nombre legal completo en footer" fieldKey="legalName" value={data.legalName||''} onChange={handleField} placeholder="J&M Eventos y Decoraciones"/>
-                  <F label="Cita / Frase en cursiva" fieldKey="quote" value={data.quote||''} onChange={handleField} placeholder="J&M Eventos y Decoraciones"/>
+                  <F label="Nombre legal completo en footer" fieldKey="legalName" value={data.legalName||''} onChange={handleField} placeholder="J&M Decoraciones y Eventos"/>
+                  <F label="Cita / Frase en cursiva" fieldKey="quote" value={data.quote||''} onChange={handleField} placeholder="J&M Decoraciones y Eventos"/>
                   <div style={{ background:'#f8fafc', borderRadius:12, padding:'1rem 1.25rem', border:'1px solid #e2e8f0' }}>
                     <p style={{ fontSize:'0.78rem', color:'#64748b', margin:'0 0 8px', fontWeight:600 }}>Vista previa del copyright:</p>
                     <p style={{ fontSize:'0.85rem', color:'#475569', margin:0 }}>
-                      © {data.foundedYear||'2018'} – {new Date().getFullYear()} {data.legalName||'J&M Eventos y Decoraciones'} | Todos los derechos reservados.
+                      © {data.foundedYear||'2018'} – {new Date().getFullYear()} {data.legalName||'J&M Decoraciones y Eventos'} | Todos los derechos reservados.
                     </p>
                   </div>
                 </div>
@@ -1319,7 +1319,7 @@ export default function ConfiguracionPage() {
                   <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
                     <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Ventana del chat</legend>
                     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-                      <F label="Título del popup" fieldKey="popupTitle" value={data.popupTitle||''} onChange={handleField} placeholder="J&M Eventos y Decoraciones"/>
+                      <F label="Título del popup" fieldKey="popupTitle" value={data.popupTitle||''} onChange={handleField} placeholder="J&M Decoraciones y Eventos"/>
                       <F label="Subtítulo (tiempo de respuesta)" fieldKey="popupSubtitle" value={data.popupSubtitle||''} onChange={handleField} placeholder="Usualmente responde en 1 hora"/>
                       <F label="Mensaje de bienvenida" fieldKey="welcomeText" value={data.welcomeText||''} onChange={handleField} placeholder="👋 Hola, ¿en qué podemos ayudarte?"/>
                       <F label="Texto predeterminado del cliente" fieldKey="customerText" value={data.customerText||''} onChange={handleField} placeholder="Hola, quiero cotizar un evento"/>
@@ -1349,7 +1349,7 @@ export default function ConfiguracionPage() {
                   <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
                     <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Contacto</legend>
                     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-                      <F label="Título (SEO)" fieldKey="contactoTitle" value={data.contactoTitle||''} onChange={handleField} placeholder="Contacto y Cotizaciones | J&M Eventos"/>
+                      <F label="Título (SEO)" fieldKey="contactoTitle" value={data.contactoTitle||''} onChange={handleField} placeholder="Contacto y Cotizaciones"/>
                       <F label="Descripción (SEO)" fieldKey="contactoDesc" type="textarea" rows={2} value={data.contactoDesc||''} onChange={handleField} placeholder="Cotiza tu evento en Sechura, Piura..."/>
                     </div>
                   </fieldset>
@@ -1357,7 +1357,7 @@ export default function ConfiguracionPage() {
                   <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
                     <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Galería</legend>
                     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-                      <F label="Título (SEO)" fieldKey="galeriaTitle" value={data.galeriaTitle||''} onChange={handleField} placeholder="Galería de Eventos | J&M Eventos y Decoraciones"/>
+                      <F label="Título (SEO)" fieldKey="galeriaTitle" value={data.galeriaTitle||''} onChange={handleField} placeholder="Galería de Eventos"/>
                       <F label="Descripción (SEO)" fieldKey="galeriaDesc" type="textarea" rows={2} value={data.galeriaDesc||''} onChange={handleField} placeholder="Fotos y videos reales de shows infantiles..."/>
                     </div>
                   </fieldset>
@@ -1365,7 +1365,7 @@ export default function ConfiguracionPage() {
                   <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:12, padding:'1rem 1.25rem' }}>
                     <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 6px' }}>Sobre Nosotros</legend>
                     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-                      <F label="Título (SEO)" fieldKey="nosotrosTitle" value={data.nosotrosTitle||''} onChange={handleField} placeholder="Nuestra Historia | J&M Eventos y Decoraciones"/>
+                      <F label="Título (SEO)" fieldKey="nosotrosTitle" value={data.nosotrosTitle||''} onChange={handleField} placeholder="Nuestra Historia"/>
                       <F label="Descripción (SEO)" fieldKey="nosotrosDesc" type="textarea" rows={2} value={data.nosotrosDesc||''} onChange={handleField} placeholder="Más de 10 años creando experiencias..."/>
                     </div>
                   </fieldset>

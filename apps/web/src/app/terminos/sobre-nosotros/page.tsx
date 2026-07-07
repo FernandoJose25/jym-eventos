@@ -188,7 +188,7 @@ export default function SobreNosotrosPage() {
 
   const misionSubtitle = cfg.misionSubtitle || 'Por qué existimos';
   const misionH2       = cfg.misionH2       || 'Creamos recuerdos que duran toda la vida';
-  const misionP1       = cfg.misionP1       || 'En J&M Eventos no solo organizamos celebraciones — diseñamos experiencias. Cada detalle está pensado para que tus invitados vivan momentos únicos.';
+  const misionP1       = cfg.misionP1       || 'En J&M Decoraciones y Eventos no solo organizamos celebraciones — diseñamos experiencias. Cada detalle está pensado para que tus invitados vivan momentos únicos.';
   const misionP2       = cfg.misionP2       || 'Más de una década en Sechura nos ha enseñado que la clave está en escuchar tus sueños y convertirlos en realidad.';
   const MISION_CARDS = (cfg.misionCards && cfg.misionCards.length > 0) ? cfg.misionCards : [
     { icon:'🎭', title:'Shows con personajes únicos',      desc:'Animadores que hacen vivir los personajes favoritos de los niños.' },
@@ -344,7 +344,7 @@ export default function SobreNosotrosPage() {
                              animation:'pillFloat 5s ease-in-out infinite 1s' }}>
                 <div style={{ width:40, height:40, borderRadius:12, background:'linear-gradient(135deg,#b8860b,#f5c842)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.2rem', flexShrink:0 }}>🎉</div>
                 <div>
-                  <p style={{ color:'#f5c842', fontWeight:700, fontSize:'0.88rem', margin:0, fontFamily:'var(--font-playfair)' }}>J&M Eventos y Decoraciones</p>
+                  <p style={{ color:'#f5c842', fontWeight:700, fontSize:'0.88rem', margin:0, fontFamily:'var(--font-playfair)' }}>J&M Decoraciones y Eventos</p>
                   <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.68rem', margin:0 }}>La primera opción en Sechura, Piura</p>
                 </div>
               </div>

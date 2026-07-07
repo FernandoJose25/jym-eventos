@@ -9,7 +9,7 @@ const playfair = Playfair_Display({ subsets:['latin'], variable:'--font-playfair
 const jakarta  = Plus_Jakarta_Sans({ subsets:['latin'], variable:'--font-jakarta', display:'swap', weight:['400','500','600','700'] });
 
 export const metadata: Metadata = {
-  title: { default:'Panel Admin | J&M Eventos', template:'%s | J&M Admin' },
+  title: { default:'Panel Admin | J&M Decoraciones y Eventos', template:'%s | J&M Admin' },
   robots: 'noindex,nofollow',
 };
 

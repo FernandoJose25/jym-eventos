@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { SITE_URL } from '@/lib/site';
 
 interface ShareBarProps {
   itemId: string;
@@ -23,7 +24,7 @@ export function ShareBar({ itemId, title, imageUrl, videoUrl }: ShareBarProps) {
   const getShareUrl = () =>
     typeof window !== 'undefined'
       ? `${window.location.origin}/foto/${itemId}`
-      : `https://jym-eventos-web.vercel.app/foto/${itemId}`;
+      : `${SITE_URL}/foto/${itemId}`;
 
   const copyLink = () => {
     navigator.clipboard.writeText(getShareUrl()).then(() => {
@@ -89,7 +90,7 @@ export function ShareBar({ itemId, title, imageUrl, videoUrl }: ShareBarProps) {
     const file = cachedFile.current;
     if (file && navigator?.share && navigator?.canShare?.({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: title || 'J&M Eventos' });
+        await navigator.share({ files: [file], title: title || 'J&M Decoraciones y Eventos' });
         setLoading(null);
         return;
       } catch (e) {
@@ -106,7 +107,7 @@ export function ShareBar({ itemId, title, imageUrl, videoUrl }: ShareBarProps) {
     // ── Fallback: compartir URL (sin toast de error) ────────────────
     if (navigator?.share) {
       try {
-        await navigator.share({ title: title || 'J&M Eventos', url: shareUrl });
+        await navigator.share({ title: title || 'J&M Decoraciones y Eventos', url: shareUrl });
         return;
       } catch (e) {
         if (e instanceof Error && e.name === 'AbortError') return;
@@ -143,7 +144,7 @@ export function ShareBar({ itemId, title, imageUrl, videoUrl }: ShareBarProps) {
       bg: '#25d366',
       onClick: () => window.open(
         `https://wa.me/?text=${encodeURIComponent(
-          `${title ? title + ' · ' : ''}J&M Eventos y Decoraciones — Sechura, Piura 🎉\n${getShareUrl()}`
+          `${title ? title + ' · ' : ''}J&M Decoraciones y Eventos — Sechura, Piura 🎉\n${getShareUrl()}`
         )}`,
         '_blank'
       ),
@@ -233,7 +234,7 @@ export function ShareBar({ itemId, title, imageUrl, videoUrl }: ShareBarProps) {
                   Compartir
                 </p>
                 <h3 style={{ margin: '4px 0 0', fontSize: '1.1rem', fontWeight: 800, color: '#0a1628', lineHeight: 1.3 }}>
-                  {title || 'J&M Eventos y Decoraciones'}
+                  {title || 'J&M Decoraciones y Eventos'}
                 </h3>
               </div>
               <button

@@ -1,6 +1,6 @@
 'use client';
 
-export default function CapybaraLoader({ label = 'Cargando J&M Eventos', inline = false }: { label?: string; inline?: boolean }) {
+export default function CapybaraLoader({ label = 'Cargando J&M Decoraciones y Eventos', inline = false }: { label?: string; inline?: boolean }) {
   if (inline) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>

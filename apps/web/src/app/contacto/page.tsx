@@ -6,7 +6,7 @@ import ContactoClient from './ContactoClient';
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_TITLE = 'Contacto y Cotizaciones | J&M Eventos';
+const DEFAULT_TITLE = 'Contacto y Cotizaciones';
 const DEFAULT_DESC = 'Cotiza tu evento en Sechura, Piura. Respuesta rápida por WhatsApp. Shows, decoración, catering, quinceaños y paquetes completos.';
 
 export async function generateMetadata(): Promise<Metadata> {

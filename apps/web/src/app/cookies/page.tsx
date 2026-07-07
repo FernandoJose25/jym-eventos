@@ -4,7 +4,7 @@ import LegalPageClient from '@/components/ui/LegalPageClient';
 
 export const metadata: Metadata = {
   title: 'Política de Cookies',
-  description: 'Política de cookies de J&M Eventos y Decoraciones. Qué cookies usamos, para qué sirven y cómo puedes gestionarlas.',
+  description: 'Política de cookies de J&M Decoraciones y Eventos. Qué cookies usamos, para qué sirven y cómo puedes gestionarlas.',
   alternates: { canonical: `${SITE_URL}/cookies` },
 };
 
@@ -15,7 +15,7 @@ const DEFAULT_SECTIONS = [
   { title: '4. Cómo gestionar las cookies', content: `Puedes controlar y/o eliminar cookies según lo desees. Puedes eliminar todas las cookies que ya están en tu dispositivo y configurar la mayoría de los navegadores para que no se acepten cookies.\n\nSin embargo, si lo haces, es posible que tengas que ajustar manualmente algunas preferencias cada vez que visites el sitio, y que algunos servicios y funcionalidades no funcionen correctamente.` },
   { title: '5. Tiempo de conservación', content: `Las cookies de sesión se eliminan cuando cierras el navegador. Las cookies persistentes tienen una duración variable según su finalidad, que puede ir desde un día hasta dos años. Puedes ver y eliminar las cookies en cualquier momento desde la configuración de tu navegador.` },
   { title: '6. Cambios en la política de cookies', content: `Podemos actualizar esta Política de Cookies para reflejar cambios en nuestras prácticas. Te notificaremos de cambios significativos publicando la nueva versión en esta página.` },
-  { title: '7. Contacto', content: `Para cualquier consulta sobre el uso de cookies en nuestro sitio, contáctanos:\n\nJ&M Eventos y Decoraciones\nSechura, Piura — Perú\n📧 jmdecoracionesyeventossechura@gmail.com\n📞 (+51) 945 203 708` },
+  { title: '7. Contacto', content: `Para cualquier consulta sobre el uso de cookies en nuestro sitio, contáctanos:\n\nJ&M Decoraciones y Eventos\nSechura, Piura — Perú\n📧 jmdecoracionesyeventossechura@gmail.com\n📞 (+51) 945 203 708` },
 ];
 
 export default function CookiesPage() {
@@ -26,7 +26,7 @@ export default function CookiesPage() {
       heroTitle="Política de"
       heroHighlight="Cookies"
       heroDesc="Última actualización: enero de 2025"
-      introText="En J&M Eventos y Decoraciones utilizamos cookies para mejorar tu experiencia de navegación. Esta política explica qué cookies usamos, para qué sirven y cómo puedes gestionarlas."
+      introText="En J&M Decoraciones y Eventos utilizamos cookies para mejorar tu experiencia de navegación. Esta política explica qué cookies usamos, para qué sirven y cómo puedes gestionarlas."
       ctaTitle="¿Tienes dudas sobre las cookies?"
       ctaDesc="Contáctanos si quieres más información sobre cómo gestionamos tus datos de navegación."
     />

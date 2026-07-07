@@ -42,7 +42,7 @@ export function formatDate(dateStr: string): string {
 export function buildWhatsAppUrl(phone: string, name: string, eventType?: string): string {
   const p = (phone || '').replace(/\D/g,'');
   const num = p.startsWith('51') ? p : `51${p}`;
-  const msg = `Hola ${name}, recibí tu consulta sobre ${eventType||'tu evento'} en J&M Eventos. ¿Cómo te puedo ayudar?`;
+  const msg = `Hola ${name}, recibí tu consulta sobre ${eventType||'tu evento'} en J&M Decoraciones y Eventos. ¿Cómo te puedo ayudar?`;
   return `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
 }
 

@@ -53,7 +53,7 @@ export async function generateMetadata(
 
   const title = data.title;
   const desc = data.desc || data.detail?.hero_desc || data.hero
-    || `${title} para tu evento en Sechura, Piura. Cotiza gratis con J&M Eventos.`;
+    || `${title} para tu evento en Sechura, Piura. Cotiza gratis con J&M Decoraciones y Eventos.`;
   const img = (data.mediaType === 'image' && data.mediaSrc) ? data.mediaSrc
     : (data.heroMediaType === 'image' && data.heroMediaSrc) ? data.heroMediaSrc
       : data.img;
@@ -63,7 +63,7 @@ export async function generateMetadata(
     description: desc,
     alternates: { canonical },
     openGraph: {
-      title: `${title} | J&M Eventos`,
+      title: `${title} | J&M Decoraciones y Eventos`,
       description: desc,
       url: canonical,
       images: img ? [{ url: img }] : undefined,

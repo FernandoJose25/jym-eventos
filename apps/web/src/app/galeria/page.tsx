@@ -6,7 +6,7 @@ import GaleriaClient from './GaleriaClient';
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_TITLE = 'Galería de Eventos | J&M Eventos y Decoraciones';
+const DEFAULT_TITLE = 'Galería de Eventos';
 const DEFAULT_DESC = 'Fotos y videos reales de shows infantiles, decoración temática, quinceaños y eventos corporativos realizados en Sechura, Piura.';
 
 export async function generateMetadata(): Promise<Metadata> {
