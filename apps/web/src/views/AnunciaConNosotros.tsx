@@ -325,39 +325,39 @@ function TierCard({ tier, inView, delay }: {
 
 /* ─── Default data ─── */
 const DEFAULT_STATS = [
-  { icon:'👁️', value:10000, suffix:'+', label:'Visitas por mes' },
-  { icon:'👨‍👩‍👧', value:85,    suffix:'%', label:'Familias locales' },
-  { icon:'⏱️', value:3,      suffix:' min', label:'Tiempo promedio en sitio' },
+  { icon: '👁️', value: 10000, suffix: '+', label: 'Visitas por mes' },
+  { icon: '👨‍👩‍👧', value: 85, suffix: '%', label: 'Familias locales' },
+  { icon: '⏱️', value: 3, suffix: ' min', label: 'Tiempo promedio en sitio' },
 ];
 const DEFAULT_BENEFITS = [
-  { icon:'🎯', title:'Audiencia segmentada', desc:'Llegás directamente a personas que están buscando proveedores de eventos. No es tráfico frío — son familias con intención de compra activa.' },
-  { icon:'✨', title:'Presencia premium', desc:'Tu marca se asocia con J&M Decoraciones y Eventos, una empresa reconocida por lujo y elegancia en decoraciones. El contexto eleva tu percepción de marca.' },
-  { icon:'📊', title:'ROI medible', desc:'Rastreamos las consultas generadas desde tu espacio publicitario. Cada mes recibirás un reporte de alcance, clics e interacciones.' },
+  { icon: '🎯', title: 'Audiencia segmentada', desc: 'Llegás directamente a personas que están buscando proveedores de eventos. No es tráfico frío — son familias con intención de compra activa.' },
+  { icon: '✨', title: 'Presencia premium', desc: 'Tu marca se asocia con J&M Decoraciones y Eventos, una empresa reconocida por lujo y elegancia en decoraciones. El contexto eleva tu percepción de marca.' },
+  { icon: '📊', title: 'ROI medible', desc: 'Rastreamos las consultas generadas desde tu espacio publicitario. Cada mes recibirás un reporte de alcance, clics e interacciones.' },
 ];
 const DEFAULT_TIERS = [
-  { name:'Básico', price:'S/. 150', period:'/mes', color:'linear-gradient(135deg,#1e3a5f 0%,#2d5986 100%)', icon:'🏷️', features:['Logo en el footer del sitio','Mención mensual en redes sociales','Enlace a tu negocio'], cta:'Empezar' },
-  { name:'Destacado', price:'S/. 350', period:'/mes', popular:true, color:'linear-gradient(135deg,#7a5800 0%,#c49000 50%,#f5c842 100%)', icon:'⭐', features:['Banner en la página principal','Mención en sección de galería','Badge "Partner Verificado"','Logo en footer + redes sociales'], cta:'Elegir Destacado' },
-  { name:'Premium', price:'S/. 750', period:'/mes', color:'linear-gradient(135deg,#3b1a6e 0%,#6b32b8 60%,#9b59e8 100%)', icon:'👑', features:['Todo lo del plan Destacado','Página propia de partner','Featured en sección de servicios','Reportes mensuales de alcance','Soporte prioritario'], cta:'Contactar' },
+  { name: 'Básico', price: 'S/. 150', period: '/mes', color: 'linear-gradient(135deg,#1e3a5f 0%,#2d5986 100%)', icon: '🏷️', features: ['Logo en el footer del sitio', 'Mención mensual en redes sociales', 'Enlace a tu negocio'], cta: 'Empezar' },
+  { name: 'Destacado', price: 'S/. 350', period: '/mes', popular: true, color: 'linear-gradient(135deg,#7a5800 0%,#c49000 50%,#f5c842 100%)', icon: '⭐', features: ['Banner en la página principal', 'Mención en sección de galería', 'Badge "Partner Verificado"', 'Logo en footer + redes sociales'], cta: 'Elegir Destacado' },
+  { name: 'Premium', price: 'S/. 750', period: '/mes', color: 'linear-gradient(135deg,#3b1a6e 0%,#6b32b8 60%,#9b59e8 100%)', icon: '👑', features: ['Todo lo del plan Destacado', 'Página propia de partner', 'Featured en sección de servicios', 'Reportes mensuales de alcance', 'Soporte prioritario'], cta: 'Contactar' },
 ];
 
 /* ─── Main component ─── */
 export default function AnunciaConNosotros() {
-  const statsSection   = useInView(0.15);
+  const statsSection = useInView(0.15);
   const benefitSection = useInView(0.15);
-  const tierSection    = useInView(0.1);
-  const ctaSection     = useInView(0.2);
+  const tierSection = useInView(0.1);
+  const ctaSection = useInView(0.2);
 
   const [cms, setCms] = useState<any>({});
 
   useEffect(() => {
     getDoc(doc(db, 'site_config', 'anuncia')).then(s => {
       if (s.exists()) setCms(s.data());
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
-  const activeTiers   = (cms.anunciaTiers   && cms.anunciaTiers.length   > 0) ? cms.anunciaTiers.filter((t:any) => t.visible !== false)   : DEFAULT_TIERS;
-  const activeStats   = (cms.anunciaStats   && cms.anunciaStats.length   > 0) ? cms.anunciaStats.filter((s:any) => s.visible !== false)   : DEFAULT_STATS;
-  const activeBenefits= (cms.anunciaBenefits&& cms.anunciaBenefits.length> 0) ? cms.anunciaBenefits.filter((b:any)=> b.visible !== false) : DEFAULT_BENEFITS;
+  const activeTiers = (cms.anunciaTiers && cms.anunciaTiers.length > 0) ? cms.anunciaTiers.filter((t: any) => t.visible !== false) : DEFAULT_TIERS;
+  const activeStats = (cms.anunciaStats && cms.anunciaStats.length > 0) ? cms.anunciaStats.filter((s: any) => s.visible !== false) : DEFAULT_STATS;
+  const activeBenefits = (cms.anunciaBenefits && cms.anunciaBenefits.length > 0) ? cms.anunciaBenefits.filter((b: any) => b.visible !== false) : DEFAULT_BENEFITS;
 
   return (
     <div style={{ background: '#08111f', minHeight: '100vh', paddingTop: 72, color: '#fff' }}>
@@ -457,7 +457,7 @@ export default function AnunciaConNosotros() {
           </h2>
           <div ref={statsSection.ref} style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             {activeStats.map((s: any, i: number) => (
-              <StatCard key={i} icon={s.icon} value={Number(s.value)} suffix={s.suffix} label={s.label} delay={i*100} inView={statsSection.inView}/>
+              <StatCard key={i} icon={s.icon} value={Number(s.value)} suffix={s.suffix} label={s.label} delay={i * 100} inView={statsSection.inView} />
             ))}
           </div>
         </div>
@@ -479,7 +479,7 @@ export default function AnunciaConNosotros() {
           </div>
           <div ref={benefitSection.ref} style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
             {activeBenefits.map((b: any, i: number) => (
-              <BenefitCard key={i} icon={b.icon} title={b.title} desc={b.desc} delay={i*120} inView={benefitSection.inView}/>
+              <BenefitCard key={i} icon={b.icon} title={b.title} desc={b.desc} delay={i * 120} inView={benefitSection.inView} />
             ))}
           </div>
         </div>
@@ -504,7 +504,7 @@ export default function AnunciaConNosotros() {
           </div>
           <div ref={tierSection.ref} style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'stretch' }}>
             {activeTiers.map((tier: any, i: number) => (
-              <TierCard key={tier.name||i} tier={tier} inView={tierSection.inView} delay={i * 120} />
+              <TierCard key={tier.name || i} tier={tier} inView={tierSection.inView} delay={i * 120} />
             ))}
           </div>
         </div>
@@ -541,25 +541,25 @@ export default function AnunciaConNosotros() {
             <div className="anuncia-cta-btns" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               {cms.ctaBtn1Url ? (
                 <a href={cms.ctaBtn1Url} target="_blank" rel="noopener noreferrer"
-                   style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'0.85rem 1.75rem', borderRadius:9999, background:'linear-gradient(135deg,#b8860b,#f5c842)', color:'#0a1628', fontWeight:700, fontSize:'0.9rem', textDecoration:'none', boxShadow:'0 6px 20px rgba(212,160,23,0.35)', transition:'transform 0.15s, box-shadow 0.15s' }}
-                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform='translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow='0 10px 28px rgba(212,160,23,0.5)'; }}
-                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform='none'; (e.currentTarget as HTMLElement).style.boxShadow='0 6px 20px rgba(212,160,23,0.35)'; }}>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0.85rem 1.75rem', borderRadius: 9999, background: 'linear-gradient(135deg,#b8860b,#f5c842)', color: '#0a1628', fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none', boxShadow: '0 6px 20px rgba(212,160,23,0.35)', transition: 'transform 0.15s, box-shadow 0.15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 28px rgba(212,160,23,0.5)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(212,160,23,0.35)'; }}>
                   {cms.ctaBtn1 || '✉️ Enviar propuesta'}
                 </a>
               ) : (
-                <a href="https://wa.me/51945203708?text=Hola%2C%20me%20interesa%20anunciar%20con%20ustedes%20en%20J%26M%20Eventos"
-                   target="_blank" rel="noopener noreferrer"
-                   style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'0.85rem 1.75rem', borderRadius:9999, background:'linear-gradient(135deg,#b8860b,#f5c842)', color:'#0a1628', fontWeight:700, fontSize:'0.9rem', textDecoration:'none', boxShadow:'0 6px 20px rgba(212,160,23,0.35)', transition:'transform 0.15s, box-shadow 0.15s' }}
-                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform='translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow='0 10px 28px rgba(212,160,23,0.5)'; }}
-                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform='none'; (e.currentTarget as HTMLElement).style.boxShadow='0 6px 20px rgba(212,160,23,0.35)'; }}>
+                <a href="https://wa.me/51945203708?text=Hola%2C%20me%20interesa%20anunciar%20con%20ustedes%20en%20J%26M%20Decoraciones%20y%20Eventos"
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0.85rem 1.75rem', borderRadius: 9999, background: 'linear-gradient(135deg,#b8860b,#f5c842)', color: '#0a1628', fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none', boxShadow: '0 6px 20px rgba(212,160,23,0.35)', transition: 'transform 0.15s, box-shadow 0.15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 28px rgba(212,160,23,0.5)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(212,160,23,0.35)'; }}>
                   💬 WhatsApp
                 </a>
               )}
               {cms.ctaBtn2Url && (
                 <a href={cms.ctaBtn2Url} target="_blank" rel="noopener noreferrer"
-                   style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'0.85rem 1.75rem', borderRadius:9999, background:'rgba(212,160,23,0.12)', color:'#f5c842', fontWeight:700, fontSize:'0.9rem', textDecoration:'none', border:'1px solid rgba(212,160,23,0.3)', transition:'transform 0.15s' }}
-                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform='translateY(-2px)'; }}
-                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform='none'; }}>
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0.85rem 1.75rem', borderRadius: 9999, background: 'rgba(212,160,23,0.12)', color: '#f5c842', fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none', border: '1px solid rgba(212,160,23,0.3)', transition: 'transform 0.15s' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'none'; }}>
                   {cms.ctaBtn2 || '💬 Otra opción'}
                 </a>
               )}
