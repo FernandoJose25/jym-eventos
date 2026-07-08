@@ -504,7 +504,7 @@ export default function GaleriaClient() {
 
             {/* Media — sin nada encima */}
             {isVideo(visibles[lightbox]) ? (
-              <CustomVideoPlayer key={visibles[lightbox].id} src={cxVideo(visibles[lightbox].url)} />
+              <CustomVideoPlayer key={visibles[lightbox].id} src={visibles[lightbox].url} />
             ) : (
               <img src={cxFull(visibles[lightbox].url)}
                    alt={visibles[lightbox].alt || 'Evento J&M'}

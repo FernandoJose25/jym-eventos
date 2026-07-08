@@ -99,7 +99,7 @@ export default function AlbumDetailClient({ fotos }: { fotos: AlbumFoto[] }) {
             }}>
 
             {isVideo(fotos[lightbox]) ? (
-              <CustomVideoPlayer key={fotos[lightbox].id} src={cxVideo(fotos[lightbox].url)} />
+              <CustomVideoPlayer key={fotos[lightbox].id} src={fotos[lightbox].url} />
             ) : (
               <img src={cxFull(fotos[lightbox].url)}
                 alt={fotos[lightbox].alt || 'Foto del evento'}

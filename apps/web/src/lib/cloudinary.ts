@@ -106,6 +106,20 @@ export function cxShareVideo(url: string): string {
   return buildVideoUrl(url, t);
 }
 
+/**
+ * Video con calidad/resolución específica — para el selector manual de
+ * calidad del reproductor (pensado para visitantes con datos móviles
+ * limitados). A menor resolución, además se baja el nivel de q_auto para
+ * que el archivo pese notablemente menos, no solo se vea más chico.
+ */
+export function cxVideoQuality(url: string, height: 1080 | 720 | 480 | 360): string {
+  if (!url) return url;
+  if (!isCloudinary(url)) return url;
+  const qLevel = height <= 480 ? 'q_auto:eco' : height === 720 ? 'q_auto:good' : 'q_auto:best';
+  const t = `${qLevel},vc_auto,fl_progressive,h_${height},c_limit`;
+  return buildVideoUrl(url, t);
+}
+
 /** Smart dispatcher — auto-detects image vs video */
 export function cxAuto(url: string, size: 'thumb' | 'card' | 'full' | 'hero' = 'card'): string {
   if (!url) return '';
