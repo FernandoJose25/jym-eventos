@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { cxVideo, cxVideoQuality } from '@/lib/cloudinary';
 
 // ── CustomVideoPlayer ──────────────────────────────────────────────
 const VBTN: React.CSSProperties = {
@@ -10,12 +11,38 @@ const VBTN: React.CSSProperties = {
   WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
 };
 
+type VideoQuality = 'auto' | 1080 | 720 | 480 | 360;
+
+const QUALITIES: { value: VideoQuality; label: string }[] = [
+  { value: 'auto', label: 'Auto' },
+  { value: 1080,   label: '1080p' },
+  { value: 720,    label: '720p' },
+  { value: 480,    label: '480p' },
+  { value: 360,    label: '360p' },
+];
+
+const QUALITY_STORAGE_KEY = 'jm_video_quality';
+
+function loadSavedQuality(): VideoQuality {
+  if (typeof window === 'undefined') return 'auto';
+  try {
+    const saved = window.localStorage.getItem(QUALITY_STORAGE_KEY);
+    if (!saved || saved === 'auto') return 'auto';
+    const n = Number(saved);
+    return ([1080, 720, 480, 360] as number[]).includes(n) ? (n as VideoQuality) : 'auto';
+  } catch { return 'auto'; }
+}
+
 function fmtTime(s: number) {
   if (!isFinite(s) || isNaN(s)) return '0:00';
   const m = Math.floor(s / 60);
   return `${m}:${Math.floor(s % 60).toString().padStart(2, '0')}`;
 }
 
+/**
+ * `src` debe ser la URL CRUDA de Cloudinary (sin transformar) — este
+ * componente arma la URL final según la calidad elegida por el usuario.
+ */
 function CustomVideoPlayer({ src }: { src: string }) {
   const videoRef  = useRef<HTMLVideoElement>(null);
   const wrapRef   = useRef<HTMLDivElement>(null);
@@ -28,10 +55,19 @@ function CustomVideoPlayer({ src }: { src: string }) {
   const [cur,         setCur]         = useState(0);
   const [dur,         setDur]         = useState(0);
   const [ctrlVisible, setCtrlVisible] = useState(true);
-  const [panel,       setPanel]       = useState<'none'|'vol'|'menu'>('none');
+  const [panel,       setPanel]       = useState<'none'|'vol'|'menu'|'calidad'>('none');
   const [speed,       setSpeed]       = useState(1);
   const [isFull,      setIsFull]      = useState(false);
   const [volRO,       setVolRO]       = useState(false); // iOS: volume read-only
+  const [quality,     setQuality]     = useState<VideoQuality>(loadSavedQuality);
+
+  const resumeRef     = useRef<{ time: number; wasPlaying: boolean } | null>(null);
+  const skipNextResume = useRef(true); // no restaurar posición en el primer render
+
+  const computedSrc = useMemo(
+    () => (quality === 'auto' ? cxVideo(src) : cxVideoQuality(src, quality)),
+    [src, quality]
+  );
 
   useEffect(() => {
     const v = videoRef.current; if (!v) return;
@@ -83,6 +119,32 @@ function CustomVideoPlayer({ src }: { src: string }) {
       setCtrlVisible(true);
     }
   }, [panel]);
+
+  // Al cambiar de calidad, el <video src> cambia y el navegador recarga el
+  // archivo desde cero — este efecto restaura el punto exacto donde iba y,
+  // si estaba reproduciendo, retoma la reproducción automáticamente.
+  useEffect(() => {
+    if (skipNextResume.current) { skipNextResume.current = false; return; }
+    const v = videoRef.current; if (!v) return;
+    const onLoaded = () => {
+      if (resumeRef.current) {
+        v.currentTime = resumeRef.current.time;
+        if (resumeRef.current.wasPlaying) v.play().catch(() => {});
+        resumeRef.current = null;
+      }
+      v.removeEventListener('loadedmetadata', onLoaded);
+    };
+    v.addEventListener('loadedmetadata', onLoaded);
+    return () => v.removeEventListener('loadedmetadata', onLoaded);
+  }, [computedSrc]);
+
+  const changeQuality = (q: VideoQuality) => {
+    const v = videoRef.current;
+    if (v) resumeRef.current = { time: v.currentTime, wasPlaying: !v.paused };
+    setQuality(q);
+    setPanel('none');
+    try { window.localStorage.setItem(QUALITY_STORAGE_KEY, String(q)); } catch {}
+  };
 
   const bump = () => {
     setCtrlVisible(true);
@@ -166,7 +228,7 @@ function CustomVideoPlayer({ src }: { src: string }) {
       {/* Video */}
       <video
         ref={videoRef}
-        src={src}
+        src={computedSrc}
         autoPlay
         playsInline
         onClick={e => { e.stopPropagation(); if (ctrlVisible) togglePlay(); else bump(); }}
@@ -254,6 +316,33 @@ function CustomVideoPlayer({ src }: { src: string }) {
           </div>
         )}
 
+        {/* ── Panel: Calidad ── */}
+        {panel === 'calidad' && (
+          <div style={{ marginBottom: 10, padding: '8px 10px', background: 'rgba(0,0,0,0.55)', borderRadius: 10 }}>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.62rem', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '.1em' }}>
+              Calidad de video
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {QUALITIES.map(q => (
+                <button key={q.value}
+                  onClick={e => { e.stopPropagation(); changeQuality(q.value); }}
+                  style={{
+                    padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
+                    background: quality === q.value ? 'rgba(212,160,23,0.9)' : 'rgba(255,255,255,0.13)',
+                    color: quality === q.value ? '#0a1628' : '#fff',
+                    fontWeight: quality === q.value ? 700 : 400, fontSize: '0.8rem',
+                    WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
+                  }}>
+                  {q.label}
+                </button>
+              ))}
+            </div>
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.62rem', margin: '8px 0 0' }}>
+              Elige una calidad menor si tu conexión es lenta o tienes datos limitados
+            </p>
+          </div>
+        )}
+
         {/* ── Seek bar ── */}
         <input
           type="range" min={0} max={100} step={0.1}
@@ -288,6 +377,14 @@ function CustomVideoPlayer({ src }: { src: string }) {
               ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="14" y1="10" x2="21" y2="3"/></svg>
               : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
             }
+          </button>
+
+          {/* Calidad de video */}
+          <button
+            style={{ ...VBTN, background: panel === 'calidad' ? 'rgba(212,160,23,0.4)' : 'rgba(255,255,255,0.15)' }}
+            onClick={e => { e.stopPropagation(); setPanel(p => p === 'calidad' ? 'none' : 'calidad'); }}
+            aria-label="Calidad de video">
+            ⚙️
           </button>
 
           {/* Menú 3 puntos */}
