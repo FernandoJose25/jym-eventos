@@ -9,3 +9,32 @@ export interface Servicio {
   relacionados?: string[]; cta?: { h2:string; descripcion:string; btnTexto:string; btnUrl:string };
   seo?: { titulo:string; descripcion:string; ogImagen?:string };
 }
+
+// ── Álbumes de eventos reales ──────────────────────────────────
+// Un álbum representa un evento concreto (cumpleaños, quinceañero, activación
+// corporativa, etc). Sus fotos/videos viven en `gallery_items` como siempre —
+// simplemente se les asigna `albumId` (nuevo campo opcional) para agruparlas.
+export interface Album {
+  id: string;
+  slug: string;
+  titulo: string;
+  tipoEvento?: string;   // "Cumpleaños", "Quinceañero", "Corporativo", "Baby Shower"...
+  cliente?: string;
+  fecha: string;         // ISO date string ('YYYY-MM-DD')
+  descripcion?: string;
+  coverUrl: string;
+  coverFocalX?: number;
+  coverFocalY?: number;
+  visible: boolean;
+  order: number;
+}
+
+export interface AlbumFoto {
+  id: string;
+  url: string;
+  alt?: string;
+  tipo?: string;         // 'foto' | 'video'
+  focalX?: number;
+  focalY?: number;
+  order?: number;
+}
