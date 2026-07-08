@@ -3,73 +3,110 @@ import { useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
+// Tamaño aproximado del botón flotante del widget (icon_size 24 + padding 8 en
+// cada lado + borde). Se usa solo para reservar el espacio visual y evitar que
+// el widget de terceros provoque Cumulative Layout Shift al insertarse.
+const WIDGET_BUTTON_SIZE = 56;
+const WIDGET_MARGIN_BOTTOM = 15;
+const WIDGET_MARGIN_RIGHT = 16;
+
 export default function WhatsAppWidget() {
   useEffect(() => {
-    (async () => {
-      try {
-        const [waSnap, contactoSnap] = await Promise.all([
-          getDoc(doc(db, 'site_config', 'whatsapp')),
-          getDoc(doc(db, 'site_config', 'contacto')),
-        ]);
-        const wa      = waSnap.exists()      ? waSnap.data()      : {};
-        const contacto = contactoSnap.exists() ? contactoSnap.data() : {};
+    const loadWidget = () => {
+      (async () => {
+        try {
+          const [waSnap, contactoSnap] = await Promise.all([
+            getDoc(doc(db, 'site_config', 'whatsapp')),
+            getDoc(doc(db, 'site_config', 'contacto')),
+          ]);
+          const wa = waSnap.exists() ? waSnap.data() : {};
+          const contacto = contactoSnap.exists() ? contactoSnap.data() : {};
 
-        const phone        = wa.phoneNumber   || contacto.whatsapp || '51945203708';
-        const primaryColor = wa.primaryColor  || '#085E54';
-        const logoUrl      = wa.logoUrl       || 'https://res.cloudinary.com/dvcmazqtp/image/upload/v1780101985/logos/feuzcxtlvcwov5fefinu.webp';
-        const buttonColor  = wa.buttonColor   || '#1c9247';
-        const promptText   = wa.promptText    || '👋 Hola, resuelve la duda que tengas';
-        const promptDelay  = wa.promptDelay   ?? 5;
-        const popupTitle   = wa.popupTitle    || 'J&M Decoraciones y Eventos';
-        const popupSub     = wa.popupSubtitle || 'Usualmente responde en 1 hora';
-        const welcomeText  = wa.welcomeText   || '👋 Hola, ¿en qué podemos ayudarte?';
-        const customerText = wa.customerText  || 'Hola, quiero cotizar un evento';
+          const phone = wa.phoneNumber || contacto.whatsapp || '51945203708';
+          const primaryColor = wa.primaryColor || '#085E54';
+          const logoUrl = wa.logoUrl || 'https://res.cloudinary.com/dvcmazqtp/image/upload/v1780101985/logos/feuzcxtlvcwov5fefinu.webp';
+          const buttonColor = wa.buttonColor || '#1c9247';
+          const promptText = wa.promptText || '👋 Hola, resuelve la duda que tengas';
+          const promptDelay = wa.promptDelay ?? 5;
+          const popupTitle = wa.popupTitle || 'J&M Decoraciones y Eventos';
+          const popupSub = wa.popupSubtitle || 'Usualmente responde en 1 hora';
+          const welcomeText = wa.welcomeText || '👋 Hola, ¿en qué podemos ayudarte?';
+          const customerText = wa.customerText || 'Hola, quiero cotizar un evento';
 
-        const script = document.createElement('script');
-        script.id = 'wbwacw-init';
-        script.async = true;
+          const script = document.createElement('script');
+          script.id = 'wbwacw-init';
+          script.async = true;
 
-        const baseUrl     = 'https://wacw.whatsbox.io';
-        const cacheVar    = '1780102875398';
+          const baseUrl = 'https://wacw.whatsbox.io';
+          const cacheVar = '1780102875398';
 
-        (window as any).wbwacw = {
-          base_url:      baseUrl,
-          cache_variant: cacheVar,
-          config: {
-            brand: {
-              phone_number:  phone,
-              primary_color: primaryColor,
-              logo_url:      logoUrl,
+          (window as any).wbwacw = {
+            base_url: baseUrl,
+            cache_variant: cacheVar,
+            config: {
+              brand: {
+                phone_number: phone,
+                primary_color: primaryColor,
+                logo_url: logoUrl,
+              },
+              button: {
+                background_color: buttonColor,
+                icon: 'white',
+                icon_size: 24,
+                padding: 8,
+                position: 'bottom-right',
+                margin: { bottom: WIDGET_MARGIN_BOTTOM, right: WIDGET_MARGIN_RIGHT, left: 0 },
+              },
+              prompt: {
+                text: promptText,
+                delay: promptDelay,
+              },
+              popup: {
+                title: popupTitle,
+                subtitle: popupSub,
+                welcome_text: welcomeText,
+                customer_text_default: customerText,
+              },
             },
-            button: {
-              background_color: buttonColor,
-              icon:             'white',
-              icon_size:        24,
-              padding:          8,
-              position:         'bottom-right',
-              margin:           { bottom: 15, right: 16, left: 0 },
-            },
-            prompt: {
-              text:  promptText,
-              delay: promptDelay,
-            },
-            popup: {
-              title:                 popupTitle,
-              subtitle:              popupSub,
-              welcome_text:          welcomeText,
-              customer_text_default: customerText,
-            },
-          },
-        };
+          };
 
-        script.src = `${baseUrl}/init.js?cv=${cacheVar}`;
-        const existing = document.getElementById('wbwacw-init');
-        if (!existing) document.head.appendChild(script);
-      } catch (e) {
-        console.error('[WhatsAppWidget]', e);
-      }
-    })();
+          script.src = `${baseUrl}/init.js?cv=${cacheVar}`;
+          const existing = document.getElementById('wbwacw-init');
+          if (!existing) document.head.appendChild(script);
+        } catch (e) {
+          console.error('[WhatsAppWidget]', e);
+        }
+      })();
+    };
+
+    // El widget se carga como script de terceros y aparece "de golpe" en el
+    // DOM, lo cual el PageSpeed reportó como la causa principal del CLS
+    // (0.16). En vez de inyectarlo apenas monta el componente —compitiendo
+    // con el render inicial de la página—, esperamos a que el navegador esté
+    // libre (idle) o, como respaldo, un par de segundos.
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(loadWidget, { timeout: 4000 });
+    } else {
+      setTimeout(loadWidget, 2000);
+    }
   }, []);
 
-  return null;
+  // Placeholder invisible que reserva el espacio exacto del botón flotante
+  // (misma posición y margen que configuramos arriba) desde el primer
+  // render. Así, cuando el widget real se inserte encima, no "empuja" nada
+  // más en la página y no debería sumar layout shift adicional.
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'fixed',
+        bottom: WIDGET_MARGIN_BOTTOM,
+        right: WIDGET_MARGIN_RIGHT,
+        width: WIDGET_BUTTON_SIZE,
+        height: WIDGET_BUTTON_SIZE,
+        pointerEvents: 'none',
+        zIndex: 1,
+      }}
+    />
+  );
 }

@@ -36,19 +36,46 @@ const getNavbarLogo = unstable_cache(
   { revalidate: 3600 }
 );
 
+const DEFAULT_TITLE = 'J&M Decoraciones y Eventos — Sechura, Piura';
+const DEFAULT_DESCRIPTION = 'Organizamos eventos únicos en Sechura, Piura. Shows infantiles, hora loca, decoración temática, catering y fotografía profesional.';
+
 export async function generateMetadata(): Promise<Metadata> {
   const iconUrl = await getNavbarLogo();
+
+  // Open Graph por defecto: sin esto, páginas que no definen su propio
+  // `openGraph` (home, galería, sobre-nosotros, contacto, etc.) no muestran
+  // imagen ni texto propio al compartirse en WhatsApp, Facebook o Instagram.
+  // TODO: reemplazar `iconUrl` por una imagen horizontal de 1200x630 dedicada
+  // para OG (el logo es cuadrado y se recorta feo en la mayoría de tarjetas
+  // de vista previa). Se puede subir a Cloudinary y guardar la URL en
+  // site_config, igual que ya se hace con el logo del navbar.
+  const defaultOgImage = iconUrl ? [{ url: iconUrl }] : undefined;
 
   return {
     metadataBase: new URL(SITE_URL),
     title: {
-      default: 'J&M Decoraciones y Eventos — Sechura, Piura',
+      default: DEFAULT_TITLE,
       template: '%s | J&M Decoraciones y Eventos',
     },
-    description: 'Organizamos eventos únicos en Sechura, Piura. Shows infantiles, hora loca, decoración temática, catering y fotografía profesional.',
+    description: DEFAULT_DESCRIPTION,
     alternates: { canonical: SITE_URL },
     verification: {
       google: 'MRy0O_zkW6ZNsC_CnEB5krGekfmnAjcB3dKlhxeKwUA',
+    },
+    openGraph: {
+      title: DEFAULT_TITLE,
+      description: DEFAULT_DESCRIPTION,
+      url: SITE_URL,
+      siteName: 'J&M Decoraciones y Eventos',
+      locale: 'es_PE',
+      type: 'website',
+      images: defaultOgImage,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: DEFAULT_TITLE,
+      description: DEFAULT_DESCRIPTION,
+      images: defaultOgImage,
     },
     ...(iconUrl && { icons: { icon: iconUrl, apple: iconUrl } }),
   };
