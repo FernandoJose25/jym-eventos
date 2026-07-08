@@ -12,7 +12,19 @@ const WIDGET_MARGIN_RIGHT = 16;
 
 export default function WhatsAppWidget() {
   useEffect(() => {
-    const loadWidget = () => {
+    let loaded = false;
+
+    // `triggeredByInteraction` decide si mostramos el globo de saludo
+    // automático. Si el usuario ya interactuó con la página (scroll, tap,
+    // clic, tecla), el cambio de diseño que provoca el globo queda dentro de
+    // los 500ms posteriores a esa interacción, que es justo la ventana que
+    // Google excluye al calcular Cumulative Layout Shift. Si nadie interactuó
+    // (poco frecuente) cargamos igual el botón por accesibilidad, pero sin el
+    // globo automático, para no sumar CLS de la nada.
+    const loadWidget = (triggeredByInteraction: boolean) => {
+      if (loaded) return;
+      loaded = true;
+
       (async () => {
         try {
           const [waSnap, contactoSnap] = await Promise.all([
@@ -27,7 +39,10 @@ export default function WhatsAppWidget() {
           const logoUrl = wa.logoUrl || 'https://res.cloudinary.com/dvcmazqtp/image/upload/v1780101985/logos/feuzcxtlvcwov5fefinu.webp';
           const buttonColor = wa.buttonColor || '#1c9247';
           const promptText = wa.promptText || '👋 Hola, resuelve la duda que tengas';
-          const promptDelay = wa.promptDelay ?? 5;
+          // Con interacción: el globo aparece casi de inmediato (pegado a la
+          // acción del usuario). Sin interacción: delay altísimo para que en
+          // la práctica nunca aparezca solo.
+          const promptDelay = triggeredByInteraction ? (wa.promptDelay ?? 1) : 999999;
           const popupTitle = wa.popupTitle || 'J&M Decoraciones y Eventos';
           const popupSub = wa.popupSubtitle || 'Usualmente responde en 1 hora';
           const welcomeText = wa.welcomeText || '👋 Hola, ¿en qué podemos ayudarte?';
@@ -79,16 +94,19 @@ export default function WhatsAppWidget() {
       })();
     };
 
-    // El widget se carga como script de terceros y aparece "de golpe" en el
-    // DOM, lo cual el PageSpeed reportó como la causa principal del CLS
-    // (0.16). En vez de inyectarlo apenas monta el componente —compitiendo
-    // con el render inicial de la página—, esperamos a que el navegador esté
-    // libre (idle) o, como respaldo, un par de segundos.
-    if ('requestIdleCallback' in window) {
-      (window as any).requestIdleCallback(loadWidget, { timeout: 4000 });
-    } else {
-      setTimeout(loadWidget, 2000);
-    }
+    const onInteraction = () => loadWidget(true);
+    const interactionEvents: (keyof WindowEventMap)[] = ['scroll', 'pointerdown', 'touchstart', 'keydown'];
+    interactionEvents.forEach(evt => window.addEventListener(evt, onInteraction, { once: true, passive: true }));
+
+    // Respaldo: si el usuario se queda quieto y nunca interactúa, igual
+    // mostramos el botón (para que WhatsApp siga siendo accesible), pero sin
+    // el globo automático.
+    const fallback = setTimeout(() => loadWidget(false), 8000);
+
+    return () => {
+      interactionEvents.forEach(evt => window.removeEventListener(evt, onInteraction));
+      clearTimeout(fallback);
+    };
   }, []);
 
   // Placeholder invisible que reserva el espacio exacto del botón flotante
