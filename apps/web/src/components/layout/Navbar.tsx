@@ -72,6 +72,7 @@ export default function Navbar() {
     { href: '/', label: 'Inicio' },
     { href: '/sobre-nosotros', label: 'Nosotros' },
     { href: '/galeria', label: 'Galería' },
+    { href: '/albumes', label: 'Álbumes' },
     { href: '/contacto', label: 'Contacto' },
   ];
 
