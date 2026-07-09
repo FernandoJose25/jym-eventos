@@ -60,7 +60,10 @@ export async function generateMetadata(): Promise<Metadata> {
     description: DEFAULT_DESCRIPTION,
     alternates: { canonical: SITE_URL },
     verification: {
-      google: 'MRy0O_zkW6ZNsC_CnEB5krGekfmnAjcB3dKlhxeKwUA',
+      google: [
+        'MRy0O_zkW6ZNsC_CnEB5krGekfmnAjcB3dKlhxeKwUA',
+        'DNmC4C6F7ycqWjm16_zsDOxurIA87vTDvGJzuQYASqE',
+      ],
     },
     openGraph: {
       title: DEFAULT_TITLE,
