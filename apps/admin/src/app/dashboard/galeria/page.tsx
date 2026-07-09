@@ -1,543 +1,510 @@
 'use client';
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
-import { collection, doc, getDocs, query, orderBy, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
+import { cxThumb, cxVideo } from '@/lib/cloudinary';
 import { db, COL } from '@/lib/firebase';
-import { getToken } from '@/lib/get-token';
-import { SUBCATS, CATEGORIAS } from '@/lib/galeriaTaxonomy';
 import { toast } from 'sonner';
-import {
-  ArrowLeft, ImagePlus, Loader2, CheckCircle2, XCircle, Sparkles,
-  AlertTriangle, Trash2, Save, Pencil,
-} from 'lucide-react';
-import {
-  getGooglePhotosToken, createPickerSession, pollPickerSession,
-  listPickedMediaItems, deletePickerSession, fetchMediaBlob, parseDurationMs,
-  type PickedMediaItem,
-} from '@/lib/googlePhotosPicker';
+import { useModal } from '@/components/ui/Modal';
+import ImageUploader from '@/components/ui/ImageUploader';
+import { Plus, Eye, EyeOff, Trash2, Filter, Search, X, Pencil, ImagePlus } from 'lucide-react';
 
-type EstadoFoto = 'pendiente' | 'procesando' | 'lista' | 'error';
+const SUBCATS: Record<string, string[]> = {
+  'General':                    [],
+  'Shows Infantiles':           ['Mickey Mouse','Pocoyo','Frozen','Encanto','Spider-Man','Princesas','Minnie Mouse','Baby Shark','Paw Patrol','Otro'],
+  'Show Hora Loca':             ['Cumpleaños','Boda','Quinceañero','Corporativo','Bautizo','Otro'],
+  'Activaciones Empresariales': ['Lanzamiento','Team Building','Feria','Corporativo','Otro'],
+  'Decoración Temática':        ['Princesas','Superhéroes','Tropical','Boho/Rústico','Elegante','Personalizada','Otro'],
+  'Fotografía':                 ['Show Infantil','Hora Loca','Corporativo','Decoración','General'],
+  'Filmación y Fotografía':     ['Show Infantil','Hora Loca','Corporativo','Decoración','General'],
+  'Catering':                   ['Carrito Snacks','Mesa Dulces','Candy Bar','Catering General'],
+  'Catering y Carritos Snacks': ['Carrito Snacks','Mesa Dulces','Candy Bar','Catering General'],
+};
 
-interface FilaFoto {
-  id: string;
-  mediaItem: PickedMediaItem;
-  thumb: string;          // object URL local para previsualizar
-  incluida: boolean;      // ¿se procesa/publica?
-  estado: EstadoFoto;
-  error?: string;
-  cloudinaryUrl?: string;
-  categoria: string;
-  subcategoria: string;
-  alt: string;
-  calidad: 'buena' | 'regular' | 'mala';
-  motivoCalidad: string;
-  eventoNombre: string;   // grupo/evento al que pertenece esta foto (editable)
+const BLANK = { categoria:'General', subcategoria:'', tipo:'imagen', visible:true, alt:'' };
+
+// Score a string match: 2=exact word, 1=partial, 0=none
+function score(text: string, q: string): number {
+  if (!text) return 0;
+  const t = text.toLowerCase();
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  let total = 0;
+  for (const w of words) {
+    if (t.includes(w)) total += t.split(w).length - 1;
+  }
+  return total;
 }
 
-type Fase = 'idle' | 'conectando' | 'esperando-seleccion' | 'listando' | 'revision' | 'guardando';
+function smartSearch(items: any[], q: string) {
+  if (!q.trim()) return { results: items, suggestions: [] };
+  const scored = items
+    .map(item => ({
+      item,
+      s: score(item.alt, q) * 3 + score(item.categoria, q) * 2 + score(item.subcategoria, q) * 2,
+    }))
+    .filter(x => x.s > 0)
+    .sort((a, b) => b.s - a.s)
+    .map(x => x.item);
 
-const FOLDER = 'jym/galeria-importada';
-const CONCURRENCIA = 3;
-const LOTE_IA = 4;            // fotos por llamada a la IA (agrupación necesita ver varias juntas)
-const LOTES_EN_PARALELO = 2;  // para no pasarnos del límite gratuito de Groq (tokens/minuto)
+  if (scored.length > 0) return { results: scored, suggestions: [] };
 
-// Colores para distinguir grupos de evento en pantalla
-const COLORES_GRUPO = ['#1e3a5f', '#b45309', '#0f766e', '#7c3aed', '#be123c', '#4d7c0f', '#0369a1', '#a16207'];
-function colorDeGrupo(nombre: string) {
-  let h = 0;
-  for (let i = 0; i < nombre.length; i++) h = (h * 31 + nombre.charCodeAt(i)) >>> 0;
-  return COLORES_GRUPO[h % COLORES_GRUPO.length];
-}
-function slugify(s: string) {
-  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'evento';
-}
-// Inserta una transformación de Cloudinary para mandar a la IA una versión liviana (menos tokens = menos costo)
-function urlParaClasificar(url: string) {
-  return url.includes('/upload/') ? url.replace('/upload/', '/upload/w_700,q_auto,f_auto/') : url;
-}
+  // No results → suggest categories/subcategories that partially relate
+  const allTerms = new Set<string>();
+  for (const item of items) {
+    if (item.categoria) allTerms.add(item.categoria);
+    if (item.subcategoria) allTerms.add(item.subcategoria);
+    if (item.alt) item.alt.split(/\s+/).forEach((w: string) => w.length > 3 && allTerms.add(w));
+  }
+  const suggestions = [...allTerms]
+    .filter(t => {
+      const tl = t.toLowerCase();
+      const ql = q.toLowerCase();
+      return tl.includes(ql[0]) || ql.split(' ').some((w: string) => tl.includes(w[0]));
+    })
+    .slice(0, 6);
 
-async function uploadBlobToCloudinary(blob: Blob, filename: string, idToken: string): Promise<string> {
-  const signRes = await fetch('/api/cloudinary-sign', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fileSize: blob.size, fileType: blob.type || 'image/jpeg', folder: FOLDER }),
-  });
-  if (!signRes.ok) throw new Error('No se pudo firmar la subida a Cloudinary');
-  const { timestamp, signature, apiKey, cloudName } = await signRes.json();
-
-  const form = new FormData();
-  form.append('file', blob, filename);
-  form.append('api_key', apiKey);
-  form.append('timestamp', String(timestamp));
-  form.append('signature', signature);
-  form.append('folder', FOLDER);
-
-  const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-    method: 'POST',
-    body: form,
-  });
-  if (!uploadRes.ok) throw new Error('Cloudinary rechazó la imagen');
-  const data = await uploadRes.json();
-  return data.secure_url as string;
+  return { results: [], suggestions };
 }
 
-function chunk<T>(items: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
-  return out;
-}
+export default function GaleriaPage() {
+  const [items,    setItems]    = useState<any[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [mode,     setMode]     = useState<'idle'|'add'|'edit'>('idle');
+  const [editId,   setEditId]   = useState<string|null>(null);
+  const [filterCat,setFilterCat]= useState('Todas');
+  const [searchQ,  setSearchQ]  = useState('');
+  const [formData, setFormData] = useState<any>(BLANK);
+  const [cats,     setCats]     = useState<string[]>(Object.keys(SUBCATS));
+  const { open } = useModal();
+  const searchRef = useRef<HTMLInputElement>(null);
 
-async function runWithConcurrency<T>(items: T[], limit: number, worker: (item: T) => Promise<void>) {
-  let i = 0;
-  const runners = new Array(Math.min(limit, items.length)).fill(0).map(async () => {
-    while (i < items.length) {
-      const item = items[i++];
-      await worker(item);
-    }
-  });
-  await Promise.all(runners);
-}
+  useEffect(() => onSnapshot(
+    query(collection(db, COL.GALERIA), orderBy('order','asc')),
+    snap => { setItems(snap.docs.map(d=>({id:d.id,...d.data()}))); setLoading(false); }
+  ), []);
 
-export default function ImportarDeGooglePhotosPage() {
-  const [fase, setFase] = useState<Fase>('idle');
-  const [filas, setFilas] = useState<FilaFoto[]>([]);
-  const [progreso, setProgreso] = useState({ hecho: 0, total: 0 });
-  const [errorGlobal, setErrorGlobal] = useState('');
-  const googleTokenRef = useRef<string>('');
-  const sessionIdRef = useRef<string>('');
-  const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const eventosDetectadosRef = useRef<string[]>([]); // nombres de evento vistos en esta sesión, para que la IA los reutilice
-
-  const actualizarFila = useCallback((id: string, patch: Partial<FilaFoto>) => {
-    setFilas(prev => prev.map(f => (f.id === id ? { ...f, ...patch } : f)));
+  useEffect(() => {
+    getDocs(query(collection(db, COL.SERVICIOS), orderBy('order','asc'))).then(snap => {
+      const titles = snap.docs.map(d => (d.data() as any).title).filter(Boolean);
+      setCats(['General', ...titles]);
+    });
   }, []);
 
-  /* ── 1. Conectar con Google Photos y abrir el selector ── */
-  const handleConectar = async () => {
-    setErrorGlobal('');
-    setFase('conectando');
-    try {
-      const token = await getGooglePhotosToken();
-      googleTokenRef.current = token;
+  const subcatsDisponibles = SUBCATS[formData.categoria] || [];
 
-      const session = await createPickerSession(token);
-      sessionIdRef.current = session.id;
-      window.open(session.pickerUri, '_blank', 'noopener,noreferrer');
-
-      setFase('esperando-seleccion');
-      const intervalo = parseDurationMs(session.pollingConfig?.pollInterval, 3000);
-      const timeoutMs = parseDurationMs(session.pollingConfig?.timeoutIn, 5 * 60 * 1000);
-      const deadline = Date.now() + timeoutMs;
-
-      const poll = async () => {
-        if (Date.now() > deadline) {
-          setErrorGlobal('El tiempo para elegir fotos expiró. Presiona "Conectar" de nuevo.');
-          setFase('idle');
-          return;
-        }
-        const s = await pollPickerSession(sessionIdRef.current, googleTokenRef.current);
-        if (s.mediaItemsSet) {
-          await cargarSeleccionadas();
-        } else {
-          pollTimer.current = setTimeout(poll, intervalo);
-        }
-      };
-      pollTimer.current = setTimeout(poll, intervalo);
-    } catch (e: any) {
-      setErrorGlobal(e.message || 'No se pudo conectar con Google Photos');
-      setFase('idle');
-    }
+  const openAdd = () => {
+    setFormData(BLANK);
+    setEditId(null);
+    setMode('add');
   };
 
-  /* ── 2. Traer los items elegidos + generar miniaturas ── */
-  const cargarSeleccionadas = async () => {
-    setFase('listando');
-    try {
-      const items = await listPickedMediaItems(sessionIdRef.current, googleTokenRef.current);
-      if (items.length === 0) {
-        setErrorGlobal('No elegiste ninguna foto.');
-        setFase('idle');
-        return;
-      }
-
-      const nuevasFilas: FilaFoto[] = [];
-      await runWithConcurrency(items, 5, async (item) => {
-        const blob = await fetchMediaBlob(item.mediaFile.baseUrl, googleTokenRef.current, '=w400-h400');
-        nuevasFilas.push({
-          id: item.id,
-          mediaItem: item,
-          thumb: URL.createObjectURL(blob),
-          incluida: true,
-          estado: 'pendiente',
-          categoria: 'General',
-          subcategoria: '',
-          alt: '',
-          calidad: 'buena',
-          motivoCalidad: '',
-          eventoNombre: '',
-        });
-      });
-
-      // Mantener el orden original de selección
-      const ordenId = items.map(i => i.id);
-      nuevasFilas.sort((a, b) => ordenId.indexOf(a.id) - ordenId.indexOf(b.id));
-
-      setFilas(nuevasFilas);
-      eventosDetectadosRef.current = [];
-      setFase('revision');
-      deletePickerSession(sessionIdRef.current, googleTokenRef.current);
-    } catch (e: any) {
-      setErrorGlobal(e.message || 'No se pudieron traer las fotos elegidas');
-      setFase('idle');
-    }
-  };
-
-  /* ── 3. Subir a Cloudinary + clasificar y agrupar por evento con IA (Groq vision, en lotes) ── */
-  const handleProcesarConIA = async () => {
-    const pendientes = filas.filter(f => f.incluida && f.estado === 'pendiente');
-    if (pendientes.length === 0) return;
-
-    setProgreso({ hecho: 0, total: pendientes.length });
-    const idToken = await getToken();
-
-    // 1) Subir todas a Cloudinary primero (esto sí puede ir con más concurrencia)
-    const subidas: { fila: FilaFoto; cloudinaryUrl: string }[] = [];
-    await runWithConcurrency(pendientes, CONCURRENCIA, async (fila) => {
-      actualizarFila(fila.id, { estado: 'procesando' });
-      try {
-        const blob = await fetchMediaBlob(fila.mediaItem.mediaFile.baseUrl, googleTokenRef.current, '=d');
-        const cloudinaryUrl = await uploadBlobToCloudinary(blob, fila.mediaItem.mediaFile.filename, idToken);
-        subidas.push({ fila, cloudinaryUrl });
-      } catch (e: any) {
-        actualizarFila(fila.id, { estado: 'error', error: e.message || 'Error subiendo esta foto' });
-        setProgreso(p => ({ ...p, hecho: p.hecho + 1 }));
-      }
+  const openEdit = (item: any) => {
+    setFormData({
+      url:          item.url          || '',
+      alt:          item.alt          || '',
+      categoria:    item.categoria    || 'General',
+      subcategoria: item.subcategoria || '',
+      tipo:         item.tipo         || 'imagen',
+      visible:      item.visible      ?? true,
+      focalX:       item.focalX       ?? 0.5,
+      focalY:       item.focalY       ?? 0.5,
+      mediaType:    item.tipo         || 'imagen',
     });
-
-    // 2) Clasificar y agrupar en lotes pequeños, para que la IA compare fotos entre sí
-    const lotes = chunk(subidas, LOTE_IA);
-    await runWithConcurrency(lotes, LOTES_EN_PARALELO, async (lote) => {
-      try {
-        const res = await fetch('/api/classify-foto', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fotos: lote.map(s => ({ id: s.fila.id, url: urlParaClasificar(s.cloudinaryUrl) })),
-            eventosConocidos: eventosDetectadosRef.current,
-          }),
-        });
-        if (!res.ok) throw new Error('La IA no pudo clasificar este lote');
-        const data = await res.json();
-        const resultados: Record<string, any> = {};
-        for (const r of data.fotos || []) resultados[r.id] = r;
-
-        for (const s of lote) {
-          const r = resultados[s.fila.id];
-          if (!r) {
-            actualizarFila(s.fila.id, { estado: 'error', error: 'La IA no devolvió resultado para esta foto' });
-            continue;
-          }
-          if (r.nombreGrupo && !eventosDetectadosRef.current.includes(r.nombreGrupo)) {
-            eventosDetectadosRef.current = [...eventosDetectadosRef.current, r.nombreGrupo];
-          }
-          actualizarFila(s.fila.id, {
-            estado: 'lista',
-            cloudinaryUrl: s.cloudinaryUrl,
-            categoria: r.categoria,
-            subcategoria: r.subcategoria,
-            alt: r.alt,
-            calidad: r.calidad,
-            motivoCalidad: r.motivoCalidad,
-            eventoNombre: r.nombreGrupo || '',
-            incluida: r.calidad !== 'mala', // auto-descarta las de mala calidad, editable después
-          });
-        }
-      } catch (e: any) {
-        for (const s of lote) {
-          actualizarFila(s.fila.id, { estado: 'error', error: e.message || 'Error procesando este lote' });
-        }
-      } finally {
-        setProgreso(p => ({ ...p, hecho: p.hecho + lote.length }));
-      }
-    });
-
-    toast.success('Clasificación y agrupación por evento terminada. Revisa y ajusta antes de publicar.');
+    setEditId(item.id);
+    setMode('edit');
   };
 
-  /* ── 4. Guardar las aprobadas en la galería (mismo esquema que /dashboard/galeria + evento) ── */
-  const handleGuardarEnGaleria = async () => {
-    const aprobadas = filas.filter(f => f.incluida && f.estado === 'lista' && f.cloudinaryUrl);
-    if (aprobadas.length === 0) {
-      toast.error('No hay fotos listas y seleccionadas para guardar');
-      return;
+  const handleSave = async () => {
+    if (!formData.url) { toast.error('Sube una imagen o video primero'); return; }
+    const payload = {
+      url:          formData.url,
+      alt:          formData.alt || formData.subcategoria || formData.categoria || 'Evento J&M',
+      categoria:    formData.categoria  || 'General',
+      subcategoria: formData.subcategoria || '',
+      focalX:       formData.focalX ?? 0.5,
+      focalY:       formData.focalY ?? 0.5,
+      tipo:         formData.mediaType  || formData.tipo || 'imagen',
+      visible:      formData.visible    ?? true,
+    };
+    if (mode === 'edit' && editId) {
+      await updateDoc(doc(db, COL.GALERIA, editId), payload);
+      toast.success('✅ Imagen actualizada');
+    } else {
+      const id = `${Date.now()}`;
+      await setDoc(doc(db, COL.GALERIA, id), { ...payload, order: items.length + 1, row: 1, createdAt: new Date().toISOString() });
+      toast.success('✅ Imagen agregada a la galería');
     }
-    setFase('guardando');
-    try {
-      const snap = await getDocs(query(collection(db, COL.GALERIA), orderBy('order', 'asc')));
-      let order = snap.size;
-
-      for (const f of aprobadas) {
-        order += 1;
-        const id = `${Date.now()}_${f.id}`;
-        const eventoNombre = f.eventoNombre.trim();
-        await setDoc(doc(db, COL.GALERIA, id), {
-          url: f.cloudinaryUrl,
-          alt: f.alt || f.subcategoria || f.categoria || 'Evento J&M',
-          categoria: f.categoria,
-          subcategoria: f.subcategoria,
-          eventoId: eventoNombre ? slugify(eventoNombre) : '',
-          eventoNombre,
-          focalX: 0.5,
-          focalY: 0.5,
-          tipo: 'imagen',
-          visible: true,
-          order,
-          row: 1,
-          createdAt: new Date().toISOString(),
-        });
-      }
-
-      toast.success(`✅ ${aprobadas.length} foto(s) agregadas a la galería`);
-      setFilas(prev => prev.filter(f => !aprobadas.includes(f)));
-      setFase('revision');
-    } catch (e: any) {
-      toast.error(e.message || 'Error guardando en la galería');
-      setFase('revision');
-    }
+    setMode('idle');
+    setFormData(BLANK);
+    setEditId(null);
   };
 
-  const quitarFila = (id: string) => setFilas(prev => prev.filter(f => f.id !== id));
+  const toggleVisible = (item: any) => open({
+    type:        item.visible ? 'hide' : 'show',
+    title:       item.visible ? 'Ocultar imagen' : 'Mostrar imagen',
+    description: item.visible
+      ? 'La imagen dejará de verse en la galería de la web pública.'
+      : 'La imagen volverá a aparecer en la galería.',
+    collection:  COL.GALERIA,
+    docId:       item.id,
+    field:       'visible',
+  });
 
-  /* Renombra/fusiona un grupo entero: aplica el nuevo nombre a todas las fotos que tenían el nombre viejo */
-  const renombrarGrupo = (nombreViejo: string, nombreNuevo: string) => {
-    setFilas(prev => prev.map(f => (f.eventoNombre === nombreViejo ? { ...f, eventoNombre: nombreNuevo } : f)));
-  };
+  const handleDelete = (item: any) => open({
+    type:       'delete',
+    title:      'Eliminar imagen',
+    description:'Se elimina el documento de Firestore. La imagen en Cloudinary permanece.',
+    onConfirm:  async () => {
+      await deleteDoc(doc(db, COL.GALERIA, item.id));
+      toast.success('Imagen eliminada');
+    },
+  });
 
-  const totalIncluidas = filas.filter(f => f.incluida).length;
-  const totalListas = filas.filter(f => f.estado === 'lista').length;
-  const totalPendientes = filas.filter(f => f.incluida && f.estado === 'pendiente').length;
+  // Category filter first, then smart search
+  const catFiltered = filterCat === 'Todas' ? items : items.filter(i => i.categoria === filterCat);
+  const { results: filtrados, suggestions } = useMemo(
+    () => smartSearch(catFiltered, searchQ),
+    [catFiltered, searchQ]
+  );
 
-  // Nombres de evento existentes (para autocompletar / fusionar grupos a mano)
-  const nombresDeGrupo = useMemo(() => {
-    const s = new Set<string>();
-    filas.forEach(f => { if (f.eventoNombre.trim()) s.add(f.eventoNombre.trim()); });
-    return [...s];
-  }, [filas]);
-
-  // Agrupar filas por evento para mostrarlas en clusters, manteniendo las "sin evento" al final
-  const grupos = useMemo(() => {
-    const orden: string[] = [];
-    const mapa = new Map<string, FilaFoto[]>();
-    for (const f of filas) {
-      const key = f.eventoNombre.trim() || '__sin_evento__';
-      if (!mapa.has(key)) { mapa.set(key, []); orden.push(key); }
-      mapa.get(key)!.push(f);
-    }
-    orden.sort((a, b) => (a === '__sin_evento__' ? 1 : b === '__sin_evento__' ? -1 : 0));
-    return orden.map(key => ({ nombre: key === '__sin_evento__' ? '' : key, filas: mapa.get(key)! }));
-  }, [filas]);
+  const activeCount = items.filter(i=>i.visible).length;
+  const hiddenCount = items.filter(i=>!i.visible).length;
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '1.5rem' }}>
-      <Link href="/dashboard/galeria" style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6, color: '#64748b',
-        fontSize: '0.85rem', textDecoration: 'none', marginBottom: 16,
-      }}>
-        <ArrowLeft size={15} /> Volver a Galería
-      </Link>
+    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
 
-      <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0a1628', marginBottom: 4 }}>
-        Importar fotos de Google Photos
-      </h1>
-      <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: 24 }}>
-        Elige fotos de tu Google Photos, la IA las clasifica por categoría, calidad y las agrupa por evento; tú revisas y apruebas antes de publicar.
-      </p>
-
-      {errorGlobal && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8, background: '#fff1f2',
-          border: '1px solid #fecaca', color: '#9f1239', borderRadius: 10,
-          padding: '0.75rem 1rem', marginBottom: 20, fontSize: '0.85rem',
-        }}>
-          <XCircle size={16} /> {errorGlobal}
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <h1 className="page-h1" style={{ fontFamily:'var(--font-playfair)', fontSize:'1.5rem', fontWeight:700, color:'#0a1628', margin:0 }}>Galería</h1>
+          <p className="page-h1-sub" style={{ color:'#64748b', fontSize:'0.82rem', marginTop:4 }}>
+            {activeCount} visibles · {hiddenCount} ocultas
+            {filterCat !== 'Todas' && ` · filtrando: "${filterCat}"`}
+          </p>
         </div>
-      )}
-
-      {fase === 'idle' && (
-        <button onClick={handleConectar} style={{
-          display: 'flex', alignItems: 'center', gap: 8, background: '#1e3a5f', color: '#fff',
-          border: 'none', borderRadius: 12, padding: '0.85rem 1.5rem', fontWeight: 700,
-          fontSize: '0.9rem', cursor: 'pointer',
-        }}>
-          <ImagePlus size={18} /> Conectar con Google Photos
-        </button>
-      )}
-
-      {(fase === 'conectando' || fase === 'esperando-seleccion' || fase === 'listando') && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 10, background: '#f8fafc',
-          border: '1px solid #e2e8f0', borderRadius: 12, padding: '1.25rem', fontSize: '0.88rem', color: '#334155',
-        }}>
-          <Loader2 size={18} className="spin" style={{ animation: 'spin 1s linear infinite' }} />
-          {fase === 'conectando' && 'Abriendo autorización de Google...'}
-          {fase === 'esperando-seleccion' && 'Elige tus fotos en la pestaña que se abrió con Google Photos. Esperando tu selección...'}
-          {fase === 'listando' && 'Trayendo las fotos elegidas y generando miniaturas...'}
+        <div style={{ display:'flex', gap:8, flexShrink:0 }}>
+          <Link href="/dashboard/galeria/importar" className="btn-outline"
+                style={{ display:'inline-flex', alignItems:'center', gap:6, whiteSpace:'nowrap', textDecoration:'none' }}>
+            <ImagePlus size={16}/> Importar de Google Photos
+          </Link>
+          <button onClick={openAdd} className="btn-primary" style={{ flexShrink:0, whiteSpace:'nowrap' }}>
+            <Plus size={16}/> Agregar
+          </button>
         </div>
-      )}
+      </div>
 
-      {(fase === 'revision' || fase === 'guardando') && filas.length > 0 && (
-        <>
-          <datalist id="lista-eventos">
-            {nombresDeGrupo.map(n => <option key={n} value={n} />)}
-          </datalist>
+      {/* Info */}
+      <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:12,
+                     padding:'0.875rem 1.25rem', display:'flex', gap:10, alignItems:'flex-start' }}>
+        <span style={{ fontSize:'1.1rem' }}>💡</span>
+        <p style={{ fontSize:'0.8rem', color:'#1e40af', margin:0, lineHeight:1.5 }}>
+          <strong>Categoría + Subcategoría:</strong> Al asignar ambos campos, la galería pública mostrará
+          filtros dobles. Por ejemplo: <em>Shows Infantiles → Mickey Mouse</em>, o <em>Decoración → Princesas</em>.
+          Los visitantes podrán filtrar por categoría y luego refinar por subcategoría.
+        </p>
+      </div>
 
-          <div style={{
-            display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center',
-            marginBottom: 18, position: 'sticky', top: 0, background: '#fff',
-            padding: '0.75rem 0', zIndex: 5,
-          }}>
-            <button onClick={handleProcesarConIA} disabled={totalPendientes === 0}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: totalPendientes === 0 ? '#e2e8f0' : '#d4a017',
-                color: totalPendientes === 0 ? '#94a3b8' : '#0a1628',
-                border: 'none', borderRadius: 10, padding: '0.7rem 1.25rem',
-                fontWeight: 700, fontSize: '0.85rem',
-                cursor: totalPendientes === 0 ? 'not-allowed' : 'pointer',
-              }}>
-              <Sparkles size={16} />
-              {progreso.total > 0 && progreso.hecho < progreso.total
-                ? `Clasificando y agrupando... ${progreso.hecho}/${progreso.total}`
-                : `Clasificar con IA (${totalPendientes})`}
-            </button>
+      {/* Formulario add / edit */}
+      {mode !== 'idle' && (
+        <div className="admin-card" style={{ padding:'1.5rem', animation:'slideUp .3s ease' }}>
+          <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'#0a1628', margin:'0 0 16px' }}>
+            {mode === 'edit' ? '✏️ Editar imagen / video' : 'Nueva imagen o video'}
+          </h3>
+          <div className="galeria-form-grid" style={{ display:'flex', flexDirection:'row', flexWrap:'wrap', gap:20 }}>
+            {/* Uploader */}
+            <div style={{ flex:'1 1 280px', minWidth:0 }}>
+            <ImageUploader
+              key={editId ?? 'new'}
+              label="Imagen o Video (máx 200MB)"
+              folder="galeria"
+              acceptVideo={true}
+              value={formData.url}
+              focal={{ x: formData.focalX ?? 0.5, y: formData.focalY ?? 0.5 }}
+              previewAspect={4/3} previewLabel="Galería (paisaje 4:3)"
+              onComplete={(url, fp, type) => setFormData((p:any) => ({ ...p, url, focalX:fp.x, focalY:fp.y, mediaType:type }))}
+            />
+            </div>
 
-            <button onClick={handleGuardarEnGaleria} disabled={totalListas === 0 || fase === 'guardando'}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: totalListas === 0 ? '#e2e8f0' : '#1e3a5f',
-                color: totalListas === 0 ? '#94a3b8' : '#fff',
-                border: 'none', borderRadius: 10, padding: '0.7rem 1.25rem',
-                fontWeight: 700, fontSize: '0.85rem',
-                cursor: totalListas === 0 ? 'not-allowed' : 'pointer',
-              }}>
-              <Save size={16} />
-              {fase === 'guardando' ? 'Guardando...' : `Guardar en galería (${filas.filter(f => f.incluida && f.estado === 'lista').length})`}
-            </button>
+            {/* Campos */}
+            <div style={{ flex:'1 1 280px', minWidth:0, display:'flex', flexDirection:'column', gap:14 }}>
 
-            <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-              {filas.length} foto(s) traídas · {totalIncluidas} incluida(s)
-            </span>
-          </div>
-
-          {grupos.map(grupo => (
-            <div key={grupo.nombre || '__sin_evento__'} style={{ marginBottom: 26 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                {grupo.nombre ? (
-                  <span style={{ width: 10, height: 10, borderRadius: 4, background: colorDeGrupo(grupo.nombre), flexShrink: 0 }} />
-                ) : (
-                  <span style={{ width: 10, height: 10, borderRadius: 4, background: '#cbd5e1', flexShrink: 0 }} />
-                )}
-                {grupo.nombre ? (
-                  <input
-                    list="lista-eventos"
-                    value={grupo.nombre}
-                    onChange={e => renombrarGrupo(grupo.nombre, e.target.value)}
-                    placeholder="Nombre del evento"
-                    title="Escribe el nombre exacto de otro grupo para fusionarlos"
-                    style={{
-                      fontSize: '0.85rem', fontWeight: 700, color: '#0a1628',
-                      border: '1px solid #e2e8f0', borderRadius: 8, padding: '4px 10px',
-                      minWidth: 220,
-                    }}
-                  />
-                ) : (
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#94a3b8' }}>Sin evento asignado</span>
-                )}
-                <Pencil size={12} color="#94a3b8" />
-                <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{grupo.filas.length} foto(s)</span>
+              {/* Categoría */}
+              <div>
+                <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>
+                  Categoría *
+                </label>
+                <select
+                  value={formData.categoria}
+                  onChange={e => setFormData((p:any) => ({ ...p, categoria:e.target.value, subcategoria:'', _subcatDrop:'' }))}
+                  className="admin-input">
+                  {cats.map(c => <option key={c}>{c}</option>)}
+                </select>
+                <p style={{ fontSize:'0.68rem', color:'#94a3b8', marginTop:4 }}>
+                  Define el filtro principal en la galería pública.
+                </p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 14 }}>
-                {grupo.filas.map(f => (
-                  <div key={f.id} style={{
-                    border: `1.5px solid ${f.calidad === 'mala' ? '#fecaca' : (grupo.nombre ? colorDeGrupo(grupo.nombre) + '55' : '#e2e8f0')}`,
-                    borderRadius: 14, overflow: 'hidden', background: '#fff',
-                    opacity: f.incluida ? 1 : 0.5,
-                  }}>
-                    <div style={{ position: 'relative', aspectRatio: '4/3', background: '#e2e8f0' }}>
-                      <img src={f.thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <div style={{ position: 'absolute', top: 6, right: 6 }}>
-                        {f.estado === 'procesando' && <Loader2 size={16} color="#fff" style={{ animation: 'spin 1s linear infinite' }} />}
-                        {f.estado === 'lista' && <CheckCircle2 size={16} color="#22c55e" />}
-                        {f.estado === 'error' && <AlertTriangle size={16} color="#ef4444" />}
-                      </div>
-                      <button onClick={() => quitarFila(f.id)} title="Quitar"
-                        style={{
-                          position: 'absolute', bottom: 6, right: 6, width: 26, height: 26, borderRadius: 8,
-                          background: 'rgba(10,22,40,.7)', border: 'none', color: '#fca5a5', cursor: 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
+              {/* Subcategoría predefinida — con campo "Otro" */}
+              {subcatsDisponibles.length > 0 && (
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block' }}>
+                    Subcategoría (temática)
+                  </label>
+                  <select
+                    value={formData._subcatDrop ?? (subcatsDisponibles.includes(formData.subcategoria) ? formData.subcategoria : formData.subcategoria ? 'Otro' : '')}
+                    onChange={e => {
+                      const v = e.target.value;
+                      setFormData((p:any) => ({ ...p, _subcatDrop: v, subcategoria: v === 'Otro' ? '' : v }));
+                    }}
+                    className="admin-input">
+                    <option value="">Sin subcategoría</option>
+                    {subcatsDisponibles.map(s => <option key={s}>{s}</option>)}
+                  </select>
+                  {/* Campo libre cuando se elige "Otro" */}
+                  {(formData._subcatDrop === 'Otro' || (!subcatsDisponibles.includes(formData.subcategoria) && formData.subcategoria)) && (
+                    <input
+                      type="text"
+                      autoFocus
+                      value={formData.subcategoria || ''}
+                      onChange={e => setFormData((p:any) => ({ ...p, subcategoria:e.target.value }))}
+                      placeholder="Ej: Quinceañero, Aniversario, etc."
+                      className="admin-input"
+                      style={{ borderColor:'#d4a017', outline:'none' }}
+                    />
+                  )}
+                </div>
+              )}
 
-                    <div style={{ padding: '0.7rem 0.8rem', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.72rem', color: '#475569' }}>
-                        <input type="checkbox" checked={f.incluida}
-                          onChange={e => actualizarFila(f.id, { incluida: e.target.checked })} />
-                        Incluir en la galería
-                      </label>
+              {/* Subcategoría manual cuando la categoría no tiene opciones */}
+              {subcatsDisponibles.length === 0 && (
+                <div>
+                  <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>
+                    Subcategoría (personalizada)
+                  </label>
+                  <input type="text" value={formData.subcategoria || ''}
+                         onChange={e => setFormData((p:any) => ({ ...p, subcategoria:e.target.value }))}
+                         placeholder="Ej: Quinceañero, Bautizo, etc." className="admin-input"/>
+                </div>
+              )}
 
-                      {f.estado === 'error' && (
-                        <p style={{ fontSize: '0.7rem', color: '#ef4444', margin: 0 }}>{f.error}</p>
-                      )}
+              {/* Alt text */}
+              <div>
+                <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>
+                  Descripción (texto alternativo)
+                </label>
+                <input type="text" value={formData.alt || ''}
+                       onChange={e => setFormData((p:any) => ({ ...p, alt:e.target.value }))}
+                       placeholder="Ej: Fiesta de Mickey Mouse en Sechura" className="admin-input"/>
+              </div>
 
-                      {f.calidad === 'mala' && f.motivoCalidad && (
-                        <p style={{ fontSize: '0.68rem', color: '#b45309', background: '#fffbeb', borderRadius: 6, padding: '3px 6px', margin: 0 }}>
-                          ⚠️ {f.motivoCalidad}
-                        </p>
-                      )}
-
-                      {f.estado === 'lista' && (
-                        <input
-                          list="lista-eventos"
-                          value={f.eventoNombre}
-                          onChange={e => actualizarFila(f.id, { eventoNombre: e.target.value })}
-                          placeholder="Evento (opcional)"
-                          title="Escribe el nombre exacto de otro grupo para moverla a ese evento"
-                          style={{ fontSize: '0.72rem', padding: '4px 6px', borderRadius: 6, border: '1px solid #e2e8f0' }}
-                        />
-                      )}
-
-                      <select value={f.categoria}
-                        onChange={e => actualizarFila(f.id, { categoria: e.target.value, subcategoria: '' })}
-                        style={{ fontSize: '0.78rem', padding: '4px 6px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
-                        {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-
-                      {(SUBCATS[f.categoria] || []).length > 0 && (
-                        <select value={f.subcategoria}
-                          onChange={e => actualizarFila(f.id, { subcategoria: e.target.value })}
-                          style={{ fontSize: '0.78rem', padding: '4px 6px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
-                          <option value="">Sin subcategoría</option>
-                          {(SUBCATS[f.categoria] || []).map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                      )}
-
-                      <input value={f.alt} placeholder="Descripción (alt)"
-                        onChange={e => actualizarFila(f.id, { alt: e.target.value })}
-                        style={{ fontSize: '0.78rem', padding: '4px 6px', borderRadius: 6, border: '1px solid #e2e8f0' }} />
-                    </div>
-                  </div>
-                ))}
+              {/* Preview filtro */}
+              <div style={{ background:'#f8fafc', borderRadius:10, padding:'0.875rem', border:'1px solid #e2e8f0' }}>
+                <p style={{ fontSize:'0.72rem', color:'#94a3b8', margin:'0 0 6px' }}>Vista previa del filtro:</p>
+                <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                  <span style={{ fontSize:'0.78rem', fontWeight:700, padding:'2px 10px', borderRadius:999,
+                                  background:'linear-gradient(135deg,#0a1628,#1e3a5f)', color:'#fff' }}>
+                    {formData.categoria || 'General'}
+                  </span>
+                  {formData.subcategoria && (
+                    <>
+                      <span style={{ color:'#94a3b8' }}>›</span>
+                      <span style={{ fontSize:'0.78rem', fontWeight:600, padding:'2px 10px', borderRadius:999,
+                                      background:'rgba(212,160,23,0.1)', border:'1.5px solid #d4a017', color:'#b8860b' }}>
+                        {formData.subcategoria}
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          ))}
-        </>
+          </div>
+
+          <div style={{ display:'flex', gap:10, marginTop:20 }}>
+            <button onClick={() => { setMode('idle'); setFormData(BLANK); setEditId(null); }} className="btn-outline">Cancelar</button>
+            <button onClick={handleSave} className="btn-gold">
+              {mode === 'edit' ? '💾 Guardar cambios' : '✅ Guardar en galería'}
+            </button>
+          </div>
+        </div>
       )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      {/* Barra de búsqueda + filtros */}
+      {!loading && items.length > 0 && (
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+
+          {/* Search input */}
+          <div style={{ position:'relative', maxWidth:480, width:'100%' }}>
+            <Search size={15} style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', pointerEvents:'none' }}/>
+            <input
+              ref={searchRef}
+              type="text"
+              value={searchQ}
+              onChange={e => setSearchQ(e.target.value)}
+              placeholder="Buscar por descripción, categoría, temática…"
+              style={{
+                width:'100%', padding:'0.55rem 2.2rem 0.55rem 2.4rem',
+                borderRadius:999, border:'1.5px solid #e2e8f0', outline:'none',
+                fontFamily:'var(--font-jakarta)', fontSize:'0.82rem', color:'#0a1628',
+                background:'#fff', boxSizing:'border-box', transition:'border-color .2s',
+              }}
+              onFocus={e=>(e.target.style.borderColor='#d4a017')}
+              onBlur={e=>(e.target.style.borderColor='#e2e8f0')}
+            />
+            {searchQ && (
+              <button onClick={() => setSearchQ('')}
+                      style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)',
+                                background:'none', border:'none', cursor:'pointer', color:'#94a3b8', display:'flex', padding:2 }}>
+                <X size={14}/>
+              </button>
+            )}
+          </div>
+
+          {/* Category filter chips — horizontal scroll en móvil */}
+          <div className="chip-scroll" style={{ alignItems:'center' }}>
+            <Filter size={14} style={{ color:'#94a3b8', flexShrink:0 }}/>
+            {['Todas', ...cats.filter(c => items.some(i=>i.categoria===c))].map(cat => (
+              <button key={cat} onClick={() => setFilterCat(cat)}
+                      className={`chip${filterCat===cat?' active':''}`}>
+                {cat}
+                {cat !== 'Todas' && (
+                  <span style={{ marginLeft:4, fontSize:'0.65rem', opacity:.7 }}>
+                    {items.filter(i=>i.categoria===cat).length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Grid de imágenes */}
+      {loading ? (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:12 }}>
+          {[...Array(12)].map((_,i) => <div key={i} className="skeleton" style={{ aspectRatio:'4/3', borderRadius:12 }}/>)}
+        </div>
+      ) : filtrados.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'4rem', background:'#fff', borderRadius:16, border:'1px solid #e2e8f0' }}>
+          <p style={{ fontSize:'3rem', marginBottom:12 }}>🔍</p>
+          {searchQ ? (
+            <>
+              <p style={{ color:'#64748b', marginBottom:suggestions.length ? 12 : 0 }}>
+                No se encontraron resultados para <strong>"{searchQ}"</strong>
+              </p>
+              {suggestions.length > 0 && (
+                <div>
+                  <p style={{ color:'#94a3b8', fontSize:'0.8rem', marginBottom:8 }}>¿Quisiste decir…?</p>
+                  <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center' }}>
+                    {suggestions.map(s => (
+                      <button key={s} onClick={() => setSearchQ(s)}
+                              style={{ padding:'0.3rem 0.875rem', borderRadius:999, border:'1.5px solid #d4a017',
+                                        background:'rgba(212,160,23,0.08)', color:'#b8860b',
+                                        fontFamily:'var(--font-jakarta)', fontSize:'0.8rem', cursor:'pointer', fontWeight:600 }}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <p style={{ color:'#64748b' }}>
+              {filterCat === 'Todas'
+                ? 'La galería está vacía. Agrega tu primera imagen o video.'
+                : `No hay imágenes en "${filterCat}" aún.`}
+            </p>
+          )}
+        </div>
+      ) : (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:12 }}>
+          {filtrados.map(item => (
+            <div key={item.id}
+                 style={{ position:'relative', borderRadius:14, overflow:'hidden', aspectRatio:'4/3',
+                           border: item.visible ? 'none' : '2px solid #fde68a',
+                           opacity: item.visible ? 1 : .65,
+                           background:'#e2e8f0',
+                           boxShadow:'0 2px 8px rgba(10,22,40,0.08)',
+                           transition:'transform .2s, box-shadow .2s' }}
+                 onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.transform='translateY(-2px)';el.style.boxShadow='0 8px 20px rgba(10,22,40,0.15)';const ov=el.querySelector('.adm-ov') as HTMLElement|null;if(ov)ov.style.opacity='1';}}
+                 onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.transform='';el.style.boxShadow='0 2px 8px rgba(10,22,40,0.08)';const ov=el.querySelector('.adm-ov') as HTMLElement|null;if(ov)ov.style.opacity='0';}}>
+
+              {item.url && (
+                item.tipo === 'video' || item.url?.match(/\.(mp4|webm|mov)(\?|$)/i)
+                  ? <video src={cxVideo(item.url)} muted preload="metadata" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                  : <img src={cxThumb(item.url)} alt={item.alt || 'Evento'} loading="lazy" decoding="async"
+                         style={{ width:'100%', height:'100%', objectFit:'cover',
+                                   objectPosition:`${(item.focalX??0.5)*100}% ${(item.focalY??0.5)*100}%` }}/>
+              )}
+
+              {/* Overlay con acciones */}
+              <div className="adm-ov"
+                   style={{ position:'absolute', inset:0, background:'rgba(10,22,40,0.7)',
+                             display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+                             gap:8, opacity:0, transition:'opacity .25s' }}>
+                <div style={{ display:'flex', gap:6 }}>
+                  {/* Editar */}
+                  <button onClick={() => openEdit(item)}
+                          title="Editar"
+                          style={{ width:34, height:34, borderRadius:8, cursor:'pointer', display:'flex',
+                                    alignItems:'center', justifyContent:'center', border:'1px solid rgba(212,160,23,.5)',
+                                    background:'rgba(212,160,23,.2)', color:'#fde68a', transition:'background .2s' }}
+                          onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(212,160,23,.4)'}
+                          onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='rgba(212,160,23,.2)'}>
+                    <Pencil size={13}/>
+                  </button>
+                  {/* Visibilidad */}
+                  <button onClick={()=>toggleVisible(item)}
+                          title={item.visible ? 'Ocultar' : 'Mostrar'}
+                          style={{ width:34, height:34, borderRadius:8, cursor:'pointer', display:'flex',
+                                    alignItems:'center', justifyContent:'center', border:'1px solid rgba(255,255,255,.3)',
+                                    background:'rgba(255,255,255,.1)', color:'#fff', transition:'background .2s' }}
+                          onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,.25)'}
+                          onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='rgba(255,255,255,.1)'}>
+                    {item.visible ? <EyeOff size={14}/> : <Eye size={14}/>}
+                  </button>
+                  {/* Eliminar */}
+                  <button onClick={()=>handleDelete(item)}
+                          title="Eliminar"
+                          style={{ width:34, height:34, borderRadius:8, cursor:'pointer', display:'flex',
+                                    alignItems:'center', justifyContent:'center', border:'1px solid rgba(239,68,68,.4)',
+                                    background:'rgba(239,68,68,.2)', color:'#fca5a5', transition:'background .2s' }}
+                          onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background='rgba(239,68,68,.4)'}
+                          onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background='rgba(239,68,68,.2)'}>
+                    <Trash2 size={14}/>
+                  </button>
+                </div>
+              </div>
+
+              {/* Badge categoría */}
+              <div style={{ position:'absolute', bottom:6, left:6, pointerEvents:'none' }}>
+                <span style={{ display:'block', background:'rgba(10,22,40,.8)', color:'#fff',
+                                fontSize:'0.58rem', padding:'1px 7px', borderRadius:999, marginBottom:2 }}>
+                  {item.categoria || 'General'}
+                </span>
+                {item.subcategoria && (
+                  <span style={{ display:'block', background:'rgba(212,160,23,.8)', color:'#0a1628',
+                                   fontSize:'0.55rem', padding:'1px 6px', borderRadius:999, fontWeight:700 }}>
+                    {item.subcategoria}
+                  </span>
+                )}
+              </div>
+
+              {!item.visible && (
+                <div style={{ position:'absolute', top:6, right:6, background:'#f59e0b', color:'#0a1628',
+                               fontSize:'0.6rem', fontWeight:700, padding:'2px 7px', borderRadius:999, pointerEvents:'none' }}>
+                  OCULTO
+                </div>
+              )}
+
+              {(item.tipo === 'video' || item.url?.match(/\.(mp4|webm|mov)$/i)) && (
+                <div style={{ position:'absolute', top:6, left:6, background:'rgba(10,22,40,.8)', color:'#fff',
+                               fontSize:'0.65rem', padding:'2px 7px', borderRadius:999, pointerEvents:'none' }}>
+                  🎬
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -60,6 +60,7 @@ function CustomVideoPlayer({ src }: { src: string }) {
   const [isFull,      setIsFull]      = useState(false);
   const [volRO,       setVolRO]       = useState(false); // iOS: volume read-only
   const [quality,     setQuality]     = useState<VideoQuality>(loadSavedQuality);
+  const [nativeHeight, setNativeHeight] = useState<number | null>(null);
 
   const resumeRef     = useRef<{ time: number; wasPlaying: boolean } | null>(null);
   const skipNextResume = useRef(true); // no restaurar posición en el primer render
@@ -68,6 +69,36 @@ function CustomVideoPlayer({ src }: { src: string }) {
     () => (quality === 'auto' ? cxVideo(src) : cxVideoQuality(src, quality)),
     [src, quality]
   );
+
+  // Consulta la resolución real del video original en Cloudinary para no
+  // mostrar opciones de calidad más altas de las que el archivo realmente
+  // tiene (ej. no mostrar "1080p" si se subió en 480p — Cloudinary solo
+  // puede reducir la imagen, no inventar resolución que no existe).
+  useEffect(() => {
+    let cancelado = false;
+    setNativeHeight(null);
+    fetch(`/api/video-meta?url=${encodeURIComponent(src)}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => { if (!cancelado && data?.height) setNativeHeight(data.height); })
+      .catch(() => {});
+    return () => { cancelado = true; };
+  }, [src]);
+
+  // Un 10% de margen porque la resolución real de un archivo (ej. 718px) no
+  // siempre calza exacto con los escalones estándar (720p, 480p...).
+  const qualitiesDisponibles = useMemo(() => {
+    if (!nativeHeight) return QUALITIES; // sin metadata aún → no restringir, se ve todo
+    return QUALITIES.filter(q => q.value === 'auto' || (q.value as number) <= nativeHeight * 1.1);
+  }, [nativeHeight]);
+
+  // Si la calidad guardada de una sesión anterior ya no es válida para este
+  // video (por ejemplo, el usuario había elegido 1080p viendo otro video de
+  // mayor resolución), la bajamos a 'auto' automáticamente.
+  useEffect(() => {
+    if (nativeHeight && quality !== 'auto' && (quality as number) > nativeHeight * 1.1) {
+      setQuality('auto');
+    }
+  }, [nativeHeight, quality]);
 
   useEffect(() => {
     const v = videoRef.current; if (!v) return;
@@ -323,7 +354,7 @@ function CustomVideoPlayer({ src }: { src: string }) {
               Calidad de video
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {QUALITIES.map(q => (
+              {qualitiesDisponibles.map(q => (
                 <button key={q.value}
                   onClick={e => { e.stopPropagation(); changeQuality(q.value); }}
                   style={{
@@ -338,7 +369,9 @@ function CustomVideoPlayer({ src }: { src: string }) {
               ))}
             </div>
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.62rem', margin: '8px 0 0' }}>
-              Elige una calidad menor si tu conexión es lenta o tienes datos limitados
+              {nativeHeight && qualitiesDisponibles.length < QUALITIES.length
+                ? `Este video es de ${nativeHeight}p — no se muestran calidades mayores porque no existen en el archivo original`
+                : 'Elige una calidad menor si tu conexión es lenta o tienes datos limitados'}
             </p>
           </div>
         )}
