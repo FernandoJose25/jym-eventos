@@ -262,7 +262,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span style={{ position: 'absolute', top: 3, right: 3, width: 7, height: 7, borderRadius: '50%', background: '#ef4444' }} />
               </Link>
             )}
-            <a href="https://jmdecoracionesyeventos.vercel.app" target="_blank" rel="noopener noreferrer"
+            <a href="https://jmdecoracionesyeventos.com" target="_blank" rel="noopener noreferrer"
               className="topbar-web-btn"
               style={{
                 display: 'flex', alignItems: 'center', gap: 5, padding: '0.4rem 0.875rem',
