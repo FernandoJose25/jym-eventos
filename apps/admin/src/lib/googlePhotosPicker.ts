@@ -20,7 +20,7 @@ declare global {
     }
 }
 
-const SCOPE = 'https://www.googleapis.com/auth/photospicker.mediaitems.readonly';
+const SCOPE = 'https://www.googleapis.com/auth/photospicker.mediaitems.readonly openid email';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 
 let gisLoaded: Promise<void> | null = null;
@@ -39,7 +39,7 @@ function loadGis(): Promise<void> {
     return gisLoaded;
 }
 
-/** Abre el popup de consentimiento de Google y devuelve un access_token temporal. */
+/** Abre el popup de consentimiento de Google y devuelve un access_token temporal (dura ~1h, sin persistencia). */
 export async function getGooglePhotosToken(): Promise<string> {
     await loadGis();
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_PHOTOS_CLIENT_ID;
@@ -57,6 +57,87 @@ export async function getGooglePhotosToken(): Promise<string> {
         });
         client.requestAccessToken();
     });
+}
+
+/**
+ * Abre el popup de consentimiento de Google usando el flujo de "código de
+ * autorización" (a diferencia de getGooglePhotosToken, que solo da un
+ * access_token temporal). Este código se manda al backend, que lo cambia
+ * por un refresh_token — así la sesión queda guardada de forma persistente,
+ * sin volver a pedir login la próxima vez.
+ *
+ * `forzarSelector` fuerza la pantalla de "elegir cuenta" + consentimiento,
+ * necesario para conectar una cuenta ADICIONAL (si no, Google reconecta
+ * automáticamente la última cuenta usada).
+ */
+export async function getGooglePhotosAuthCode(forzarSelector = false): Promise<string> {
+    await loadGis();
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_PHOTOS_CLIENT_ID;
+    if (!clientId) throw new Error('Falta configurar NEXT_PUBLIC_GOOGLE_PHOTOS_CLIENT_ID');
+
+    return new Promise((resolve, reject) => {
+        const client = window.google.accounts.oauth2.initCodeClient({
+            client_id: clientId,
+            scope: SCOPE,
+            ux_mode: 'popup',
+            access_type: 'offline',
+            prompt: forzarSelector ? 'consent select_account' : 'consent',
+            callback: (resp: any) => {
+                if (resp.error) reject(new Error(resp.error));
+                else resolve(resp.code as string);
+            },
+            error_callback: (err: any) => reject(new Error(err?.message || 'Autorización cancelada')),
+        });
+        client.requestCode();
+    });
+}
+
+export interface CuentaGoogle {
+    email: string;
+    connectedAt: string | null;
+}
+
+/** Lista las cuentas de Google Photos ya conectadas de forma persistente. */
+export async function listarCuentasGoogle(idToken: string): Promise<CuentaGoogle[]> {
+    const res = await fetch('/api/google-photos/accounts', {
+        headers: { Authorization: `Bearer ${idToken}` },
+    });
+    if (!res.ok) throw new Error('No se pudieron cargar las cuentas de Google conectadas');
+    const data = await res.json();
+    return data.cuentas as CuentaGoogle[];
+}
+
+/** Cambia un "code" de autorización por un refresh_token persistente guardado en el servidor. */
+export async function conectarCuentaGoogle(code: string, idToken: string): Promise<{ email: string; accessToken: string }> {
+    const res = await fetch('/api/google-photos/accounts', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'No se pudo conectar la cuenta de Google Photos');
+    return { email: data.email, accessToken: data.accessToken };
+}
+
+/** Pide un access_token fresco para una cuenta ya conectada, sin mostrar ningún popup. */
+export async function obtenerAccessTokenDeCuenta(email: string, idToken: string): Promise<string> {
+    const res = await fetch('/api/google-photos/token', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'No se pudo renovar el acceso a Google Photos');
+    return data.accessToken as string;
+}
+
+/** Desconecta una cuenta: revoca el permiso en Google y la borra del servidor. */
+export async function desconectarCuentaGoogle(email: string, idToken: string): Promise<void> {
+    const res = await fetch(`/api/google-photos/accounts?email=${encodeURIComponent(email)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${idToken}` },
+    });
+    if (!res.ok) throw new Error('No se pudo desconectar la cuenta');
 }
 
 export interface PickerSession {
