@@ -494,13 +494,13 @@ export default function GaleriaClient() {
                         transition: 'transform .3s, box-shadow .3s',
                         background: '#0a1628', display: 'block', textDecoration: 'none'
                       }}
-                      onMouseEnter={e => {
+                      onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
                         const el = e.currentTarget as HTMLElement;
                         el.style.transform = 'translateY(-4px) scale(1.01)';
                         el.style.boxShadow = '0 12px 32px rgba(10,22,40,0.2)';
                         el.querySelector('.gal-overlay')?.classList.add('visible');
                       }}
-                      onMouseLeave={e => {
+                      onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
                         const el = e.currentTarget as HTMLElement;
                         el.style.transform = '';
                         el.style.boxShadow = '0 4px 16px rgba(10,22,40,0.1)';
