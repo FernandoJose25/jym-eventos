@@ -1,7 +1,9 @@
 'use client';
+// RUTA: apps/web/src/app/galeria/GaleriaClient.tsx
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import Link from 'next/link';
 import { Search, X } from 'lucide-react';
 import { cxCard, cxFull, cxVideo, cxShareVideo } from '@/lib/cloudinary';
 import { ShareBar } from '@/components/ui/ShareBar';
@@ -17,6 +19,17 @@ interface GItem {
   // `albumId` referencia la colección `albums` (id real del documento, no
   // un slug de texto) — se usa para armar cada álbum en /albumes/[slug].
   albumId?: string;
+  // Presentes solo en tarjetas SINTÉTICAS que representan un álbum completo
+  // (ver buildDisplayItems). Nunca vienen de Firestore.
+  isAlbum?: boolean;
+  albumSlug?: string;
+  albumCount?: number;
+}
+
+interface AlbumDoc {
+  id: string; slug: string; titulo: string;
+  coverUrl: string; coverFocalX?: number; coverFocalY?: number;
+  visible?: boolean;
 }
 
 const CAT_ICONS: Record<string, string> = {
@@ -34,6 +47,57 @@ const CAT_ICONS: Record<string, string> = {
 
 const isVideo = (item: GItem) =>
   item.tipo === 'video' || !!item.url?.match(/\.(mp4|webm|mov)(\?|$)/i);
+
+/**
+ * Consolida las fotos que pertenecen a un álbum visible en UNA sola tarjeta
+ * (portada + contador), en vez de mostrarlas sueltas en el grid. La foto no
+ * desaparece: al hacer clic en la tarjeta se navega a /albumes/[slug], que
+ * sí muestra todas las fotos del evento.
+ *
+ * Categoría/subcategoría de la tarjeta = las de la primera foto del álbum
+ * (ordenando por `order`), para que aparezca en el filtro correcto.
+ *
+ * Las fotos con `albumId` que no apunta a ningún álbum visible (borrado,
+ * oculto, o el álbum aún no cargó) se muestran sueltas como respaldo.
+ */
+function buildDisplayItems(items: GItem[], albums: AlbumDoc[]): GItem[] {
+  const albumMap = new Map(albums.map(a => [a.id, a]));
+  const groups = new Map<string, GItem[]>();
+  const loose: GItem[] = [];
+
+  for (const it of items) {
+    const alb = it.albumId ? albumMap.get(it.albumId) : undefined;
+    if (alb) {
+      if (!groups.has(alb.id)) groups.set(alb.id, []);
+      groups.get(alb.id)!.push(it);
+    } else {
+      loose.push(it);
+    }
+  }
+
+  const albumCards: GItem[] = [];
+  for (const [albumId, fotos] of groups) {
+    const alb = albumMap.get(albumId)!;
+    const primera = [...fotos].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
+    albumCards.push({
+      id: `album:${albumId}`,
+      url: alb.coverUrl || primera.url,
+      alt: alb.titulo,
+      categoria: primera.categoria,
+      subcategoria: primera.subcategoria,
+      visible: true,
+      order: Math.min(...fotos.map(f => f.order ?? 0)),
+      focalX: alb.coverFocalX ?? 0.5,
+      focalY: alb.coverFocalY ?? 0.5,
+      tipo: 'imagen',
+      isAlbum: true,
+      albumSlug: alb.slug,
+      albumCount: fotos.length,
+    });
+  }
+
+  return [...loose, ...albumCards].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+}
 
 // Smart search: score items by query relevance
 function smartSearch(items: GItem[], q: string): { results: GItem[]; suggestions: string[] } {
@@ -74,6 +138,7 @@ function smartSearch(items: GItem[], q: string): { results: GItem[]; suggestions
 
 export default function GaleriaClient() {
   const [items, setItems] = useState<GItem[]>([]);
+  const [albums, setAlbums] = useState<AlbumDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [catActiva, setCatActiva] = useState('Todos');
   const [subActiva, setSubActiva] = useState('Todos');
@@ -111,12 +176,38 @@ export default function GaleriaClient() {
           localStorage.setItem(CACHE_KEY, JSON.stringify({ items: fresh, ts: Date.now() }));
         } catch { /* cuota de localStorage llena: no es crítico, seguimos sin cachear */ }
       });
+
+    // Álbumes visibles — para agrupar sus fotos en una sola tarjeta (misma
+    // estrategia stale-while-revalidate que gallery_items).
+    const ALBUMS_CACHE_KEY = 'jym_albums_cache_v1';
+    try {
+      const raw = localStorage.getItem(ALBUMS_CACHE_KEY);
+      if (raw) {
+        const { albums: cached } = JSON.parse(raw);
+        if (Array.isArray(cached)) setAlbums(cached);
+      }
+    } catch { /* sin caché disponible, seguimos sin ella */ }
+
+    getDocs(query(collection(db, 'albums'), where('visible', '==', true)))
+      .then(snap => {
+        const fresh = snap.docs.map(d => ({ id: d.id, ...d.data() })) as AlbumDoc[];
+        setAlbums(fresh);
+        try {
+          localStorage.setItem(ALBUMS_CACHE_KEY, JSON.stringify({ albums: fresh, ts: Date.now() }));
+        } catch { /* no es crítico */ }
+      })
+      .catch(() => { /* si falla, las fotos del álbum se muestran sueltas como respaldo */ });
   }, []);
+
+  // Fotos individuales + tarjetas de álbum consolidadas — esta es la lista
+  // real que se filtra, busca y pagina en toda la página.
+  const displayItems = useMemo(() => buildDisplayItems(items, albums), [items, albums]);
 
   useEffect(() => { setSubActiva('Todos'); setSearchQ(''); }, [catActiva]);
 
-  // Pipeline: category → subcategory → search
-  const catFiltered = catActiva === 'Todos' ? items : items.filter(i => i.categoria === catActiva);
+  // Pipeline: category → subcategory → search (sobre displayItems, que ya
+  // trae las fotos de álbum consolidadas en una sola tarjeta)
+  const catFiltered = catActiva === 'Todos' ? displayItems : displayItems.filter(i => i.categoria === catActiva);
 
   // Deduplicate subcategories: normalize to "Primera letra mayúscula, resto minúscula"
   // so "PROMOCIONES", "PROmociones", "promociones" → "Promociones"
@@ -160,14 +251,14 @@ export default function GaleriaClient() {
   const cats = useMemo(() => {
     const seen = new Set<string>();
     const result: { id: string; icon: string }[] = [];
-    for (const item of items) {
+    for (const item of displayItems) {
       if (item.categoria && !seen.has(item.categoria)) {
         seen.add(item.categoria);
         result.push({ id: item.categoria, icon: CAT_ICONS[item.categoria] ?? '✨' });
       }
     }
     return [{ id: 'Todos', icon: '🎪' }, ...result];
-  }, [items]);
+  }, [displayItems]);
 
   const haySubs = catActiva !== 'Todos' && subcats.length > 1;
 
@@ -269,7 +360,7 @@ export default function GaleriaClient() {
           {/* Categorías principales */}
           <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: '1rem', flexWrap: 'wrap' }}>
             {cats.map(cat => {
-              const count = cat.id === 'Todos' ? items.length : items.filter(i => i.categoria === cat.id).length;
+              const count = cat.id === 'Todos' ? displayItems.length : displayItems.filter(i => i.categoria === cat.id).length;
               if (cat.id !== 'Todos' && count === 0) return null;
               const active = catActiva === cat.id;
               return (
@@ -389,15 +480,19 @@ export default function GaleriaClient() {
                 {visibles.slice(0, visibleLimit).map((item, i) => {
                   const fp = `${(item.focalX ?? 0.5) * 100}% ${(item.focalY ?? 0.5) * 100}%`;
                   const vid = isVideo(item);
+                  const CardTag: any = item.isAlbum ? Link : 'div';
+                  const cardProps: any = item.isAlbum
+                    ? { href: `/albumes/${item.albumSlug}` }
+                    : { onClick: () => setLightbox(i) };
                   return (
-                    <div key={item.id}
-                      onClick={() => setLightbox(i)}
+                    <CardTag key={item.id}
+                      {...cardProps}
                       style={{
                         breakInside: 'avoid', marginBottom: '1.25rem', borderRadius: 16,
                         overflow: 'hidden', cursor: 'pointer', position: 'relative',
                         boxShadow: '0 4px 16px rgba(10,22,40,0.1)',
                         transition: 'transform .3s, box-shadow .3s',
-                        background: '#0a1628'
+                        background: '#0a1628', display: 'block', textDecoration: 'none'
                       }}
                       onMouseEnter={e => {
                         const el = e.currentTarget as HTMLElement;
@@ -436,6 +531,18 @@ export default function GaleriaClient() {
                         </div>
                       )}
 
+                      {/* Badge de álbum: cuántas fotos agrupa */}
+                      {item.isAlbum && (
+                        <div style={{
+                          position: 'absolute', top: 10, left: 10, background: 'rgba(212,160,23,0.92)',
+                          color: '#0a1628', fontSize: '0.7rem', fontWeight: 700,
+                          padding: '3px 9px', borderRadius: 999, pointerEvents: 'none',
+                          display: 'flex', alignItems: 'center', gap: 4,
+                        }}>
+                          🖼️ {item.albumCount} fotos
+                        </div>
+                      )}
+
                       {/* Overlay */}
                       <div className="gal-overlay"
                         style={{
@@ -460,11 +567,11 @@ export default function GaleriaClient() {
                             </p>
                           )}
                           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', margin: '2px 0 0' }}>
-                            {vid ? '▶ Reproducir' : '🔍 Ver en grande'}
+                            {item.isAlbum ? '📁 Ver álbum completo' : vid ? '▶ Reproducir' : '🔍 Ver en grande'}
                           </p>
                         </div>
                       </div>
-                    </div>
+                    </CardTag>
                   );
                 })}
               </div>

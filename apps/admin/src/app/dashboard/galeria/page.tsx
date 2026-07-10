@@ -1,4 +1,5 @@
 'use client';
+// RUTA: apps/admin/src/app/dashboard/galeria/page.tsx
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs, addDoc, writeBatch } from 'firebase/firestore';
 import { cxThumb, cxVideo } from '@/lib/cloudinary';
@@ -11,6 +12,13 @@ import Link from 'next/link';
 import { SUBCATS } from '@/lib/galeriaTaxonomy';
 
 const BLANK = { categoria: 'General', subcategoria: '', tipo: 'imagen', visible: true, alt: '', albumId: '' };
+
+const TIPOS_EVENTO_ALBUM = ['Quinceañero', 'Cumpleaños', 'Boda', 'Baby Shower', 'Corporativo', 'Bautizo', 'Graduación', 'Otro'];
+
+const ALBUM_BLANK = {
+  titulo: '', tipoEvento: '', cliente: '', fecha: new Date().toISOString().slice(0, 10),
+  descripcion: '', coverUrl: '', coverFocalX: 0.5, coverFocalY: 0.5, visible: true,
+};
 
 // "Quinceañero de Sofía" -> "quinceanero-de-sofia" — para el slug del álbum
 function slugify(title: string): string {
@@ -90,6 +98,13 @@ export default function GaleriaPage() {
   const [bulkCreandoAlbum, setBulkCreandoAlbum] = useState(false);
   const [bulkNuevoTitulo, setBulkNuevoTitulo] = useState('');
   const [bulkBusy, setBulkBusy] = useState(false);
+
+  // Pestaña de la página: fotos sueltas o gestión de álbumes (antes era una
+  // ruta aparte /dashboard/albumes; ahora vive aquí para no fragmentar el flujo).
+  const [view, setView] = useState<'fotos' | 'albumes'>('fotos');
+  const [albumMode, setAlbumMode] = useState<'idle' | 'add' | 'edit'>('idle');
+  const [albumEditId, setAlbumEditId] = useState<string | null>(null);
+  const [albumFormData, setAlbumFormData] = useState<any>(ALBUM_BLANK);
 
   useEffect(() => onSnapshot(
     query(collection(db, COL.GALERIA), orderBy('order', 'asc')),
@@ -240,6 +255,74 @@ export default function GaleriaPage() {
     }
   };
 
+  // ── Panel de Álbumes (fusionado dentro de Galería) ────────────────────
+  const openAlbumAdd = () => { setAlbumFormData(ALBUM_BLANK); setAlbumEditId(null); setAlbumMode('add'); };
+
+  const openAlbumEdit = (album: any) => {
+    setAlbumFormData({
+      titulo: album.titulo || '', tipoEvento: album.tipoEvento || '', cliente: album.cliente || '',
+      fecha: album.fecha || ALBUM_BLANK.fecha, descripcion: album.descripcion || '',
+      coverUrl: album.coverUrl || '', coverFocalX: album.coverFocalX ?? 0.5, coverFocalY: album.coverFocalY ?? 0.5,
+      visible: album.visible ?? true,
+    });
+    setAlbumEditId(album.id);
+    setAlbumMode('edit');
+  };
+
+  const handleAlbumSave = async () => {
+    if (!albumFormData.titulo.trim()) { toast.error('Ponle un título al álbum'); return; }
+    if (!albumFormData.coverUrl) { toast.error('Elige una foto de portada'); return; }
+    const payload = {
+      titulo: albumFormData.titulo.trim(),
+      slug: slugify(albumFormData.titulo.trim()),
+      tipoEvento: albumFormData.tipoEvento || '',
+      cliente: albumFormData.cliente || '',
+      fecha: albumFormData.fecha || '',
+      descripcion: albumFormData.descripcion || '',
+      coverUrl: albumFormData.coverUrl,
+      coverFocalX: albumFormData.coverFocalX ?? 0.5,
+      coverFocalY: albumFormData.coverFocalY ?? 0.5,
+      visible: albumFormData.visible ?? true,
+    };
+    if (albumMode === 'edit' && albumEditId) {
+      await updateDoc(doc(db, COL.ALBUMES, albumEditId), payload);
+      toast.success('✅ Álbum actualizado');
+    } else {
+      await addDoc(collection(db, COL.ALBUMES), { ...payload, order: albumesDisponibles.length + 1, createdAt: new Date().toISOString() });
+      toast.success('✅ Álbum creado');
+    }
+    setAlbumMode('idle'); setAlbumFormData(ALBUM_BLANK); setAlbumEditId(null);
+  };
+
+  const toggleAlbumVisible = (album: any) => open({
+    type: album.visible ? 'hide' : 'show',
+    title: album.visible ? 'Ocultar álbum' : 'Publicar álbum',
+    description: album.visible
+      ? 'El álbum dejará de verse en /albumes y como tarjeta agrupada en la galería. Sus fotos individuales no se ven afectadas.'
+      : 'El álbum volverá a aparecer en la web pública.',
+    collection: COL.ALBUMES,
+    docId: album.id,
+    field: 'visible',
+  });
+
+  const handleAlbumDelete = (album: any) => open({
+    type: 'delete',
+    title: 'Eliminar álbum',
+    description: 'Se borra el álbum. Las fotos siguen en la galería, solo quedan sin agrupar (puedes reagruparlas después).',
+    onConfirm: async () => {
+      await deleteDoc(doc(db, COL.ALBUMES, album.id));
+      toast.success('Álbum eliminado');
+    },
+  });
+
+  /** Saca una foto del álbum sin salir del panel de álbumes. */
+  const handleQuitarDeAlbum = async (item: any) => {
+    await updateDoc(doc(db, COL.GALERIA, item.id), { albumId: '' });
+    toast.success('Foto removida del álbum');
+  };
+
+  const fotosDelAlbumEnEdicion = albumEditId ? items.filter(i => i.albumId === albumEditId) : [];
+
   const handlePublicarEnLote = async (visible: boolean) => {
     setBulkBusy(true);
     try {
@@ -273,50 +356,94 @@ export default function GaleriaPage() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 className="page-h1" style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.5rem', fontWeight: 700, color: '#0a1628', margin: 0 }}>Galería</h1>
           <p className="page-h1-sub" style={{ color: '#64748b', fontSize: '0.82rem', marginTop: 4 }}>
-            {activeCount} visibles · {hiddenCount} ocultas
-            {filterCat !== 'Todas' && ` · filtrando: "${filterCat}"`}
+            {view === 'fotos'
+              ? <>{activeCount} visibles · {hiddenCount} ocultas{filterCat !== 'Todas' && ` · filtrando: "${filterCat}"`}</>
+              : <>{albumesDisponibles.filter(a => a.visible).length} álbumes publicados de {albumesDisponibles.length}</>}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-          <Link href="/dashboard/galeria/importar" style={{
-            display: 'flex', alignItems: 'center', gap: 6, background: '#d4a017', color: '#0a1628',
-            border: 'none', borderRadius: 10, padding: '0.6rem 1rem', fontWeight: 700,
-            fontSize: '0.82rem', textDecoration: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-          }}>
-            <Sparkles size={15} /> Importar de Google Photos
-          </Link>
-          <button
-            onClick={() => { setSelMode(m => !m); setSelected(new Set()); }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: selMode ? '#0a1628' : '#fff', color: selMode ? '#fff' : '#0a1628',
-              border: '1.5px solid #0a1628', borderRadius: 10, padding: '0.6rem 1rem', fontWeight: 700,
-              fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap',
-            }}>
-            {selMode ? <CheckSquare size={15} /> : <Square size={15} />}
-            {selMode ? 'Cancelar selección' : 'Seleccionar'}
-          </button>
-          <button onClick={openAdd} className="btn-primary" style={{ whiteSpace: 'nowrap' }}>
-            <Plus size={16} /> Agregar
-          </button>
+          {view === 'fotos' ? (
+            <>
+              <Link href="/dashboard/galeria/importar" style={{
+                display: 'flex', alignItems: 'center', gap: 6, background: '#d4a017', color: '#0a1628',
+                border: 'none', borderRadius: 10, padding: '0.6rem 1rem', fontWeight: 700,
+                fontSize: '0.82rem', textDecoration: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+              }}>
+                <Sparkles size={15} /> Importar de Google Photos
+              </Link>
+              <button
+                onClick={() => { setSelMode(m => !m); setSelected(new Set()); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: selMode ? '#0a1628' : '#fff', color: selMode ? '#fff' : '#0a1628',
+                  border: '1.5px solid #0a1628', borderRadius: 10, padding: '0.6rem 1rem', fontWeight: 700,
+                  fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap',
+                }}>
+                {selMode ? <CheckSquare size={15} /> : <Square size={15} />}
+                {selMode ? 'Cancelar selección' : 'Seleccionar'}
+              </button>
+              <button onClick={openAdd} className="btn-primary" style={{ whiteSpace: 'nowrap' }}>
+                <Plus size={16} /> Agregar
+              </button>
+            </>
+          ) : (
+            <button onClick={openAlbumAdd} className="btn-primary" style={{ whiteSpace: 'nowrap' }}>
+              <Plus size={16} /> Nuevo álbum
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Info */}
-      <div style={{
-        background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12,
-        padding: '0.875rem 1.25rem', display: 'flex', gap: 10, alignItems: 'flex-start'
-      }}>
-        <span style={{ fontSize: '1.1rem' }}>💡</span>
-        <p style={{ fontSize: '0.8rem', color: '#1e40af', margin: 0, lineHeight: 1.5 }}>
-          <strong>Categoría + Subcategoría:</strong> Al asignar ambos campos, la galería pública mostrará
-          filtros dobles. Por ejemplo: <em>Shows Infantiles → Mickey Mouse</em>, o <em>Decoración → Princesas</em>.
-          Los visitantes podrán filtrar por categoría y luego refinar por subcategoría.
-        </p>
+      {/* Pestañas: Fotos / Álbumes */}
+      <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid #e2e8f0' }}>
+        {([
+          { id: 'fotos', label: '🖼️ Fotos y videos' },
+          { id: 'albumes', label: `🗂️ Álbumes${albumesDisponibles.length ? ` (${albumesDisponibles.length})` : ''}` },
+        ] as const).map(t => (
+          <button key={t.id}
+            onClick={() => { setView(t.id); setMode('idle'); setAlbumMode('idle'); setSelMode(false); setSelected(new Set()); }}
+            style={{
+              padding: '0.65rem 1rem', background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: '0.85rem', fontWeight: 700, color: view === t.id ? '#0a1628' : '#94a3b8',
+              borderBottom: view === t.id ? '2.5px solid #d4a017' : '2.5px solid transparent',
+              marginBottom: -1, whiteSpace: 'nowrap',
+            }}>
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* Formulario add / edit */}
-      {mode !== 'idle' && (
+      {/* Info */}
+      {view === 'fotos' && (
+        <div style={{
+          background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12,
+          padding: '0.875rem 1.25rem', display: 'flex', gap: 10, alignItems: 'flex-start'
+        }}>
+          <span style={{ fontSize: '1.1rem' }}>💡</span>
+          <p style={{ fontSize: '0.8rem', color: '#1e40af', margin: 0, lineHeight: 1.5 }}>
+            <strong>Categoría + Subcategoría:</strong> Al asignar ambos campos, la galería pública mostrará
+            filtros dobles. Por ejemplo: <em>Shows Infantiles → Mickey Mouse</em>, o <em>Decoración → Princesas</em>.
+            Los visitantes podrán filtrar por categoría y luego refinar por subcategoría.
+          </p>
+        </div>
+      )}
+      {view === 'albumes' && (
+        <div style={{
+          background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12,
+          padding: '0.875rem 1.25rem', display: 'flex', gap: 10, alignItems: 'flex-start'
+        }}>
+          <span style={{ fontSize: '1.1rem' }}>💡</span>
+          <p style={{ fontSize: '0.8rem', color: '#1e40af', margin: 0, lineHeight: 1.5 }}>
+            Un álbum agrupa varias fotos/videos de un mismo evento con su propia página en la web
+            (<code>jmdecoracionesyeventos.vercel.app/albumes/tu-slug</code>) y aparece como <strong>una sola
+              tarjeta</strong> en la galería pública en vez de fotos sueltas. Créalo aquí, luego ve a la pestaña{' '}
+            <strong>Fotos y videos</strong> y asigna cada foto al álbum desde su formulario (o selección múltiple).
+          </p>
+        </div>
+      )}
+
+      {/* Formulario add / edit — pestaña Fotos */}
+      {view === 'fotos' && mode !== 'idle' && (
         <div className="admin-card" style={{ padding: '1.5rem', animation: 'slideUp .3s ease' }}>
           <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0a1628', margin: '0 0 16px' }}>
             {mode === 'edit' ? '✏️ Editar imagen / video' : 'Nueva imagen o video'}
@@ -494,8 +621,8 @@ export default function GaleriaPage() {
         </div>
       )}
 
-      {/* Barra de búsqueda + filtros */}
-      {!loading && items.length > 0 && (
+      {/* Barra de búsqueda + filtros — pestaña Fotos */}
+      {view === 'fotos' && !loading && items.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
           {/* Search input */}
@@ -545,8 +672,8 @@ export default function GaleriaPage() {
         </div>
       )}
 
-      {/* Grid de imágenes */}
-      {loading ? (
+      {/* Grid de imágenes — pestaña Fotos */}
+      {view === 'fotos' && (loading ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
           {[...Array(12)].map((_, i) => <div key={i} className="skeleton" style={{ aspectRatio: '4/3', borderRadius: 12 }} />)}
         </div>
@@ -730,10 +857,211 @@ export default function GaleriaPage() {
             );
           })}
         </div>
+      ))}
+
+      {/* Panel de Álbumes — pestaña Álbumes */}
+      {view === 'albumes' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Formulario add / edit álbum */}
+          {albumMode !== 'idle' && (
+            <div className="admin-card" style={{ padding: '1.5rem', animation: 'slideUp .3s ease' }}>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0a1628', margin: '0 0 16px' }}>
+                {albumMode === 'edit' ? '✏️ Editar álbum' : 'Nuevo álbum'}
+              </h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20 }}>
+                <div style={{ flex: '1 1 280px', minWidth: 0 }}>
+                  <label style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#64748b', display: 'block', marginBottom: 6 }}>
+                    Portada del álbum
+                  </label>
+                  <ImageUploader
+                    key={albumEditId ?? 'new-album'}
+                    label="Foto de portada"
+                    folder="albumes"
+                    acceptVideo={false}
+                    value={albumFormData.coverUrl}
+                    focal={{ x: albumFormData.coverFocalX ?? 0.5, y: albumFormData.coverFocalY ?? 0.5 }}
+                    previewAspect={4 / 5} previewLabel="Portada (retrato 4:5)"
+                    onComplete={(url, fp) => setAlbumFormData((p: any) => ({ ...p, coverUrl: url, coverFocalX: fp.x, coverFocalY: fp.y }))}
+                  />
+                </div>
+
+                <div style={{ flex: '1 1 280px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#64748b', display: 'block', marginBottom: 6 }}>
+                      Título *
+                    </label>
+                    <input type="text" value={albumFormData.titulo}
+                      onChange={e => setAlbumFormData((p: any) => ({ ...p, titulo: e.target.value }))}
+                      placeholder="Ej: Quinceañero de Sofía" className="admin-input" />
+                    {albumFormData.titulo && (
+                      <p style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: 4 }}>
+                        URL: /albumes/{slugify(albumFormData.titulo)}
+                      </p>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#64748b', display: 'block', marginBottom: 6 }}>
+                        Tipo de evento
+                      </label>
+                      <select value={albumFormData.tipoEvento}
+                        onChange={e => setAlbumFormData((p: any) => ({ ...p, tipoEvento: e.target.value }))}
+                        className="admin-input">
+                        <option value="">— Sin especificar —</option>
+                        {TIPOS_EVENTO_ALBUM.map(t => <option key={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#64748b', display: 'block', marginBottom: 6 }}>
+                        Fecha del evento
+                      </label>
+                      <input type="date" value={albumFormData.fecha}
+                        onChange={e => setAlbumFormData((p: any) => ({ ...p, fecha: e.target.value }))}
+                        className="admin-input" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#64748b', display: 'block', marginBottom: 6 }}>
+                      Cliente (opcional, no se muestra en público si lo dejas vacío)
+                    </label>
+                    <input type="text" value={albumFormData.cliente}
+                      onChange={e => setAlbumFormData((p: any) => ({ ...p, cliente: e.target.value }))}
+                      placeholder="Ej: Familia Rodríguez" className="admin-input" />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#64748b', display: 'block', marginBottom: 6 }}>
+                      Descripción (opcional)
+                    </label>
+                    <textarea value={albumFormData.descripcion}
+                      onChange={e => setAlbumFormData((p: any) => ({ ...p, descripcion: e.target.value }))}
+                      placeholder="Breve historia del evento, para el detalle del álbum y el SEO"
+                      className="admin-input" rows={3} />
+                  </div>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', color: '#0a1628', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={albumFormData.visible}
+                      onChange={e => setAlbumFormData((p: any) => ({ ...p, visible: e.target.checked }))} />
+                    Publicado (visible en la web)
+                  </label>
+                </div>
+              </div>
+
+              {/* Fotos que ya pertenecen a este álbum — para gestionarlas sin salir de aquí */}
+              {albumMode === 'edit' && (
+                <div style={{ marginTop: 20 }}>
+                  <p style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#64748b', marginBottom: 10 }}>
+                    Fotos en este álbum ({fotosDelAlbumEnEdicion.length})
+                  </p>
+                  {fotosDelAlbumEnEdicion.length === 0 ? (
+                    <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>
+                      Aún no hay fotos asignadas. Ve a la pestaña <strong>Fotos y videos</strong>, edita una foto
+                      (o selecciona varias) y asígnale este álbum.
+                    </p>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(110px,1fr))', gap: 10 }}>
+                      {fotosDelAlbumEnEdicion.map(foto => (
+                        <div key={foto.id} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', aspectRatio: '4/3', background: '#e2e8f0' }}>
+                          {foto.tipo === 'video' || foto.url?.match(/\.(mp4|webm|mov)(\?|$)/i) ? (
+                            <video src={cxVideo(foto.url)} muted preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <img src={cxThumb(foto.url)} alt={foto.alt || 'Foto'} loading="lazy"
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          )}
+                          <button onClick={() => handleQuitarDeAlbum(foto)} title="Quitar del álbum"
+                            style={{
+                              position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: 7,
+                              background: 'rgba(10,22,40,.85)', color: '#fca5a5', border: 'none', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                            <X size={13} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                <button onClick={() => { setAlbumMode('idle'); setAlbumFormData(ALBUM_BLANK); setAlbumEditId(null); }} className="btn-outline">Cancelar</button>
+                <button onClick={handleAlbumSave} className="btn-gold">
+                  {albumMode === 'edit' ? '💾 Guardar cambios' : '✅ Crear álbum'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Grid de álbumes */}
+          {loading ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 16 }}>
+              {[...Array(4)].map((_, i) => <div key={i} className="skeleton" style={{ aspectRatio: '4/5', borderRadius: 14 }} />)}
+            </div>
+          ) : albumesDisponibles.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '4rem', background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0' }}>
+              <p style={{ fontSize: '2.5rem', marginBottom: 12 }}>🗂️</p>
+              <p style={{ color: '#64748b' }}>Aún no creas ningún álbum. Empieza con el botón "Nuevo álbum".</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 16 }}>
+              {albumesDisponibles.map(album => (
+                <div key={album.id} className="admin-card" style={{
+                  padding: 0, overflow: 'hidden', border: album.visible ? undefined : '2px solid #fde68a',
+                  opacity: album.visible ? 1 : .7,
+                }}>
+                  <div style={{ position: 'relative', aspectRatio: '4/5', background: '#e2e8f0' }}>
+                    {album.coverUrl && (
+                      <img src={cxThumb(album.coverUrl)} alt={album.titulo} loading="lazy"
+                        style={{
+                          width: '100%', height: '100%', objectFit: 'cover',
+                          objectPosition: `${(album.coverFocalX ?? 0.5) * 100}% ${(album.coverFocalY ?? 0.5) * 100}%`,
+                        }} />
+                    )}
+                    <div style={{
+                      position: 'absolute', bottom: 8, left: 8, background: 'rgba(10,22,40,.85)', color: '#fff',
+                      fontSize: '0.65rem', fontWeight: 700, padding: '2px 9px', borderRadius: 999,
+                    }}>
+                      🖼️ {albumItemCounts[album.id] || 0} {albumItemCounts[album.id] === 1 ? 'item' : 'items'}
+                    </div>
+                    {!album.visible && (
+                      <div style={{
+                        position: 'absolute', top: 8, right: 8, background: '#f59e0b', color: '#0a1628',
+                        fontSize: '0.6rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999,
+                      }}>
+                        OCULTO
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ padding: '0.85rem 1rem' }}>
+                    <p style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0a1628', margin: 0 }}>{album.titulo}</p>
+                    {album.tipoEvento && <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '2px 0 0' }}>{album.tipoEvento}</p>}
+                    <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                      <button onClick={() => openAlbumEdit(album)} title="Editar"
+                        style={{ flex: 1, height: 32, borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Pencil size={13} />
+                      </button>
+                      <button onClick={() => toggleAlbumVisible(album)} title={album.visible ? 'Ocultar' : 'Publicar'}
+                        style={{ flex: 1, height: 32, borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {album.visible ? <EyeOff size={13} /> : <Eye size={13} />}
+                      </button>
+                      <button onClick={() => handleAlbumDelete(album)} title="Eliminar"
+                        style={{ flex: 1, height: 32, borderRadius: 8, border: '1px solid #fecaca', background: '#fef2f2', color: '#dc2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
-      {/* Barra flotante de acciones en lote */}
-      {selMode && selected.size > 0 && (
+      {/* Barra flotante de acciones en lote — pestaña Fotos */}
+      {view === 'fotos' && selMode && selected.size > 0 && (
         <div style={{
           position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 40,
           background: '#0a1628', borderRadius: 16, padding: '0.9rem 1.1rem',
