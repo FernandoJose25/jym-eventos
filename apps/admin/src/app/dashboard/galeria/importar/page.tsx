@@ -17,13 +17,19 @@ import {
   obtenerAccessTokenDeCuenta, desconectarCuentaGoogle,
   type PickedMediaItem, type CuentaGoogle,
 } from '@/lib/googlePhotosPicker';
+import {
+  listarAlbumICloud, importarDeICloud, type ICloudItem,
+} from '@/lib/icloudSharedAlbum';
 
 type EstadoFoto = 'pendiente' | 'procesando' | 'lista' | 'error';
+type Fuente = 'google' | 'icloud';
 
 interface FilaFoto {
   id: string;
-  mediaItem: PickedMediaItem;
-  thumb: string;          // object URL local para previsualizar
+  origen: Fuente;
+  mediaItem?: PickedMediaItem;  // solo cuando origen === 'google'
+  icloudItem?: ICloudItem;      // solo cuando origen === 'icloud'
+  thumb: string;          // object URL local (Google) o URL remota de Apple (iCloud) para previsualizar
   incluida: boolean;      // ¿se procesa/publica?
   estado: EstadoFoto;
   error?: string;
@@ -103,6 +109,7 @@ async function runWithConcurrency<T>(items: T[], limit: number, worker: (item: T
 
 export default function ImportarDeGooglePhotosPage() {
   const [fase, setFase] = useState<Fase>('idle');
+  const [fuente, setFuente] = useState<Fuente>('google');
   const [filas, setFilas] = useState<FilaFoto[]>([]);
   const [progreso, setProgreso] = useState({ hecho: 0, total: 0 });
   const [errorGlobal, setErrorGlobal] = useState('');
@@ -110,6 +117,9 @@ export default function ImportarDeGooglePhotosPage() {
   const sessionIdRef = useRef<string>('');
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventosDetectadosRef = useRef<string[]>([]); // nombres de evento vistos en esta sesión, para que la IA los reutilice
+
+  // ── iCloud: álbum compartido (link público, sin login) ──
+  const [icloudUrl, setIcloudUrl] = useState('');
 
   // Álbumes reales ya existentes (colección `albums`) — el mismo sistema
   // que usa el formulario manual de Galería y /dashboard/albumes.
@@ -247,6 +257,7 @@ export default function ImportarDeGooglePhotosPage() {
         const blob = await fetchMediaBlob(item.mediaFile.baseUrl, googleTokenRef.current, '=w400-h400');
         nuevasFilas.push({
           id: item.id,
+          origen: 'google',
           mediaItem: item,
           thumb: URL.createObjectURL(blob),
           incluida: true,
@@ -274,6 +285,42 @@ export default function ImportarDeGooglePhotosPage() {
     }
   };
 
+  /* ── 2b. iCloud: cargar álbum compartido por link (sin login, sin OAuth) ── */
+  const handleCargarICloud = async () => {
+    if (!icloudUrl.trim()) return;
+    setErrorGlobal('');
+    setFase('listando');
+    try {
+      const idToken = await getToken();
+      const items = await listarAlbumICloud(icloudUrl.trim(), idToken);
+      if (items.length === 0) {
+        setErrorGlobal('No se encontraron fotos en ese álbum (o está vacío).');
+        setFase('idle');
+        return;
+      }
+      const nuevasFilas: FilaFoto[] = items.map(item => ({
+        id: item.id,
+        origen: 'icloud',
+        icloudItem: item,
+        thumb: item.thumbUrl, // URL directa de Apple — no necesita CORS solo para mostrarla en un <img>
+        incluida: true,
+        estado: 'pendiente',
+        categoria: 'General',
+        subcategoria: '',
+        alt: '',
+        calidad: 'buena',
+        motivoCalidad: '',
+        eventoNombre: '',
+      }));
+      setFilas(nuevasFilas);
+      eventosDetectadosRef.current = [];
+      setFase('revision');
+    } catch (e: any) {
+      setErrorGlobal(e.message || 'No se pudo leer el álbum de iCloud');
+      setFase('idle');
+    }
+  };
+
   /* ── 3. Subir a Cloudinary + clasificar y agrupar por evento con IA (Groq vision, en lotes) ── */
   const handleProcesarConIA = async () => {
     const pendientes = filas.filter(f => f.incluida && f.estado === 'pendiente');
@@ -284,17 +331,53 @@ export default function ImportarDeGooglePhotosPage() {
 
     // 1) Subir todas a Cloudinary primero (esto sí puede ir con más concurrencia)
     const subidas: { fila: FilaFoto; cloudinaryUrl: string }[] = [];
-    await runWithConcurrency(pendientes, CONCURRENCIA, async (fila) => {
+
+    const pendientesGoogle = pendientes.filter(f => f.origen === 'google');
+    const pendientesICloud = pendientes.filter(f => f.origen === 'icloud');
+
+    await runWithConcurrency(pendientesGoogle, CONCURRENCIA, async (fila) => {
       actualizarFila(fila.id, { estado: 'procesando' });
       try {
-        const blob = await fetchMediaBlob(fila.mediaItem.mediaFile.baseUrl, googleTokenRef.current, '=d');
-        const cloudinaryUrl = await uploadBlobToCloudinary(blob, fila.mediaItem.mediaFile.filename, idToken);
+        const blob = await fetchMediaBlob(fila.mediaItem!.mediaFile.baseUrl, googleTokenRef.current, '=d');
+        const cloudinaryUrl = await uploadBlobToCloudinary(blob, fila.mediaItem!.mediaFile.filename, idToken);
         subidas.push({ fila, cloudinaryUrl });
       } catch (e: any) {
         actualizarFila(fila.id, { estado: 'error', error: e.message || 'Error subiendo esta foto' });
         setProgreso(p => ({ ...p, hecho: p.hecho + 1 }));
       }
     });
+
+    // iCloud: el servidor descarga de Apple y sube a Cloudinary en un solo paso
+    // (evita el mismo problema de CORS que ya resolvimos en el cropper — el
+    // CDN de Apple no promete cabeceras CORS para que el navegador lo lea).
+    if (pendientesICloud.length > 0) {
+      pendientesICloud.forEach(fila => actualizarFila(fila.id, { estado: 'procesando' }));
+      try {
+        const resultados = await importarDeICloud(
+          pendientesICloud.map(f => ({
+            id: f.id,
+            fullUrl: f.icloudItem!.fullUrl,
+            filename: f.icloudItem!.filename,
+          })),
+          idToken,
+        );
+        const porId = new Map(resultados.map(r => [r.id, r]));
+        for (const fila of pendientesICloud) {
+          const r = porId.get(fila.id);
+          if (r?.cloudinaryUrl) {
+            subidas.push({ fila, cloudinaryUrl: r.cloudinaryUrl });
+          } else {
+            actualizarFila(fila.id, { estado: 'error', error: r?.error || 'Error subiendo esta foto' });
+            setProgreso(p => ({ ...p, hecho: p.hecho + 1 }));
+          }
+        }
+      } catch (e: any) {
+        for (const fila of pendientesICloud) {
+          actualizarFila(fila.id, { estado: 'error', error: e.message || 'Error importando desde iCloud' });
+          setProgreso(p => ({ ...p, hecho: p.hecho + 1 }));
+        }
+      }
+    }
 
     // 2) Clasificar y agrupar en lotes pequeños, para que la IA compare fotos entre sí
     const lotes = chunk(subidas, LOTE_IA);
@@ -467,10 +550,10 @@ export default function ImportarDeGooglePhotosPage() {
       </Link>
 
       <h1 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0a1628', marginBottom: 4 }}>
-        Importar fotos de Google Photos
+        Importar fotos
       </h1>
       <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: 24 }}>
-        Elige fotos de tu Google Photos, la IA las clasifica por categoría, calidad y las agrupa por evento; tú revisas y apruebas antes de publicar.
+        Trae fotos desde Google Photos o desde un álbum compartido de iCloud; la IA las clasifica por categoría, calidad y las agrupa por evento; tú revisas y apruebas antes de publicar.
       </p>
 
       {errorGlobal && (
@@ -484,6 +567,25 @@ export default function ImportarDeGooglePhotosPage() {
       )}
 
       {fase === 'idle' && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
+          {([
+            { k: 'google', label: '📷 Google Photos' },
+            { k: 'icloud', label: '☁️ Álbum de iCloud' },
+          ] as { k: Fuente; label: string }[]).map(({ k, label }) => (
+            <button key={k} onClick={() => setFuente(k)} type="button" style={{
+              padding: '0.5rem 1rem', borderRadius: 10,
+              border: fuente === k ? '1.5px solid #1e3a5f' : '1.5px solid #e2e8f0',
+              background: fuente === k ? '#eff6ff' : '#fff',
+              color: fuente === k ? '#1e3a5f' : '#64748b',
+              fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {fase === 'idle' && fuente === 'google' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {cargandoCuentas ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8', fontSize: '0.85rem' }}>
@@ -548,6 +650,37 @@ export default function ImportarDeGooglePhotosPage() {
               )}
             </>
           )}
+        </div>
+      )}
+
+      {fase === 'idle' && fuente === 'icloud' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 520 }}>
+          <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>
+            En tu iPhone: <strong>Fotos → selecciona las fotos del evento → Compartir → Álbum compartido</strong> (o
+            agrégalas a uno existente) → en el álbum, activa <strong>"Sitio web público"</strong> → copia el link y pégalo aquí.
+          </p>
+          <input
+            value={icloudUrl}
+            onChange={e => setIcloudUrl(e.target.value)}
+            placeholder="https://www.icloud.com/sharedalbum/#B..."
+            style={{
+              padding: '0.65rem 0.9rem', borderRadius: 10, border: '1.5px solid #e2e8f0',
+              fontSize: '0.85rem', fontFamily: 'inherit',
+            }}
+          />
+          <button onClick={handleCargarICloud} disabled={!icloudUrl.trim()} type="button" style={{
+            display: 'flex', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
+            background: icloudUrl.trim() ? '#1e3a5f' : '#e2e8f0',
+            color: icloudUrl.trim() ? '#fff' : '#94a3b8',
+            border: 'none', borderRadius: 12, padding: '0.85rem 1.5rem', fontWeight: 700,
+            fontSize: '0.9rem', cursor: icloudUrl.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit',
+          }}>
+            <ImagePlus size={18} /> Cargar álbum
+          </button>
+          <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0 }}>
+            No pide iniciar sesión ni contraseña — funciona con cualquier álbum compartido públicamente.
+            Trae todas las fotos del álbum; abajo, en cada foto, podrás destildar "Incluir en la galería" para las que no quieras publicar.
+          </p>
         </div>
       )}
 
