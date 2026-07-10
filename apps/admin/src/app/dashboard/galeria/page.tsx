@@ -369,7 +369,7 @@ export default function GaleriaPage() {
                 border: 'none', borderRadius: 10, padding: '0.6rem 1rem', fontWeight: 700,
                 fontSize: '0.82rem', textDecoration: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
               }}>
-                <Sparkles size={15} /> Importar de Google Photos
+                <Sparkles size={15} /> Importar imágenes desde Google Photos o Icloud
               </Link>
               <button
                 onClick={() => { setSelMode(m => !m); setSelected(new Set()); }}
