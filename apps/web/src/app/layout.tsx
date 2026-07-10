@@ -64,6 +64,9 @@ export async function generateMetadata(): Promise<Metadata> {
         'MRy0O_zkW6ZNsC_CnEB5krGekfmnAjcB3dKlhxeKwUA',
         'DNmC4C6F7ycqWjm16_zsDOxurIA87vTDvGJzuQYASqE',
       ],
+      other: {
+        'facebook-domain-verification': 'wwqpxmcd49tkr5j6takgz2hg9evk0v',
+      },
     },
     openGraph: {
       title: DEFAULT_TITLE,
