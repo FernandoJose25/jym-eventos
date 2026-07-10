@@ -108,32 +108,17 @@ export function cxShareVideo(url: string): string {
 
 /**
  * Calidad de video seleccionable manualmente por el usuario (engranaje del
- * reproductor). 'auto' usa el mismo preset que cxVideo (q_auto:best + mejor
- * códec disponible). Las demás fuerzan una altura máxima + perfil de calidad
- * más liviano, para cuando el usuario está en datos móviles y no quiere que
- * el video se trabe intentando cargar 1080p.
+ * reproductor, ver components/ui/CustomVideoPlayer.tsx). El componente ya
+ * resuelve 'auto' llamando a cxVideo() directamente; esta función solo se
+ * usa para las calidades numéricas explícitas, limitando la altura del
+ * video y bajando el perfil de calidad para conexiones lentas/datos móviles.
  */
-export type VideoQuality = 'auto' | '1080p' | '720p' | '480p';
+export type VideoQuality = 'auto' | 1080 | 720 | 480 | 360;
 
-export function cxVideoQuality(url: string, quality: VideoQuality): string {
+export function cxVideoQuality(url: string, quality: 1080 | 720 | 480 | 360): string {
   if (!url) return url;
   if (!isCloudinary(url)) return url;
-  if (quality === 'auto') return cxVideo(url);
-
-  const HEIGHT_BY_QUALITY: Record<Exclude<VideoQuality, 'auto'>, number> = {
-    '1080p': 1080,
-    '720p': 720,
-    '480p': 480,
-  };
-  const Q_BY_QUALITY: Record<Exclude<VideoQuality, 'auto'>, string> = {
-    '1080p': 'q_auto:best',
-    '720p': 'q_auto:good',
-    '480p': 'q_auto:eco',
-  };
-
-  const h = HEIGHT_BY_QUALITY[quality];
-  const q = Q_BY_QUALITY[quality];
-  const t = `${q},vc_auto,fl_progressive,h_${h},c_limit`;
+  const t = `q_auto:good,vc_auto,fl_progressive,h_${quality},c_limit`;
   return buildVideoUrl(url, t);
 }
 

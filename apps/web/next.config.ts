@@ -7,22 +7,15 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Refuerzo de caché — Vercel ya cachea agresivamente los assets de
-  // /_next/static por defecto (son inmutables, tienen hash en el nombre),
-  // pero lo dejamos explícito. Nota: las imágenes/videos de Cloudinary NO
-  // necesitan nada aquí — res.cloudinary.com ya sirve con Cache-Control de
-  // muy larga duración por su propia CDN, así que el navegador ya no vuelve
-  // a descargarlas en una segunda visita a esa misma URL transformada.
+  // Refuerzo de caché para assets propios servidos desde /public (íconos,
+  // manifest, favicon). No tocamos /_next/static: Vercel ya lo sirve con
+  // el Cache-Control óptimo por defecto — sobrescribirlo solo genera un
+  // warning en build y puede romper el comportamiento en desarrollo.
+  // Las imágenes/videos de Cloudinary tampoco necesitan nada aquí — ya
+  // sirven con Cache-Control de muy larga duración por su propia CDN.
   async headers() {
     return [
       {
-        source: '/_next/static/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-        ],
-      },
-      {
-        // Íconos, manifest, favicon, etc. servidos desde /public
         source: '/:path*.(svg|png|jpg|jpeg|webp|ico|woff2)',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' },
