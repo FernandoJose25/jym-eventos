@@ -107,16 +107,33 @@ export function cxShareVideo(url: string): string {
 }
 
 /**
- * Video con calidad/resolución específica — para el selector manual de
- * calidad del reproductor (pensado para visitantes con datos móviles
- * limitados). A menor resolución, además se baja el nivel de q_auto para
- * que el archivo pese notablemente menos, no solo se vea más chico.
+ * Calidad de video seleccionable manualmente por el usuario (engranaje del
+ * reproductor). 'auto' usa el mismo preset que cxVideo (q_auto:best + mejor
+ * códec disponible). Las demás fuerzan una altura máxima + perfil de calidad
+ * más liviano, para cuando el usuario está en datos móviles y no quiere que
+ * el video se trabe intentando cargar 1080p.
  */
-export function cxVideoQuality(url: string, height: 1080 | 720 | 480 | 360): string {
+export type VideoQuality = 'auto' | '1080p' | '720p' | '480p';
+
+export function cxVideoQuality(url: string, quality: VideoQuality): string {
   if (!url) return url;
   if (!isCloudinary(url)) return url;
-  const qLevel = height <= 480 ? 'q_auto:eco' : height === 720 ? 'q_auto:good' : 'q_auto:best';
-  const t = `${qLevel},vc_auto,fl_progressive,h_${height},c_limit`;
+  if (quality === 'auto') return cxVideo(url);
+
+  const HEIGHT_BY_QUALITY: Record<Exclude<VideoQuality, 'auto'>, number> = {
+    '1080p': 1080,
+    '720p': 720,
+    '480p': 480,
+  };
+  const Q_BY_QUALITY: Record<Exclude<VideoQuality, 'auto'>, string> = {
+    '1080p': 'q_auto:best',
+    '720p': 'q_auto:good',
+    '480p': 'q_auto:eco',
+  };
+
+  const h = HEIGHT_BY_QUALITY[quality];
+  const q = Q_BY_QUALITY[quality];
+  const t = `${q},vc_auto,fl_progressive,h_${h},c_limit`;
   return buildVideoUrl(url, t);
 }
 
@@ -126,8 +143,8 @@ export function cxAuto(url: string, size: 'thumb' | 'card' | 'full' | 'hero' = '
   if (isVideoUrl(url)) return cxVideo(url);
   switch (size) {
     case 'thumb': return cxThumb(url);
-    case 'full':  return cxFull(url);
-    case 'hero':  return cxHero(url);
-    default:      return cxCard(url);
+    case 'full': return cxFull(url);
+    case 'hero': return cxHero(url);
+    default: return cxCard(url);
   }
 }
