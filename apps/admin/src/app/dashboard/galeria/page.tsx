@@ -1,21 +1,21 @@
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { collection, query, orderBy, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs, addDoc, writeBatch } from 'firebase/firestore';
 import { cxThumb, cxVideo } from '@/lib/cloudinary';
 import { db, COL } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { useModal } from '@/components/ui/Modal';
 import ImageUploader from '@/components/ui/ImageUploader';
-import { Plus, Eye, EyeOff, Trash2, Filter, Search, X, Pencil, Sparkles } from 'lucide-react';
+import { Plus, Eye, EyeOff, Trash2, Filter, Search, X, Pencil, Sparkles, CheckSquare, Square, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { SUBCATS } from '@/lib/galeriaTaxonomy';
 
-const BLANK = { categoria: 'General', subcategoria: '', tipo: 'imagen', visible: true, alt: '', albumTitle: '', albumSubtitle: '' };
+const BLANK = { categoria: 'General', subcategoria: '', tipo: 'imagen', visible: true, alt: '', albumId: '' };
 
-// "Quinceañero de Sofía" -> "quinceanero-de-sofia" (para agrupar items del mismo evento)
-function slugifyAlbum(title: string): string {
+// "Quinceañero de Sofía" -> "quinceanero-de-sofia" — para el slug del álbum
+function slugify(title: string): string {
   return title
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita tildes
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLowerCase().trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
@@ -76,10 +76,35 @@ export default function GaleriaPage() {
   const { open } = useModal();
   const searchRef = useRef<HTMLInputElement>(null);
 
+  // Álbumes reales (colección `albums`) — para el select del formulario,
+  // el badge en cada miniatura y la agrupación en lote desde el grid.
+  const [albumesDisponibles, setAlbumesDisponibles] = useState<any[]>([]);
+  const [albumItemCounts, setAlbumItemCounts] = useState<Record<string, number>>({});
+  const [creandoAlbum, setCreandoAlbum] = useState(false);
+  const [nuevoAlbumTitulo, setNuevoAlbumTitulo] = useState('');
+
+  // Selección múltiple en el grid, para agrupar/publicar/ocultar en lote.
+  const [selMode, setSelMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkAlbumId, setBulkAlbumId] = useState('');
+  const [bulkCreandoAlbum, setBulkCreandoAlbum] = useState(false);
+  const [bulkNuevoTitulo, setBulkNuevoTitulo] = useState('');
+  const [bulkBusy, setBulkBusy] = useState(false);
+
   useEffect(() => onSnapshot(
     query(collection(db, COL.GALERIA), orderBy('order', 'asc')),
     snap => { setItems(snap.docs.map(d => ({ id: d.id, ...d.data() }))); setLoading(false); }
   ), []);
+
+  useEffect(() => onSnapshot(query(collection(db, COL.ALBUMES), orderBy('order', 'asc')), snap => {
+    setAlbumesDisponibles(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  }), []);
+
+  useEffect(() => {
+    const counts: Record<string, number> = {};
+    items.forEach(i => { if (i.albumId) counts[i.albumId] = (counts[i.albumId] || 0) + 1; });
+    setAlbumItemCounts(counts);
+  }, [items]);
 
   useEffect(() => {
     getDocs(query(collection(db, COL.SERVICIOS), orderBy('order', 'asc'))).then(snap => {
@@ -88,13 +113,20 @@ export default function GaleriaPage() {
     });
   }, []);
 
-  // Títulos de álbum ya usados, para autocompletar y evitar que un typo
-  // (ej. "Quinceañero Sofia" vs "Quinceañero de Sofía") cree un álbum duplicado.
-  const albumTitles = useMemo(() => {
-    const seen = new Set<string>();
-    items.forEach(i => { if (i.albumTitle) seen.add(i.albumTitle); });
-    return [...seen].sort();
-  }, [items]);
+  /** Crea un álbum nuevo con la foto que se está editando/agregando como portada, y lo selecciona. */
+  const handleCrearAlbumInline = async () => {
+    const titulo = nuevoAlbumTitulo.trim();
+    if (!titulo) { toast.error('Ponle un título al álbum'); return; }
+    const ref = await addDoc(collection(db, COL.ALBUMES), {
+      titulo, slug: slugify(titulo), tipoEvento: '', cliente: '', fecha: new Date().toISOString().slice(0, 10),
+      descripcion: '', coverUrl: formData.url || '', coverFocalX: formData.focalX ?? 0.5, coverFocalY: formData.focalY ?? 0.5,
+      visible: true, order: albumesDisponibles.length + 1, createdAt: new Date().toISOString(),
+    });
+    setFormData((p: any) => ({ ...p, albumId: ref.id }));
+    setCreandoAlbum(false);
+    setNuevoAlbumTitulo('');
+    toast.success(`✅ Álbum "${titulo}" creado`);
+  };
 
   const subcatsDisponibles = SUBCATS[formData.categoria] || [];
 
@@ -115,8 +147,7 @@ export default function GaleriaPage() {
       focalX: item.focalX ?? 0.5,
       focalY: item.focalY ?? 0.5,
       mediaType: item.tipo || 'imagen',
-      albumTitle: item.albumTitle || '',
-      albumSubtitle: item.albumSubtitle || '',
+      albumId: item.albumId || '',
     });
     setEditId(item.id);
     setMode('edit');
@@ -133,11 +164,8 @@ export default function GaleriaPage() {
       focalY: formData.focalY ?? 0.5,
       tipo: formData.mediaType || formData.tipo || 'imagen',
       visible: formData.visible ?? true,
-      // Álbum: mismo título -> mismo albumId (slug), así se agrupan
-      // automáticamente en la web sin necesidad de un ID manual.
-      albumTitle: formData.albumTitle?.trim() || '',
-      albumSubtitle: formData.albumSubtitle?.trim() || '',
-      albumId: formData.albumTitle?.trim() ? slugifyAlbum(formData.albumTitle.trim()) : '',
+      // Referencia al documento real en la colección `albums` (o '' si va suelta).
+      albumId: formData.albumId || '',
     };
     if (mode === 'edit' && editId) {
       await updateDoc(doc(db, COL.GALERIA, editId), payload);
@@ -173,6 +201,60 @@ export default function GaleriaPage() {
     },
   });
 
+  const toggleSelected = (id: string) => setSelected(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  /** Crea un álbum nuevo usando la primera foto seleccionada como portada. */
+  const handleCrearAlbumEnLote = async () => {
+    const titulo = bulkNuevoTitulo.trim();
+    if (!titulo) { toast.error('Ponle un título al álbum'); return; }
+    const primera = items.find(i => selected.has(i.id));
+    const ref = await addDoc(collection(db, COL.ALBUMES), {
+      titulo, slug: slugify(titulo), tipoEvento: '', cliente: '', fecha: new Date().toISOString().slice(0, 10),
+      descripcion: '', coverUrl: primera?.url || '', coverFocalX: primera?.focalX ?? 0.5, coverFocalY: primera?.focalY ?? 0.5,
+      visible: true, order: albumesDisponibles.length + 1, createdAt: new Date().toISOString(),
+    });
+    setBulkAlbumId(ref.id);
+    setBulkCreandoAlbum(false);
+    setBulkNuevoTitulo('');
+    toast.success(`✅ Álbum "${titulo}" creado`);
+  };
+
+  /** Asigna el álbum elegido (bulkAlbumId) a todos los items seleccionados. */
+  const handleAsignarAlbumEnLote = async () => {
+    if (!bulkAlbumId) { toast.error('Elige o crea un álbum primero'); return; }
+    setBulkBusy(true);
+    try {
+      const batch = writeBatch(db);
+      selected.forEach(id => batch.update(doc(db, COL.GALERIA, id), { albumId: bulkAlbumId }));
+      await batch.commit();
+      toast.success(`✅ ${selected.size} item(s) agregados al álbum`);
+      setSelected(new Set()); setSelMode(false); setBulkAlbumId('');
+    } catch (e: any) {
+      toast.error(e.message || 'Error agrupando en álbum');
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const handlePublicarEnLote = async (visible: boolean) => {
+    setBulkBusy(true);
+    try {
+      const batch = writeBatch(db);
+      selected.forEach(id => batch.update(doc(db, COL.GALERIA, id), { visible }));
+      await batch.commit();
+      toast.success(`✅ ${selected.size} item(s) ${visible ? 'publicados' : 'ocultos'}`);
+      setSelected(new Set());
+    } catch (e: any) {
+      toast.error(e.message || 'Error actualizando visibilidad');
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   // Category filter first, then smart search
   const catFiltered = filterCat === 'Todas' ? items : items.filter(i => i.categoria === filterCat);
   const { results: filtrados, suggestions } = useMemo(
@@ -203,6 +285,17 @@ export default function GaleriaPage() {
           }}>
             <Sparkles size={15} /> Importar de Google Photos
           </Link>
+          <button
+            onClick={() => { setSelMode(m => !m); setSelected(new Set()); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: selMode ? '#0a1628' : '#fff', color: selMode ? '#fff' : '#0a1628',
+              border: '1.5px solid #0a1628', borderRadius: 10, padding: '0.6rem 1rem', fontWeight: 700,
+              fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap',
+            }}>
+            {selMode ? <CheckSquare size={15} /> : <Square size={15} />}
+            {selMode ? 'Cancelar selección' : 'Seleccionar'}
+          </button>
           <button onClick={openAdd} className="btn-primary" style={{ whiteSpace: 'nowrap' }}>
             <Plus size={16} /> Agregar
           </button>
@@ -315,27 +408,54 @@ export default function GaleriaPage() {
                   placeholder="Ej: Fiesta de Mickey Mouse en Sechura" className="admin-input" />
               </div>
 
-              {/* Álbum — agrupa varias fotos/videos del mismo evento en una
-                  sola tarjeta en la galería pública. Deja vacío para que el
-                  item se muestre suelto, como hoy. */}
+              {/* Álbum — el mismo concepto que en /dashboard/albumes. Selecciona
+                  uno existente o crea uno nuevo sin salir de este formulario. */}
               <div>
                 <label style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: '#64748b', display: 'block', marginBottom: 6 }}>
                   Álbum (opcional)
                 </label>
-                <input type="text" list="album-titles" value={formData.albumTitle || ''}
-                  onChange={e => setFormData((p: any) => ({ ...p, albumTitle: e.target.value }))}
-                  placeholder="Ej: Quinceañero de Sofía" className="admin-input" />
-                <datalist id="album-titles">
-                  {albumTitles.map(t => <option key={t} value={t} />)}
-                </datalist>
-                <p style={{ fontSize: '0.68rem', color: '#94a3b8', margin: '6px 0 0' }}>
-                  Usa exactamente el mismo texto en todas las fotos/videos de un mismo evento para que se agrupen juntas.
-                </p>
-                {formData.albumTitle && (
-                  <input type="text" value={formData.albumSubtitle || ''}
-                    onChange={e => setFormData((p: any) => ({ ...p, albumSubtitle: e.target.value }))}
-                    placeholder="Subtítulo opcional, ej: Temática Bella y Bestia"
-                    className="admin-input" style={{ marginTop: 8 }} />
+
+                {!creandoAlbum ? (
+                  <>
+                    <select
+                      value={formData.albumId || ''}
+                      onChange={e => {
+                        if (e.target.value === '__nuevo__') { setCreandoAlbum(true); setNuevoAlbumTitulo(''); return; }
+                        setFormData((p: any) => ({ ...p, albumId: e.target.value }));
+                      }}
+                      className="admin-input">
+                      <option value="">— Sin álbum (foto suelta) —</option>
+                      {albumesDisponibles.map(a => (
+                        <option key={a.id} value={a.id}>
+                          {a.titulo} · {albumItemCounts[a.id] || 0} item{albumItemCounts[a.id] === 1 ? '' : 's'}
+                        </option>
+                      ))}
+                      <option value="__nuevo__">+ Crear álbum nuevo…</option>
+                    </select>
+                    <p style={{ fontSize: '0.68rem', color: '#94a3b8', margin: '6px 0 0' }}>
+                      Agrupa varias fotos/videos del mismo evento con su propia página en /albumes.
+                    </p>
+                  </>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '0.75rem' }}>
+                    <input type="text" autoFocus value={nuevoAlbumTitulo}
+                      onChange={e => setNuevoAlbumTitulo(e.target.value)}
+                      placeholder="Título del nuevo álbum, ej: Quinceañero de Sofía"
+                      className="admin-input" />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button type="button" onClick={handleCrearAlbumInline}
+                        style={{ flex: 1, background: '#d4a017', color: '#0a1628', border: 'none', borderRadius: 8, padding: '0.5rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
+                        Crear y usar
+                      </button>
+                      <button type="button" onClick={() => setCreandoAlbum(false)}
+                        style={{ flex: 1, background: '#e2e8f0', color: '#475569', border: 'none', borderRadius: 8, padding: '0.5rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
+                        Cancelar
+                      </button>
+                    </div>
+                    <p style={{ fontSize: '0.65rem', color: '#94a3b8', margin: 0 }}>
+                      Esta foto será la portada del álbum. Podrás editar fecha, tipo de evento, etc. en Álbumes.
+                    </p>
+                  </div>
                 )}
               </div>
 
@@ -466,113 +586,216 @@ export default function GaleriaPage() {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
-          {filtrados.map(item => (
-            <div key={item.id}
-              style={{
-                position: 'relative', borderRadius: 14, overflow: 'hidden', aspectRatio: '4/3',
-                border: item.visible ? 'none' : '2px solid #fde68a',
-                opacity: item.visible ? 1 : .65,
-                background: '#e2e8f0',
-                boxShadow: '0 2px 8px rgba(10,22,40,0.08)',
-                transition: 'transform .2s, box-shadow .2s'
-              }}
-              onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 20px rgba(10,22,40,0.15)'; const ov = el.querySelector('.adm-ov') as HTMLElement | null; if (ov) ov.style.opacity = '1'; }}
-              onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 2px 8px rgba(10,22,40,0.08)'; const ov = el.querySelector('.adm-ov') as HTMLElement | null; if (ov) ov.style.opacity = '0'; }}>
-
-              {item.url && (
-                item.tipo === 'video' || item.url?.match(/\.(mp4|webm|mov)(\?|$)/i)
-                  ? <video src={cxVideo(item.url)} muted preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : <img src={cxThumb(item.url)} alt={item.alt || 'Evento'} loading="lazy" decoding="async"
-                    style={{
-                      width: '100%', height: '100%', objectFit: 'cover',
-                      objectPosition: `${(item.focalX ?? 0.5) * 100}% ${(item.focalY ?? 0.5) * 100}%`
-                    }} />
-              )}
-
-              {/* Overlay con acciones */}
-              <div className="adm-ov"
+          {filtrados.map(item => {
+            const isSel = selected.has(item.id);
+            const album = item.albumId ? albumesDisponibles.find(a => a.id === item.albumId) : null;
+            return (
+              <div key={item.id}
                 style={{
-                  position: 'absolute', inset: 0, background: 'rgba(10,22,40,0.7)',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  gap: 8, opacity: 0, transition: 'opacity .25s'
-                }}>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {/* Editar */}
-                  <button onClick={() => openEdit(item)}
-                    title="Editar"
-                    style={{
-                      width: 34, height: 34, borderRadius: 8, cursor: 'pointer', display: 'flex',
-                      alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(212,160,23,.5)',
-                      background: 'rgba(212,160,23,.2)', color: '#fde68a', transition: 'background .2s'
-                    }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,.4)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,.2)'}>
-                    <Pencil size={13} />
-                  </button>
-                  {/* Visibilidad */}
-                  <button onClick={() => toggleVisible(item)}
-                    title={item.visible ? 'Ocultar' : 'Mostrar'}
-                    style={{
-                      width: 34, height: 34, borderRadius: 8, cursor: 'pointer', display: 'flex',
-                      alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,.3)',
-                      background: 'rgba(255,255,255,.1)', color: '#fff', transition: 'background .2s'
-                    }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.25)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.1)'}>
-                    {item.visible ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                  {/* Eliminar */}
-                  <button onClick={() => handleDelete(item)}
-                    title="Eliminar"
-                    style={{
-                      width: 34, height: 34, borderRadius: 8, cursor: 'pointer', display: 'flex',
-                      alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239,68,68,.4)',
-                      background: 'rgba(239,68,68,.2)', color: '#fca5a5', transition: 'background .2s'
-                    }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,.4)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,.2)'}>
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
+                  position: 'relative', borderRadius: 14, overflow: 'hidden', aspectRatio: '4/3',
+                  border: isSel ? '2.5px solid #1e3a5f' : item.visible ? 'none' : '2px solid #fde68a',
+                  opacity: item.visible ? 1 : .65,
+                  background: '#e2e8f0',
+                  boxShadow: isSel ? '0 0 0 3px rgba(30,58,95,0.2)' : '0 2px 8px rgba(10,22,40,0.08)',
+                  transition: 'transform .2s, box-shadow .2s',
+                  cursor: selMode ? 'pointer' : undefined,
+                }}
+                onClick={() => { if (selMode) toggleSelected(item.id); }}
+                onMouseEnter={e => { if (selMode) return; const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 20px rgba(10,22,40,0.15)'; const ov = el.querySelector('.adm-ov') as HTMLElement | null; if (ov) ov.style.opacity = '1'; }}
+                onMouseLeave={e => { if (selMode) return; const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 2px 8px rgba(10,22,40,0.08)'; const ov = el.querySelector('.adm-ov') as HTMLElement | null; if (ov) ov.style.opacity = '0'; }}>
 
-              {/* Badge categoría */}
-              <div style={{ position: 'absolute', bottom: 6, left: 6, pointerEvents: 'none' }}>
-                <span style={{
-                  display: 'block', background: 'rgba(10,22,40,.8)', color: '#fff',
-                  fontSize: '0.58rem', padding: '1px 7px', borderRadius: 999, marginBottom: 2
-                }}>
-                  {item.categoria || 'General'}
-                </span>
-                {item.subcategoria && (
-                  <span style={{
-                    display: 'block', background: 'rgba(212,160,23,.8)', color: '#0a1628',
-                    fontSize: '0.55rem', padding: '1px 6px', borderRadius: 999, fontWeight: 700
+                {item.url && (
+                  item.tipo === 'video' || item.url?.match(/\.(mp4|webm|mov)(\?|$)/i)
+                    ? <video src={cxVideo(item.url)} muted preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <img src={cxThumb(item.url)} alt={item.alt || 'Evento'} loading="lazy" decoding="async"
+                      style={{
+                        width: '100%', height: '100%', objectFit: 'cover',
+                        objectPosition: `${(item.focalX ?? 0.5) * 100}% ${(item.focalY ?? 0.5) * 100}%`
+                      }} />
+                )}
+
+                {/* Checkbox de selección */}
+                {selMode && (
+                  <div style={{
+                    position: 'absolute', top: 8, left: 8, width: 24, height: 24, borderRadius: 7,
+                    background: isSel ? '#1e3a5f' : 'rgba(255,255,255,0.92)', border: isSel ? 'none' : '1.5px solid #cbd5e1',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3,
                   }}>
-                    {item.subcategoria}
+                    {isSel && <CheckSquare size={14} color="#fff" />}
+                  </div>
+                )}
+
+                {/* Overlay con acciones */}
+                {!selMode && (
+                  <div className="adm-ov"
+                    style={{
+                      position: 'absolute', inset: 0, background: 'rgba(10,22,40,0.7)',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      gap: 8, opacity: 0, transition: 'opacity .25s'
+                    }}>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {/* Editar */}
+                      <button onClick={() => openEdit(item)}
+                        title="Editar"
+                        style={{
+                          width: 34, height: 34, borderRadius: 8, cursor: 'pointer', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(212,160,23,.5)',
+                          background: 'rgba(212,160,23,.2)', color: '#fde68a', transition: 'background .2s'
+                        }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,.4)'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,.2)'}>
+                        <Pencil size={13} />
+                      </button>
+                      {/* Visibilidad */}
+                      <button onClick={() => toggleVisible(item)}
+                        title={item.visible ? 'Ocultar' : 'Mostrar'}
+                        style={{
+                          width: 34, height: 34, borderRadius: 8, cursor: 'pointer', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,.3)',
+                          background: 'rgba(255,255,255,.1)', color: '#fff', transition: 'background .2s'
+                        }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.25)'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.1)'}>
+                        {item.visible ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                      {/* Eliminar */}
+                      <button onClick={() => handleDelete(item)}
+                        title="Eliminar"
+                        style={{
+                          width: 34, height: 34, borderRadius: 8, cursor: 'pointer', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239,68,68,.4)',
+                          background: 'rgba(239,68,68,.2)', color: '#fca5a5', transition: 'background .2s'
+                        }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,.4)'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,.2)'}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Badge categoría */}
+                <div style={{ position: 'absolute', bottom: 6, left: 6, pointerEvents: 'none', display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start' }}>
+                  <span style={{
+                    display: 'block', background: 'rgba(10,22,40,.8)', color: '#fff',
+                    fontSize: '0.58rem', padding: '1px 7px', borderRadius: 999
+                  }}>
+                    {item.categoria || 'General'}
                   </span>
+                  {item.subcategoria && (
+                    <span style={{
+                      display: 'block', background: 'rgba(212,160,23,.8)', color: '#0a1628',
+                      fontSize: '0.55rem', padding: '1px 6px', borderRadius: 999, fontWeight: 700
+                    }}>
+                      {item.subcategoria}
+                    </span>
+                  )}
+                  {album && (
+                    <span style={{
+                      display: 'block', background: 'rgba(124,58,237,.88)', color: '#fff',
+                      fontSize: '0.55rem', padding: '1px 6px', borderRadius: 999, fontWeight: 700, maxWidth: 140,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                    }}>
+                      📁 {album.titulo}
+                    </span>
+                  )}
+                </div>
+
+                {/* Estado de publicación — siempre visible, no solo al pasar el mouse */}
+                {!item.visible ? (
+                  <div style={{
+                    position: 'absolute', top: 6, right: 6, background: '#f59e0b', color: '#0a1628',
+                    fontSize: '0.6rem', fontWeight: 700, padding: '2px 7px', borderRadius: 999, pointerEvents: 'none'
+                  }}>
+                    OCULTO
+                  </div>
+                ) : (
+                  <div style={{
+                    position: 'absolute', top: 6, right: 6, background: 'rgba(34,197,94,.9)', color: '#fff',
+                    fontSize: '0.6rem', fontWeight: 700, padding: '2px 7px', borderRadius: 999, pointerEvents: 'none'
+                  }}>
+                    ✓ Publicado
+                  </div>
+                )}
+
+                {(item.tipo === 'video' || item.url?.match(/\.(mp4|webm|mov)$/i)) && (
+                  <div style={{
+                    position: 'absolute', top: 6, left: selMode ? 38 : 6, background: 'rgba(10,22,40,.8)', color: '#fff',
+                    fontSize: '0.65rem', padding: '2px 7px', borderRadius: 999, pointerEvents: 'none'
+                  }}>
+                    🎬
+                  </div>
                 )}
               </div>
+            );
+          })}
+        </div>
+      )}
 
-              {!item.visible && (
-                <div style={{
-                  position: 'absolute', top: 6, right: 6, background: '#f59e0b', color: '#0a1628',
-                  fontSize: '0.6rem', fontWeight: 700, padding: '2px 7px', borderRadius: 999, pointerEvents: 'none'
-                }}>
-                  OCULTO
-                </div>
-              )}
+      {/* Barra flotante de acciones en lote */}
+      {selMode && selected.size > 0 && (
+        <div style={{
+          position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 40,
+          background: '#0a1628', borderRadius: 16, padding: '0.9rem 1.1rem',
+          boxShadow: '0 12px 32px rgba(10,22,40,0.35)', display: 'flex', alignItems: 'center',
+          gap: 12, flexWrap: 'wrap', maxWidth: 'calc(100vw - 2rem)',
+        }}>
+          <span style={{ color: '#fff', fontSize: '0.82rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+            {selected.size} seleccionado{selected.size === 1 ? '' : 's'}
+          </span>
 
-              {(item.tipo === 'video' || item.url?.match(/\.(mp4|webm|mov)$/i)) && (
-                <div style={{
-                  position: 'absolute', top: 6, left: 6, background: 'rgba(10,22,40,.8)', color: '#fff',
-                  fontSize: '0.65rem', padding: '2px 7px', borderRadius: 999, pointerEvents: 'none'
-                }}>
-                  🎬
-                </div>
-              )}
+          {!bulkCreandoAlbum ? (
+            <select
+              value={bulkAlbumId}
+              onChange={e => {
+                if (e.target.value === '__nuevo__') { setBulkCreandoAlbum(true); setBulkNuevoTitulo(''); return; }
+                setBulkAlbumId(e.target.value);
+              }}
+              style={{ borderRadius: 8, border: 'none', padding: '0.5rem 0.6rem', fontSize: '0.8rem', minWidth: 180 }}>
+              <option value="">Agregar a álbum…</option>
+              {albumesDisponibles.map(a => <option key={a.id} value={a.id}>{a.titulo}</option>)}
+              <option value="__nuevo__">+ Crear álbum nuevo…</option>
+            </select>
+          ) : (
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input type="text" autoFocus value={bulkNuevoTitulo}
+                onChange={e => setBulkNuevoTitulo(e.target.value)}
+                placeholder="Título del álbum"
+                style={{ borderRadius: 8, border: 'none', padding: '0.5rem 0.6rem', fontSize: '0.8rem', width: 170 }} />
+              <button onClick={handleCrearAlbumEnLote}
+                style={{ background: '#d4a017', color: '#0a1628', border: 'none', borderRadius: 8, padding: '0.5rem 0.7rem', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}>
+                Crear
+              </button>
+              <button onClick={() => setBulkCreandoAlbum(false)}
+                style={{ background: 'rgba(255,255,255,.15)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 0.7rem', fontSize: '0.78rem', cursor: 'pointer' }}>
+                ✕
+              </button>
             </div>
-          ))}
+          )}
+
+          {bulkAlbumId && !bulkCreandoAlbum && (
+            <button onClick={handleAsignarAlbumEnLote} disabled={bulkBusy}
+              style={{ background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 0.8rem', fontWeight: 700, fontSize: '0.78rem', cursor: bulkBusy ? 'not-allowed' : 'pointer' }}>
+              <Layers size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />
+              Agrupar
+            </button>
+          )}
+
+          <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,.15)' }} />
+
+          <button onClick={() => handlePublicarEnLote(true)} disabled={bulkBusy}
+            style={{ background: 'rgba(34,197,94,.2)', color: '#86efac', border: '1px solid rgba(34,197,94,.4)', borderRadius: 8, padding: '0.5rem 0.7rem', fontSize: '0.78rem', fontWeight: 700, cursor: bulkBusy ? 'not-allowed' : 'pointer' }}>
+            <Eye size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Publicar
+          </button>
+          <button onClick={() => handlePublicarEnLote(false)} disabled={bulkBusy}
+            style={{ background: 'rgba(245,158,11,.2)', color: '#fde68a', border: '1px solid rgba(245,158,11,.4)', borderRadius: 8, padding: '0.5rem 0.7rem', fontSize: '0.78rem', fontWeight: 700, cursor: bulkBusy ? 'not-allowed' : 'pointer' }}>
+            <EyeOff size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Ocultar
+          </button>
+
+          <button onClick={() => { setSelected(new Set()); setSelMode(false); }}
+            style={{ background: 'transparent', color: 'rgba(255,255,255,.6)', border: 'none', fontSize: '0.78rem', cursor: 'pointer' }}>
+            Cancelar
+          </button>
         </div>
       )}
     </div>

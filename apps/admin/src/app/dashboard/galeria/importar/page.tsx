@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { collection, doc, getDocs, query, orderBy, setDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, query, orderBy, setDoc, onSnapshot, addDoc } from 'firebase/firestore';
 import { db, COL } from '@/lib/firebase';
 import { getToken } from '@/lib/get-token';
 import { SUBCATS, CATEGORIAS } from '@/lib/galeriaTaxonomy';
@@ -110,6 +110,17 @@ export default function ImportarDeGooglePhotosPage() {
   const sessionIdRef = useRef<string>('');
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventosDetectadosRef = useRef<string[]>([]); // nombres de evento vistos en esta sesión, para que la IA los reutilice
+
+  // Álbumes reales ya existentes (colección `albums`) — el mismo sistema
+  // que usa el formulario manual de Galería y /dashboard/albumes.
+  const [albumesExistentes, setAlbumesExistentes] = useState<{ id: string; titulo: string }[]>([]);
+  useEffect(() => onSnapshot(query(collection(db, COL.ALBUMES), orderBy('order', 'asc')), snap => {
+    setAlbumesExistentes(snap.docs.map(d => ({ id: d.id, titulo: (d.data() as any).titulo || '' })));
+  }), []);
+
+  // Por cada nombre de grupo (evento) detectado: a qué álbum real se
+  // vincula. '' = crear álbum nuevo con ese nombre al guardar.
+  const [grupoAlbumId, setGrupoAlbumId] = useState<Record<string, string>>({});
 
   // ── Cuentas de Google Photos conectadas de forma persistente (como iCloud:
   // quedan guardadas hasta que el usuario le da "Desconectar") ──
@@ -310,6 +321,14 @@ export default function ImportarDeGooglePhotosPage() {
           }
           if (r.nombreGrupo && !eventosDetectadosRef.current.includes(r.nombreGrupo)) {
             eventosDetectadosRef.current = [...eventosDetectadosRef.current, r.nombreGrupo];
+            // Si ya existe un álbum con (casi) el mismo título, lo vinculamos
+            // de una vez — así no se crea un álbum duplicado por accidente.
+            const match = albumesExistentes.find(
+              a => a.titulo.trim().toLowerCase() === r.nombreGrupo.trim().toLowerCase()
+            );
+            if (match) {
+              setGrupoAlbumId(prev => ({ ...prev, [r.nombreGrupo]: match.id }));
+            }
           }
           actualizarFila(s.fila.id, {
             estado: 'lista',
@@ -335,7 +354,7 @@ export default function ImportarDeGooglePhotosPage() {
     toast.success('Clasificación y agrupación por evento terminada. Revisa y ajusta antes de publicar.');
   };
 
-  /* ── 4. Guardar las aprobadas en la galería (mismo esquema que /dashboard/galeria + evento) ── */
+  /* ── 4. Guardar las aprobadas en la galería, creando/vinculando álbumes reales ── */
   const handleGuardarEnGaleria = async () => {
     const aprobadas = filas.filter(f => f.incluida && f.estado === 'lista' && f.cloudinaryUrl);
     if (aprobadas.length === 0) {
@@ -344,6 +363,28 @@ export default function ImportarDeGooglePhotosPage() {
     }
     setFase('guardando');
     try {
+      // 1) Por cada grupo con nombre, resolver su albumId real: el ya
+      //    vinculado (grupoAlbumId) o uno nuevo creado en `albums` ahora mismo.
+      const nombresDeEvento = [...new Set(aprobadas.map(f => f.eventoNombre.trim()).filter(Boolean))];
+      const albumIdPorNombre: Record<string, string> = {};
+
+      for (const nombre of nombresDeEvento) {
+        const yaVinculado = grupoAlbumId[nombre];
+        if (yaVinculado) { albumIdPorNombre[nombre] = yaVinculado; continue; }
+
+        const primeraFoto = aprobadas.find(f => f.eventoNombre.trim() === nombre);
+        const ref = await addDoc(collection(db, COL.ALBUMES), {
+          titulo: nombre,
+          slug: slugify(nombre),
+          tipoEvento: '', cliente: '', fecha: new Date().toISOString().slice(0, 10), descripcion: '',
+          coverUrl: primeraFoto?.cloudinaryUrl || '', coverFocalX: 0.5, coverFocalY: 0.5,
+          visible: true, order: albumesExistentes.length + 1, createdAt: new Date().toISOString(),
+        });
+        albumIdPorNombre[nombre] = ref.id;
+      }
+
+      // 2) Guardar cada foto en gallery_items con su albumId ya resuelto
+      //    (mismo esquema que el formulario manual de /dashboard/galeria).
       const snap = await getDocs(query(collection(db, COL.GALERIA), orderBy('order', 'asc')));
       let order = snap.size;
 
@@ -356,8 +397,7 @@ export default function ImportarDeGooglePhotosPage() {
           alt: f.alt || f.subcategoria || f.categoria || 'Evento J&M',
           categoria: f.categoria,
           subcategoria: f.subcategoria,
-          eventoId: eventoNombre ? slugify(eventoNombre) : '',
-          eventoNombre,
+          albumId: eventoNombre ? (albumIdPorNombre[eventoNombre] || '') : '',
           focalX: 0.5,
           focalY: 0.5,
           tipo: 'imagen',
@@ -370,6 +410,7 @@ export default function ImportarDeGooglePhotosPage() {
 
       toast.success(`✅ ${aprobadas.length} foto(s) agregadas a la galería`);
       setFilas(prev => prev.filter(f => !aprobadas.includes(f)));
+      setGrupoAlbumId({});
       setFase('revision');
     } catch (e: any) {
       toast.error(e.message || 'Error guardando en la galería');
@@ -382,6 +423,14 @@ export default function ImportarDeGooglePhotosPage() {
   /* Renombra/fusiona un grupo entero: aplica el nuevo nombre a todas las fotos que tenían el nombre viejo */
   const renombrarGrupo = (nombreViejo: string, nombreNuevo: string) => {
     setFilas(prev => prev.map(f => (f.eventoNombre === nombreViejo ? { ...f, eventoNombre: nombreNuevo } : f)));
+    // Si el grupo viejo ya estaba vinculado a un álbum real y el nuevo nombre
+    // todavía no tiene vínculo propio, conservamos ese vínculo.
+    setGrupoAlbumId(prev => {
+      if (!prev[nombreViejo] || prev[nombreNuevo]) return prev;
+      const next = { ...prev, [nombreNuevo]: prev[nombreViejo] };
+      delete next[nombreViejo];
+      return next;
+    });
   };
 
   const totalIncluidas = filas.filter(f => f.incluida).length;
@@ -560,7 +609,7 @@ export default function ImportarDeGooglePhotosPage() {
 
           {grupos.map(grupo => (
             <div key={grupo.nombre || '__sin_evento__'} style={{ marginBottom: 26 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                 {grupo.nombre ? (
                   <span style={{ width: 10, height: 10, borderRadius: 4, background: colorDeGrupo(grupo.nombre), flexShrink: 0 }} />
                 ) : (
@@ -585,6 +634,22 @@ export default function ImportarDeGooglePhotosPage() {
                 <Pencil size={12} color="#94a3b8" />
                 <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{grupo.filas.length} foto(s)</span>
               </div>
+
+              {/* Vínculo a álbum real — igual que en Galería y /dashboard/albumes.
+                  Solo aplica a grupos con nombre; "Sin evento asignado" se guarda suelto. */}
+              {grupo.nombre && (
+                <div style={{ marginBottom: 10, marginLeft: 18 }}>
+                  <select
+                    value={grupoAlbumId[grupo.nombre] || ''}
+                    onChange={e => setGrupoAlbumId(prev => ({ ...prev, [grupo.nombre]: e.target.value }))}
+                    style={{ fontSize: '0.75rem', padding: '5px 8px', borderRadius: 7, border: '1px solid #e2e8f0', color: '#334155' }}>
+                    <option value="">📁 Crear álbum nuevo: "{grupo.nombre}"</option>
+                    {albumesExistentes.map(a => (
+                      <option key={a.id} value={a.id}>🔗 Agregar al álbum existente: {a.titulo}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 14 }}>
                 {grupo.filas.map(f => (

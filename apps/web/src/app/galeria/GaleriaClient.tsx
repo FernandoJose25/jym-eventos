@@ -369,9 +369,9 @@ interface GItem {
   visible: boolean; order: number;
   focalX?: number; focalY?: number;
   tipo?: string;
-  // Álbumes: opcionales y retrocompatibles — un item sin albumId se
-  // sigue mostrando suelto exactamente como hoy.
-  albumId?: string; albumTitle?: string; albumSubtitle?: string;
+  // `albumId` referencia la colección `albums` (id real del documento, no
+  // un slug de texto) — se usa para armar cada álbum en /albumes/[slug].
+  albumId?: string;
 }
 
 const CAT_ICONS: Record<string, string> = {
@@ -500,28 +500,6 @@ export default function GaleriaClient() {
     () => smartSearch(subFiltered, searchQ),
     [subFiltered, searchQ]
   );
-
-  // Agrupar por álbum SOLO para el grid — el lightbox sigue navegando
-  // sobre `visibles` completo (flat), así que las flechas ← → no cambian
-  // de comportamiento. Items sin albumId se muestran sueltos, igual que hoy.
-  const gridItems = useMemo(() => {
-    const seenAlbums = new Map<string, number>(); // albumId -> cantidad
-    visibles.forEach(item => {
-      if (item.albumId) seenAlbums.set(item.albumId, (seenAlbums.get(item.albumId) ?? 0) + 1);
-    });
-    const renderedAlbums = new Set<string>();
-    const out: { item: GItem; index: number; isAlbumCover: boolean; albumCount: number }[] = [];
-    visibles.forEach((item, index) => {
-      if (item.albumId) {
-        if (renderedAlbums.has(item.albumId)) return; // ya se mostró la portada de este álbum
-        renderedAlbums.add(item.albumId);
-        out.push({ item, index, isAlbumCover: true, albumCount: seenAlbums.get(item.albumId) ?? 1 });
-      } else {
-        out.push({ item, index, isAlbumCover: false, albumCount: 1 });
-      }
-    });
-    return out;
-  }, [visibles]);
 
   // Auto-open lightbox when URL contains ?foto=ID (deep link from share)
   useEffect(() => {
@@ -763,12 +741,12 @@ export default function GaleriaClient() {
 
               {/* Masonry */}
               <div style={{ columns: '3 220px', gap: '1.25rem' }}>
-                {gridItems.slice(0, visibleLimit).map(({ item, index, isAlbumCover, albumCount }, i) => {
+                {visibles.slice(0, visibleLimit).map((item, i) => {
                   const fp = `${(item.focalX ?? 0.5) * 100}% ${(item.focalY ?? 0.5) * 100}%`;
                   const vid = isVideo(item);
                   return (
                     <div key={item.id}
-                      onClick={() => setLightbox(index)}
+                      onClick={() => setLightbox(i)}
                       style={{
                         breakInside: 'avoid', marginBottom: '1.25rem', borderRadius: 16,
                         overflow: 'hidden', cursor: 'pointer', position: 'relative',
@@ -813,35 +791,6 @@ export default function GaleriaClient() {
                         </div>
                       )}
 
-                      {/* Álbum badge — contador de fotos/videos del evento */}
-                      {isAlbumCover && albumCount > 1 && (
-                        <div style={{
-                          position: 'absolute', top: 10, right: 10, background: 'rgba(212,160,23,0.92)',
-                          color: '#0a1628', fontSize: '0.7rem', fontWeight: 700,
-                          padding: '3px 9px', borderRadius: 999, pointerEvents: 'none'
-                        }}>
-                          🖼️ {albumCount}
-                        </div>
-                      )}
-                      {isAlbumCover && item.albumTitle && (
-                        <div style={{ position: 'absolute', bottom: 12, left: 14, right: 14, zIndex: 2 }}>
-                          <p style={{
-                            color: '#fff', fontWeight: 700, fontSize: '0.85rem', margin: 0,
-                            textShadow: '0 2px 8px rgba(0,0,0,0.8)'
-                          }}>
-                            {item.albumTitle}
-                          </p>
-                          {item.albumSubtitle && (
-                            <p style={{
-                              color: 'rgba(255,255,255,0.8)', fontSize: '0.72rem', margin: 0,
-                              textShadow: '0 2px 8px rgba(0,0,0,0.8)'
-                            }}>
-                              {item.albumSubtitle}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
                       {/* Overlay */}
                       <div className="gal-overlay"
                         style={{
@@ -876,7 +825,7 @@ export default function GaleriaClient() {
               </div>
 
               {/* Cargar más */}
-              {visibleLimit < gridItems.length && (
+              {visibleLimit < visibles.length && (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, marginTop: '2.5rem' }}>
                   {loadingMore ? (
                     <CapybaraLoader inline label="Cargando más fotos..." />
@@ -897,7 +846,7 @@ export default function GaleriaClient() {
                       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
                       onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
                     >
-                      Cargar más fotos ({gridItems.length - visibleLimit} restantes)
+                      Cargar más fotos ({visibles.length - visibleLimit} restantes)
                     </button>
                   )}
                 </div>
