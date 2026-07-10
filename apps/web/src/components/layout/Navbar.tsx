@@ -37,13 +37,13 @@ export default function Navbar() {
     try {
       const cached = localStorage.getItem('navConfigCache');
       if (cached) setNavConfig(JSON.parse(cached));
-    } catch {}
+    } catch { }
 
     getDoc(doc(db, 'site_config', 'navbar')).then(snap => {
       if (snap.exists()) {
         const data = snap.data() as NavConfig;
         setNavConfig(data);
-        try { localStorage.setItem('navConfigCache', JSON.stringify(data)); } catch {}
+        try { localStorage.setItem('navConfigCache', JSON.stringify(data)); } catch { }
       }
     }).catch(err => console.error('Error cargando config del navbar:', err));
   }, []);
@@ -72,7 +72,6 @@ export default function Navbar() {
     { href: '/', label: 'Inicio' },
     { href: '/sobre-nosotros', label: 'Nosotros' },
     { href: '/galeria', label: 'Galería' },
-    { href: '/albumes', label: 'Álbumes' },
     { href: '/contacto', label: 'Contacto' },
   ];
 
