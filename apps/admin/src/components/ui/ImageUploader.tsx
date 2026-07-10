@@ -10,17 +10,17 @@ interface FP { x: number; y: number }
 interface CropBox { x: number; y: number; w: number; h: number }
 
 interface Props {
-  value?:        string;
-  focal?:        FP;
-  folder?:       string;
-  label?:        string;
-  onComplete:    (url: string, fp: FP, type?: string) => void;
-  onSound?:      (enabled: boolean) => void;
+  value?: string;
+  focal?: FP;
+  folder?: string;
+  label?: string;
+  onComplete: (url: string, fp: FP, type?: string) => void;
+  onSound?: (enabled: boolean) => void;
   soundEnabled?: boolean;
-  className?:    string;
-  acceptVideo?:  boolean;
+  className?: string;
+  acceptVideo?: boolean;
   /** Relación de aspecto fija para el crop. undefined = libre */
-  cropAspect?:   number;
+  cropAspect?: number;
   /**
    * Relación de aspecto (ancho/alto) del bloque en la web pública donde
    * se mostrará esta imagen. Controla la forma del previsualizador de
@@ -29,7 +29,7 @@ interface Props {
    */
   previewAspect?: number;
   /** Etiqueta corta que describe el bloque destino, p.ej. "Banner hero" */
-  previewLabel?:  string;
+  previewLabel?: string;
 }
 
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
@@ -42,10 +42,10 @@ async function applyCropToFile(
   displayH: number,
   fileName: string,
 ): Promise<File> {
-  const scaleX = img.naturalWidth  / displayW;
+  const scaleX = img.naturalWidth / displayW;
   const scaleY = img.naturalHeight / displayH;
   const canvas = document.createElement('canvas');
-  canvas.width  = Math.round(box.w * scaleX);
+  canvas.width = Math.round(box.w * scaleX);
   canvas.height = Math.round(box.h * scaleY);
   const ctx = canvas.getContext('2d')!;
   ctx.drawImage(
@@ -61,12 +61,12 @@ async function applyCropToFile(
       canvas.toBlob(b2 => b2 ? res(b2) : rej(new Error('toBlob failed')), 'image/png');
     }, 'image/webp', 0.92);
   });
-  const ext  = blob.type === 'image/webp' ? '.webp' : '.png';
+  const ext = blob.type === 'image/webp' ? '.webp' : '.png';
   return new File([blob], fileName.replace(/\.\w+$/, ext), { type: blob.type });
 }
 
 /* ─── crop modal ─── */
-type Handle = 'nw'|'n'|'ne'|'e'|'se'|'s'|'sw'|'w'|'move'|null;
+type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'move' | null;
 
 /**
  * Bugs corregidos vs versión anterior:
@@ -96,30 +96,32 @@ function CropModal({
   onApply,
   onSkip,
 }: {
-  src:     string;
+  src: string;
   aspect?: number;
   onApply: (box: CropBox, displayW: number, displayH: number, img: HTMLImageElement) => Promise<void>;
-  onSkip:  () => void;
+  onSkip: () => void;
 }) {
-  const imgRef      = useRef<HTMLImageElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [box,      setBox]      = useState<CropBox>({ x:0, y:0, w:0, h:0 });
-  const [imgSize,  setImgSize]  = useState({ w:0, h:0 });
+  const [box, setBox] = useState<CropBox>({ x: 0, y: 0, w: 0, h: 0 });
+  const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
   const [applying, setApplying] = useState(false);
   const [applyErr, setApplyErr] = useState('');
+  const [corsError, setCorsError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   /* ── drag state ──────────────────────────────────────────────────────────
      Todo se guarda en un ref para que los handlers de window no tengan
      closures rancias. imgW/imgH se leen del DOM en el momento del pointerdown.
   ───────────────────────────────────────────────────────────────────────── */
   const drag = useRef<{
-    handle:  Handle;
-    startX:  number;
-    startY:  number;
+    handle: Handle;
+    startX: number;
+    startY: number;
     origBox: CropBox;
-    imgW:    number;
-    imgH:    number;
+    imgW: number;
+    imgH: number;
   } | null>(null);
 
   /* Impide que onClick dispare la lógica de reposicionado después de un drag */
@@ -128,20 +130,87 @@ function CropModal({
   /* ── init box ────────────────────────────────────────────────────────── */
   const initBox = useCallback((w: number, h: number) => {
     if (aspect) {
-      const bw  = w * 0.9;
-      const bh  = Math.min(bw / aspect, h * 0.9);
+      const bw = w * 0.9;
+      const bh = Math.min(bw / aspect, h * 0.9);
       const bw2 = bh * aspect;
-      setBox({ x:(w - bw2) / 2, y:(h - bh) / 2, w:bw2, h:bh });
+      setBox({ x: (w - bw2) / 2, y: (h - bh) / 2, w: bw2, h: bh });
     } else {
       const pad = Math.min(w, h) * 0.05;
-      setBox({ x:pad, y:pad, w:w - pad * 2, h:h - pad * 2 });
+      setBox({ x: pad, y: pad, w: w - pad * 2, h: h - pad * 2 });
     }
   }, [aspect]);
 
   const onImgLoad = () => {
     const img = imgRef.current!;
-    setImgSize({ w:img.offsetWidth, h:img.offsetHeight });
+    setImgSize({ w: img.offsetWidth, h: img.offsetHeight });
     initBox(img.offsetWidth, img.offsetHeight);
+    setImgLoaded(true);
+    setCorsError(false);
+  };
+
+  /* ── ajustes rápidos: centrar / imagen completa / reset ─────────────── */
+  const centerBox = useCallback(() => {
+    setBox(prev => ({
+      ...prev,
+      x: (imgSize.w - prev.w) / 2,
+      y: (imgSize.h - prev.h) / 2,
+    }));
+  }, [imgSize]);
+
+  const fitFull = useCallback(() => {
+    if (!imgSize.w || !imgSize.h) return;
+    if (aspect) {
+      const bw = imgSize.w;
+      const bh = Math.min(bw / aspect, imgSize.h);
+      const bw2 = bh * aspect;
+      setBox({ x: (imgSize.w - bw2) / 2, y: (imgSize.h - bh) / 2, w: bw2, h: bh });
+    } else {
+      setBox({ x: 0, y: 0, w: imgSize.w, h: imgSize.h });
+    }
+  }, [imgSize, aspect]);
+
+  const resetBox = useCallback(() => {
+    initBox(imgSize.w, imgSize.h);
+  }, [imgSize, initBox]);
+
+  /* ── edición numérica precisa (X / Y / Ancho / Alto) ─────────────────
+     Permite teclear valores exactos en px en vez de depender solo del
+     arrastre con mouse/touch — más preciso para recortes puntuales. */
+  const setBoxField = (field: keyof CropBox, raw: string) => {
+    const val = Number(raw);
+    if (!Number.isFinite(val)) return;
+    setBox(prev => {
+      let { x, y, w, h } = prev;
+      const MIN = 20;
+      if (field === 'x') x = Math.max(0, Math.min(val, imgSize.w - w));
+      if (field === 'y') y = Math.max(0, Math.min(val, imgSize.h - h));
+      if (field === 'w') {
+        w = Math.max(MIN, Math.min(val, imgSize.w - x));
+        if (aspect) h = Math.max(MIN, Math.min(w / aspect, imgSize.h - y));
+      }
+      if (field === 'h') {
+        h = Math.max(MIN, Math.min(val, imgSize.h - y));
+        if (aspect) w = Math.max(MIN, Math.min(h * aspect, imgSize.w - x));
+      }
+      return { x, y, w, h };
+    });
+  };
+
+  /* ── nudge por teclado — flechas mueven 1px, Shift+flecha 10px ──────── */
+  const onBoxKeyDown = (e: React.KeyboardEvent) => {
+    const step = e.shiftKey ? 10 : 1;
+    let dx = 0, dy = 0;
+    if (e.key === 'ArrowLeft') dx = -step;
+    else if (e.key === 'ArrowRight') dx = step;
+    else if (e.key === 'ArrowUp') dy = -step;
+    else if (e.key === 'ArrowDown') dy = step;
+    else return;
+    e.preventDefault();
+    setBox(prev => ({
+      ...prev,
+      x: Math.max(0, Math.min(prev.x + dx, imgSize.w - prev.w)),
+      y: Math.max(0, Math.min(prev.y + dy, imgSize.h - prev.h)),
+    }));
   };
 
   /* ── listeners globales en window ───────────────────────────────────────
@@ -149,7 +218,7 @@ function CropModal({
      sin closures sobre state.
   ───────────────────────────────────────────────────────────────────────── */
   useEffect(() => {
-    const MIN   = 20;
+    const MIN = 20;
     const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
     const onMove = (e: PointerEvent) => {
@@ -167,8 +236,8 @@ function CropModal({
         y = clamp(y + dy, 0, imgH - h);
       } else {
         /* ── resize ──────────────────────────────────────────────────── */
-        if (handle?.includes('e')) w = clamp(w + dx,  MIN, imgW - x);
-        if (handle?.includes('s')) h = clamp(h + dy,  MIN, imgH - y);
+        if (handle?.includes('e')) w = clamp(w + dx, MIN, imgW - x);
+        if (handle?.includes('s')) h = clamp(h + dy, MIN, imgH - y);
         if (handle?.includes('w')) {
           const nw = clamp(w - dx, MIN, x + w);
           x = x + w - nw; w = nw;
@@ -186,8 +255,8 @@ function CropModal({
             if (newH >= MIN && y + newH <= imgH) {
               h = newH;
             } else {
-              h  = clamp(imgH - y, MIN, imgH);
-              w  = clamp(h * aspect, MIN, imgW - x);
+              h = clamp(imgH - y, MIN, imgH);
+              w = clamp(h * aspect, MIN, imgW - x);
             }
           } else {
             /* ancla: y + h; ajusta w */
@@ -195,8 +264,8 @@ function CropModal({
             if (newW >= MIN && x + newW <= imgW) {
               w = newW;
             } else {
-              w  = clamp(imgW - x, MIN, imgW);
-              h  = clamp(w / aspect, MIN, imgH - y);
+              w = clamp(imgW - x, MIN, imgW);
+              h = clamp(w / aspect, MIN, imgH - y);
             }
           }
         }
@@ -207,11 +276,11 @@ function CropModal({
 
     const onUp = () => { drag.current = null; };
 
-    window.addEventListener('pointermove', onMove, { passive:true });
-    window.addEventListener('pointerup',   onUp);
+    window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('pointerup', onUp);
     return () => {
       window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup',   onUp);
+      window.removeEventListener('pointerup', onUp);
     };
   }, []); /* sin dependencias — todo se lee desde refs */
 
@@ -223,18 +292,18 @@ function CropModal({
     didDrag.current = false;
     drag.current = {
       handle,
-      startX:  e.clientX,
-      startY:  e.clientY,
+      startX: e.clientX,
+      startY: e.clientY,
       origBox: { ...box },                      // snapshot del estado actual
-      imgW:    imgRef.current.offsetWidth,      // tamaño real en el DOM ahora
-      imgH:    imgRef.current.offsetHeight,
+      imgW: imgRef.current.offsetWidth,      // tamaño real en el DOM ahora
+      imgH: imgRef.current.offsetHeight,
     };
   };
 
   /* ── click en el overlay (solo si NO hubo drag) ─────────────────────── */
   const onOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (didDrag.current) { didDrag.current = false; return; }
-    const r  = containerRef.current!.getBoundingClientRect();
+    const r = containerRef.current!.getBoundingClientRect();
     const mx = e.clientX - r.left;
     const my = e.clientY - r.top;
     setBox(prev => ({
@@ -252,108 +321,157 @@ function CropModal({
     try {
       await onApply(box, imgSize.w, imgSize.h, imgRef.current);
     } catch (err: any) {
-      setApplyErr(err?.message || 'Error al recortar. Intenta de nuevo.');
+      const msg = String(err?.message || '');
+      const isTainted = err?.name === 'SecurityError' || /tainted/i.test(msg);
+      setApplyErr(
+        isTainted
+          ? 'El servidor de la imagen no permite exportarla desde este dominio (CORS). Sube la foto de nuevo desde tu equipo, o usa "Usar sin recortar".'
+          : (msg || 'Error al recortar. Intenta de nuevo.'),
+      );
       setApplying(false);
     }
   };
 
-  const handles: { id:Handle; cursor:string; style:React.CSSProperties }[] = [
-    { id:'nw', cursor:'nw-resize', style:{ top:-7,  left:-7  } },
-    { id:'n',  cursor:'n-resize',  style:{ top:-7,  left:'calc(50% - 7px)' } },
-    { id:'ne', cursor:'ne-resize', style:{ top:-7,  right:-7 } },
-    { id:'e',  cursor:'e-resize',  style:{ top:'calc(50% - 7px)', right:-7 } },
-    { id:'se', cursor:'se-resize', style:{ bottom:-7, right:-7 } },
-    { id:'s',  cursor:'s-resize',  style:{ bottom:-7, left:'calc(50% - 7px)' } },
-    { id:'sw', cursor:'sw-resize', style:{ bottom:-7, left:-7  } },
-    { id:'w',  cursor:'w-resize',  style:{ top:'calc(50% - 7px)', left:-7 } },
+  const handles: { id: Handle; cursor: string; style: React.CSSProperties }[] = [
+    { id: 'nw', cursor: 'nw-resize', style: { top: -7, left: -7 } },
+    { id: 'n', cursor: 'n-resize', style: { top: -7, left: 'calc(50% - 7px)' } },
+    { id: 'ne', cursor: 'ne-resize', style: { top: -7, right: -7 } },
+    { id: 'e', cursor: 'e-resize', style: { top: 'calc(50% - 7px)', right: -7 } },
+    { id: 'se', cursor: 'se-resize', style: { bottom: -7, right: -7 } },
+    { id: 's', cursor: 's-resize', style: { bottom: -7, left: 'calc(50% - 7px)' } },
+    { id: 'sw', cursor: 'sw-resize', style: { bottom: -7, left: -7 } },
+    { id: 'w', cursor: 'w-resize', style: { top: 'calc(50% - 7px)', left: -7 } },
   ];
 
   /* ── render ─────────────────────────────────────────────────────────── */
   return (
     <div style={{
-      position:'fixed', inset:0, zIndex:9999,
-      background:'rgba(0,0,0,0.85)', display:'flex',
-      alignItems:'center', justifyContent:'center', padding:'1rem',
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.85)', display: 'flex',
+      alignItems: 'center', justifyContent: 'center', padding: '1rem',
     }}>
       <div style={{
-        background:'#fff', borderRadius:20, overflow:'hidden',
-        maxWidth:720, width:'100%', boxShadow:'0 32px 64px rgba(0,0,0,0.55)',
-        display:'flex', flexDirection:'column', maxHeight:'92vh',
+        background: '#fff', borderRadius: 20, overflow: 'hidden',
+        maxWidth: 720, width: '100%', boxShadow: '0 32px 64px rgba(0,0,0,0.55)',
+        display: 'flex', flexDirection: 'column', maxHeight: '92vh',
       }}>
         {/* header */}
-        <div style={{ padding:'1rem 1.5rem', borderBottom:'1px solid #e2e8f0',
-                      display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+        <div style={{
+          padding: '1rem 1.5rem', borderBottom: '1px solid #e2e8f0',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0
+        }}>
           <div>
-            <p style={{ fontWeight:700, fontSize:'1rem', color:'#0f172a', margin:0 }}>
+            <p style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a', margin: 0 }}>
               ✂️ Recortar / ajustar imagen
             </p>
-            <p style={{ fontSize:'0.72rem', color:'#94a3b8', margin:0, marginTop:2 }}>
-              Arrastra los bordes o esquinas · Mueve el área · Haz clic fuera para centrar
+            <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0, marginTop: 2 }}>
+              Arrastra bordes o esquinas · Flechas del teclado = mover 1px (Shift = 10px) · Clic fuera = centrar
             </p>
           </div>
           <button onClick={onSkip} type="button" disabled={applying} style={{
-            background:'none', border:'none', cursor:'pointer',
-            fontSize:'1.3rem', color:'#94a3b8', lineHeight:1, padding:4,
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: '1.3rem', color: '#94a3b8', lineHeight: 1, padding: 4,
           }}>✕</button>
         </div>
 
+        {/* barra de ajustes rápidos */}
+        {imgLoaded && (
+          <div style={{
+            padding: '0.5rem 1.5rem', display: 'flex', gap: 8,
+            flexWrap: 'wrap', borderBottom: '1px solid #e2e8f0', flexShrink: 0
+          }}>
+            {[
+              { label: '⤢ Imagen completa', fn: fitFull },
+              { label: '◎ Centrar', fn: centerBox },
+              { label: '↺ Restablecer', fn: resetBox },
+            ].map(({ label, fn }) => (
+              <button key={label} type="button" onClick={fn} disabled={applying} style={{
+                padding: '0.3rem 0.7rem', borderRadius: 8, border: '1.5px solid #e2e8f0',
+                background: '#f8fafc', cursor: applying ? 'not-allowed' : 'pointer',
+                fontSize: '0.72rem', color: '#475569', fontFamily: 'inherit', fontWeight: 600,
+              }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* canvas */}
-        <div style={{ flex:1, overflowY:'auto', padding:'1rem',
-                      background:'#0d1117', display:'flex',
-                      alignItems:'center', justifyContent:'center',
-                      /* evita scroll accidental durante el drag */
-                      touchAction:'none' }}>
+        <div style={{
+          flex: 1, overflowY: 'auto', padding: '1rem',
+          background: '#0d1117', display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          /* evita scroll accidental durante el drag */
+          touchAction: 'none'
+        }}>
           <div
             ref={containerRef}
             onClick={onOverlayClick}
-            style={{ position:'relative', display:'inline-block',
-                     userSelect:'none', lineHeight:0, cursor:'crosshair' }}
+            style={{
+              position: 'relative', display: 'inline-block',
+              userSelect: 'none', lineHeight: 0, cursor: 'crosshair'
+            }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               ref={imgRef}
               src={src}
               alt="crop"
+              crossOrigin="anonymous"
               onLoad={onImgLoad}
+              onError={() => setCorsError(true)}
               draggable={false}
-              style={{ maxWidth:'100%', maxHeight:'58vh', display:'block',
-                       opacity:.45, pointerEvents:'none' }}
+              style={{
+                maxWidth: '100%', maxHeight: '58vh', display: 'block',
+                opacity: .45, pointerEvents: 'none'
+              }}
             />
 
             {imgSize.w > 0 && (
               <>
                 {/* sombra alrededor del recorte */}
                 {([
-                  { top:0,          left:0,       width:'100%', height:box.y           },
-                  { top:box.y+box.h,left:0,       width:'100%', bottom:0               },
-                  { top:box.y,      left:0,       width:box.x,  height:box.h           },
-                  { top:box.y,      left:box.x+box.w, right:0,  height:box.h           },
+                  { top: 0, left: 0, width: '100%', height: box.y },
+                  { top: box.y + box.h, left: 0, width: '100%', bottom: 0 },
+                  { top: box.y, left: 0, width: box.x, height: box.h },
+                  { top: box.y, left: box.x + box.w, right: 0, height: box.h },
                 ] as React.CSSProperties[]).map((s, i) => (
-                  <div key={i} style={{ position:'absolute', background:'rgba(0,0,0,0.6)',
-                                        pointerEvents:'none', ...s }} />
+                  <div key={i} style={{
+                    position: 'absolute', background: 'rgba(0,0,0,0.6)',
+                    pointerEvents: 'none', ...s
+                  }} />
                 ))}
 
                 {/* área de recorte */}
                 <div
                   onPointerDown={e => onPointerDown(e, 'move')}
+                  onKeyDown={onBoxKeyDown}
+                  tabIndex={0}
+                  role="slider"
+                  aria-label="Área de recorte — usa las flechas para mover con precisión"
+                  aria-valuetext={`${Math.round(box.w)}×${Math.round(box.h)}px en ${Math.round(box.x)},${Math.round(box.y)}`}
                   style={{
-                    position:'absolute',
-                    left:box.x, top:box.y, width:box.w, height:box.h,
-                    border:'1.5px solid rgba(255,255,255,0.9)',
-                    boxShadow:'0 0 0 1px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.15)',
-                    cursor:'move', boxSizing:'border-box',
+                    position: 'absolute',
+                    left: box.x, top: box.y, width: box.w, height: box.h,
+                    border: '1.5px solid rgba(255,255,255,0.9)',
+                    boxShadow: '0 0 0 1px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.15)',
+                    cursor: 'move', boxSizing: 'border-box', outline: 'none',
                   }}
                 >
                   {/* rejilla de tercios */}
-                  {[1,2].map(n => (
-                    <div key={`v${n}`} style={{ position:'absolute', top:0, bottom:0, width:1,
-                                                left:`${n*33.33}%`, background:'rgba(255,255,255,0.25)',
-                                                pointerEvents:'none' }}/>
+                  {[1, 2].map(n => (
+                    <div key={`v${n}`} style={{
+                      position: 'absolute', top: 0, bottom: 0, width: 1,
+                      left: `${n * 33.33}%`, background: 'rgba(255,255,255,0.25)',
+                      pointerEvents: 'none'
+                    }} />
                   ))}
-                  {[1,2].map(n => (
-                    <div key={`h${n}`} style={{ position:'absolute', left:0, right:0, height:1,
-                                                top:`${n*33.33}%`, background:'rgba(255,255,255,0.25)',
-                                                pointerEvents:'none' }}/>
+                  {[1, 2].map(n => (
+                    <div key={`h${n}`} style={{
+                      position: 'absolute', left: 0, right: 0, height: 1,
+                      top: `${n * 33.33}%`, background: 'rgba(255,255,255,0.25)',
+                      pointerEvents: 'none'
+                    }} />
                   ))}
 
                   {/* handles de redimensión — más grandes y fáciles de agarrar */}
@@ -362,12 +480,12 @@ function CropModal({
                       key={id}
                       onPointerDown={e => onPointerDown(e, id)}
                       style={{
-                        position:'absolute', width:14, height:14,
-                        background:'#fff',
-                        border:'2px solid #1e3a5f',
-                        borderRadius:3, cursor,
-                        boxShadow:'0 1px 5px rgba(0,0,0,0.55)',
-                        zIndex:2,
+                        position: 'absolute', width: 14, height: 14,
+                        background: '#fff',
+                        border: '2px solid #1e3a5f',
+                        borderRadius: 3, cursor,
+                        boxShadow: '0 1px 5px rgba(0,0,0,0.55)',
+                        zIndex: 2,
                         ...style,
                       }}
                     />
@@ -376,14 +494,14 @@ function CropModal({
 
                 {/* badge de tamaño */}
                 <div style={{
-                  position:'absolute',
+                  position: 'absolute',
                   left: box.x + box.w / 2,
-                  top:  Math.max(box.y + box.h + 6, box.y + box.h + 4),
-                  transform:'translateX(-50%)',
-                  background:'rgba(0,0,0,0.75)', color:'#fff',
-                  fontSize:'0.63rem', padding:'2px 9px', borderRadius:6,
-                  pointerEvents:'none', whiteSpace:'nowrap',
-                  fontVariantNumeric:'tabular-nums',
+                  top: Math.max(box.y + box.h + 6, box.y + box.h + 4),
+                  transform: 'translateX(-50%)',
+                  background: 'rgba(0,0,0,0.75)', color: '#fff',
+                  fontSize: '0.63rem', padding: '2px 9px', borderRadius: 6,
+                  pointerEvents: 'none', whiteSpace: 'nowrap',
+                  fontVariantNumeric: 'tabular-nums',
                 }}>
                   {Math.round(box.w)} × {Math.round(box.h)} px
                 </div>
@@ -392,59 +510,94 @@ function CropModal({
           </div>
         </div>
 
-        {/* info row */}
-        <div style={{ padding:'0.45rem 1.5rem', background:'#f8fafc',
-                      borderTop:'1px solid #e2e8f0', display:'flex',
-                      gap:20, flexWrap:'wrap', fontSize:'0.7rem',
-                      color:'#64748b', flexShrink:0 }}>
-          <span>X: <strong>{Math.round(box.x)}</strong></span>
-          <span>Y: <strong>{Math.round(box.y)}</strong></span>
-          <span>Ancho: <strong>{Math.round(box.w)}</strong></span>
-          <span>Alto: <strong>{Math.round(box.h)}</strong></span>
+        {/* info row — editable para precisión exacta en px */}
+        <div style={{
+          padding: '0.45rem 1.5rem', background: '#f8fafc',
+          borderTop: '1px solid #e2e8f0', display: 'flex',
+          gap: 14, flexWrap: 'wrap', alignItems: 'center',
+          fontSize: '0.7rem', color: '#64748b', flexShrink: 0
+        }}>
+          {([
+            ['x', 'X'], ['y', 'Y'], ['w', 'Ancho'], ['h', 'Alto'],
+          ] as [keyof CropBox, string][]).map(([field, lbl]) => (
+            <label key={field} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              {lbl}:
+              <input
+                type="number"
+                value={Math.round(box[field])}
+                onChange={e => setBoxField(field, e.target.value)}
+                disabled={applying}
+                style={{
+                  width: 58, padding: '2px 6px', borderRadius: 6,
+                  border: '1.5px solid #e2e8f0', fontSize: '0.72rem',
+                  fontFamily: 'inherit', color: '#0f172a',
+                  fontVariantNumeric: 'tabular-nums',
+                }}
+              />
+              px
+            </label>
+          ))}
           {aspect && (
-            <span style={{ color:'#94a3b8' }}>
+            <span style={{ color: '#94a3b8' }}>
               Relación fija: <strong>{aspect.toFixed(2)}</strong>
             </span>
           )}
         </div>
 
+        {corsError && (
+          <div style={{
+            margin: '0 1.5rem 0.75rem', padding: '0.6rem 0.85rem',
+            background: '#fff1f2', border: '1px solid #fecaca',
+            borderRadius: 8, fontSize: '0.75rem', color: '#9f1239', flexShrink: 0
+          }}>
+            ❌ No se pudo cargar esta imagen para recortarla — el servidor de origen
+            no permite acceso desde este dominio (CORS). Prueba subir la foto de
+            nuevo desde tu equipo en vez de recortar la ya publicada, o usa
+            &quot;Usar sin recortar&quot;.
+          </div>
+        )}
+
         {/* footer */}
-        <div style={{ padding:'1rem 1.5rem', borderTop:'1px solid #e2e8f0',
-                      display:'flex', gap:10, alignItems:'center',
-                      justifyContent:'flex-end', flexShrink:0, flexWrap:'wrap' }}>
+        <div style={{
+          padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0',
+          display: 'flex', gap: 10, alignItems: 'center',
+          justifyContent: 'flex-end', flexShrink: 0, flexWrap: 'wrap'
+        }}>
           {applyErr && (
-            <p style={{ flex:1, margin:0, fontSize:'0.78rem', color:'#ef4444',
-                        background:'#fff1f2', border:'1px solid #fecaca',
-                        borderRadius:8, padding:'4px 10px' }}>
+            <p style={{
+              flex: 1, margin: 0, fontSize: '0.78rem', color: '#ef4444',
+              background: '#fff1f2', border: '1px solid #fecaca',
+              borderRadius: 8, padding: '4px 10px'
+            }}>
               ❌ {applyErr}
             </p>
           )}
           <button onClick={onSkip} type="button" disabled={applying} style={{
-            padding:'0.6rem 1.2rem', borderRadius:10, border:'1.5px solid #e2e8f0',
-            background:'#fff', cursor:applying ? 'not-allowed' : 'pointer',
-            fontSize:'0.85rem', color:'#475569',
-            fontFamily:'inherit', fontWeight:600, opacity:applying ? 0.5 : 1,
+            padding: '0.6rem 1.2rem', borderRadius: 10, border: '1.5px solid #e2e8f0',
+            background: '#fff', cursor: applying ? 'not-allowed' : 'pointer',
+            fontSize: '0.85rem', color: '#475569',
+            fontFamily: 'inherit', fontWeight: 600, opacity: applying ? 0.5 : 1,
           }}>
             Usar sin recortar
           </button>
           <button onClick={handleApply} type="button" disabled={applying} style={{
-            padding:'0.6rem 1.4rem', borderRadius:10, border:'none',
-            background:applying
+            padding: '0.6rem 1.4rem', borderRadius: 10, border: 'none',
+            background: applying
               ? 'linear-gradient(135deg,#4b6a8f,#6b93d6)'
               : 'linear-gradient(135deg,#1e3a5f,#2563eb)',
-            color:'#fff', cursor:applying ? 'not-allowed' : 'pointer',
-            fontSize:'0.85rem', fontFamily:'inherit', fontWeight:700,
-            display:'flex', alignItems:'center', gap:8,
+            color: '#fff', cursor: applying ? 'not-allowed' : 'pointer',
+            fontSize: '0.85rem', fontFamily: 'inherit', fontWeight: 700,
+            display: 'flex', alignItems: 'center', gap: 8,
           }}>
             {applying ? (
               <>
                 <span style={{
-                  width:14, height:14, borderRadius:'50%',
-                  border:'2px solid rgba(255,255,255,0.3)',
-                  borderTopColor:'#fff',
-                  animation:'spin .7s linear infinite',
-                  display:'inline-block', flexShrink:0,
-                }}/>
+                  width: 14, height: 14, borderRadius: '50%',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  borderTopColor: '#fff',
+                  animation: 'spin .7s linear infinite',
+                  display: 'inline-block', flexShrink: 0,
+                }} />
                 Aplicando…
               </>
             ) : '✓ Aplicar recorte'}
@@ -461,20 +614,20 @@ const VIDEO_EXTS = /\.(mp4|webm|mov|avi|mkv)$/i;
 
 /* ══════════════════════════════════════════ main component ══ */
 export default function ImageUploader({
-  value, focal = { x:.5, y:.5 }, folder = 'jym',
+  value, focal = { x: .5, y: .5 }, folder = 'jym',
   label = 'Imagen', onComplete, onSound, soundEnabled = false,
   className, acceptVideo = true, cropAspect,
   previewAspect = 16 / 9,
   previewLabel,
 }: Props) {
-  const [preview,     setPreview]     = useState(value || '');
-  const [previewType, setPreviewType] = useState<'image'|'video'>(
+  const [preview, setPreview] = useState(value || '');
+  const [previewType, setPreviewType] = useState<'image' | 'video'>(
     value?.match(/\.(mp4|webm|mov|avi)$/i) ? 'video' : 'image',
   );
-  const [fp,        setFp]        = useState<FP>(focal);
-  const [progress,  setProgress]  = useState(0);
+  const [fp, setFp] = useState<FP>(focal);
+  const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
-  const [error,     setError]     = useState('');
+  const [error, setError] = useState('');
 
   interface QualityInfo {
     origSize: number;   // bytes
@@ -485,7 +638,7 @@ export default function ImageUploader({
   }
   const [quality, setQuality] = useState<QualityInfo | null>(null);
 
-  const [cropSrc,  setCropSrc]  = useState('');
+  const [cropSrc, setCropSrc] = useState('');
   const [cropFile, setCropFile] = useState<File | null>(null);
 
   /* ── upload ── */
@@ -608,14 +761,14 @@ export default function ImageUploader({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: acceptVideo
       ? {
-          'image/*':               ['.jpg','.jpeg','.png','.webp','.heic','.heif'],
-          'video/*':               ['.mp4','.webm','.mov'],
-          'application/octet-stream': ['.jpg','.jpeg','.png','.webp','.heic','.heif','.mp4','.webm','.mov'],
-        }
+        'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'],
+        'video/*': ['.mp4', '.webm', '.mov'],
+        'application/octet-stream': ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.mp4', '.webm', '.mov'],
+      }
       : {
-          'image/*':               ['.jpg','.jpeg','.png','.webp','.heic','.heif'],
-          'application/octet-stream': ['.jpg','.jpeg','.png','.webp','.heic','.heif'],
-        },
+        'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'],
+        'application/octet-stream': ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'],
+      },
     maxSize: MAX_VIDEO_BYTES,
     multiple: false,
     validator: (file) => {
@@ -654,8 +807,8 @@ export default function ImageUploader({
   const handleFocalClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     const nfp: FP = {
-      x: parseFloat(((e.clientX - r.left) / r.width ).toFixed(3)),
-      y: parseFloat(((e.clientY - r.top)  / r.height).toFixed(3)),
+      x: parseFloat(((e.clientX - r.left) / r.width).toFixed(3)),
+      y: parseFloat(((e.clientY - r.top) / r.height).toFixed(3)),
     };
     setFp(nfp);
     if (preview) onComplete(preview, nfp, previewType);
@@ -686,7 +839,7 @@ export default function ImageUploader({
     upload(cropFile);
   };
 
-  const op        = `${fp.x * 100}% ${fp.y * 100}%`;
+  const op = `${fp.x * 100}% ${fp.y * 100}%`;
   const sizeLabel = acceptVideo
     ? 'JPEG · PNG · WebP · HEIC · MP4 · MOV — Máx 100 MB · Incluye fotos enviadas como documento en WhatsApp'
     : 'JPEG · PNG · WebP · HEIC — incluye fotos enviadas como documento en WhatsApp';
@@ -696,8 +849,10 @@ export default function ImageUploader({
 
   return (
     <div className={className}>
-      <p style={{ fontSize:'0.75rem', fontWeight:700, color:'#64748b',
-                  textTransform:'uppercase', letterSpacing:'.08em', marginBottom:8 }}>
+      <p style={{
+        fontSize: '0.75rem', fontWeight: 700, color: '#64748b',
+        textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8
+      }}>
         {label}
       </p>
 
@@ -714,34 +869,36 @@ export default function ImageUploader({
       {/* DROP ZONE */}
       {!preview ? (
         <div {...getRootProps()} style={{
-          border:`2px dashed ${isDragActive ? '#2563eb' : '#cbd5e1'}`,
-          borderRadius:16, padding:'2rem', textAlign:'center', cursor:'pointer',
-          background:isDragActive ? '#eff6ff' : '#f8fafc', transition:'all 0.2s',
+          border: `2px dashed ${isDragActive ? '#2563eb' : '#cbd5e1'}`,
+          borderRadius: 16, padding: '2rem', textAlign: 'center', cursor: 'pointer',
+          background: isDragActive ? '#eff6ff' : '#f8fafc', transition: 'all 0.2s',
         }}>
           <input {...getInputProps()} />
-          <div style={{ fontSize:'2rem', marginBottom:8 }}>🖼️</div>
-          <p style={{ fontSize:'0.85rem', color:'#64748b', margin:0 }}>
-            <span style={{ color:'#2563eb', fontWeight:600 }}>Click para seleccionar</span>{' '}
+          <div style={{ fontSize: '2rem', marginBottom: 8 }}>🖼️</div>
+          <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+            <span style={{ color: '#2563eb', fontWeight: 600 }}>Click para seleccionar</span>{' '}
             o arrastra aquí
           </p>
-          <p style={{ fontSize:'0.72rem', color:'#94a3b8', marginTop:4 }}>{sizeLabel}</p>
+          <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 4 }}>{sizeLabel}</p>
         </div>
       ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           {previewType === 'image' ? (
             <div>
               {/* hint row */}
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
-                            marginBottom:6, gap:8, flexWrap:'wrap' }}>
-                <p style={{ fontSize:'0.72rem', color:'#94a3b8', margin:0 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                marginBottom: 6, gap: 8, flexWrap: 'wrap'
+              }}>
+                <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0 }}>
                   📍 Toca para ajustar el <strong>punto de enfoque</strong>
                 </p>
                 {previewLabel && (
                   <span style={{
-                    fontSize:'0.65rem', fontWeight:600, color:'#1e3a5f',
-                    background:'rgba(30,58,95,0.08)', border:'1px solid rgba(30,58,95,0.15)',
-                    borderRadius:6, padding:'2px 8px', whiteSpace:'nowrap',
+                    fontSize: '0.65rem', fontWeight: 600, color: '#1e3a5f',
+                    background: 'rgba(30,58,95,0.08)', border: '1px solid rgba(30,58,95,0.15)',
+                    borderRadius: 6, padding: '2px 8px', whiteSpace: 'nowrap',
                   }}>
                     Vista previa · {previewLabel}
                   </span>
@@ -750,52 +907,52 @@ export default function ImageUploader({
 
               {/* preview container — usa previewAspect para coincidir con el bloque real */}
               <div onClick={handleFocalClick} style={{
-                position:'relative', borderRadius:12, overflow:'hidden',
-                cursor:'crosshair', paddingTop: previewPadding, background:'#e2e8f0',
+                position: 'relative', borderRadius: 12, overflow: 'hidden',
+                cursor: 'crosshair', paddingTop: previewPadding, background: '#e2e8f0',
               }}>
                 <img src={preview} alt="" style={{
-                  position:'absolute', inset:0, width:'100%',
-                  height:'100%', objectFit:'cover', objectPosition:op,
+                  position: 'absolute', inset: 0, width: '100%',
+                  height: '100%', objectFit: 'cover', objectPosition: op,
                 }} />
 
                 {/* punto de enfoque */}
                 <div style={{
-                  position:'absolute', width:24, height:24, borderRadius:'50%',
-                  border:'3px solid #fff', background:'rgba(212,160,23,0.85)',
-                  boxShadow:'0 2px 8px rgba(0,0,0,0.4)',
-                  transform:'translate(-50%,-50%)', pointerEvents:'none',
-                  left:`${fp.x*100}%`, top:`${fp.y*100}%`,
+                  position: 'absolute', width: 24, height: 24, borderRadius: '50%',
+                  border: '3px solid #fff', background: 'rgba(212,160,23,0.85)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                  transform: 'translate(-50%,-50%)', pointerEvents: 'none',
+                  left: `${fp.x * 100}%`, top: `${fp.y * 100}%`,
                 }} />
                 {/* crosshairs */}
                 <div style={{
-                  position:'absolute', top:0, bottom:0, width:1,
-                  background:'rgba(255,255,255,0.4)', pointerEvents:'none',
-                  left:`${fp.x*100}%`,
+                  position: 'absolute', top: 0, bottom: 0, width: 1,
+                  background: 'rgba(255,255,255,0.4)', pointerEvents: 'none',
+                  left: `${fp.x * 100}%`,
                 }} />
                 <div style={{
-                  position:'absolute', left:0, right:0, height:1,
-                  background:'rgba(255,255,255,0.4)', pointerEvents:'none',
-                  top:`${fp.y*100}%`,
+                  position: 'absolute', left: 0, right: 0, height: 1,
+                  background: 'rgba(255,255,255,0.4)', pointerEvents: 'none',
+                  top: `${fp.y * 100}%`,
                 }} />
                 {/* coords badge */}
                 <div style={{
-                  position:'absolute', bottom:8, right:8, background:'rgba(0,0,0,0.6)',
-                  color:'#fff', fontSize:'0.65rem', padding:'2px 8px', borderRadius:6,
-                  pointerEvents:'none',
+                  position: 'absolute', bottom: 8, right: 8, background: 'rgba(0,0,0,0.6)',
+                  color: '#fff', fontSize: '0.65rem', padding: '2px 8px', borderRadius: 6,
+                  pointerEvents: 'none',
                 }}>
-                  {Math.round(fp.x*100)}% / {Math.round(fp.y*100)}%
+                  {Math.round(fp.x * 100)}% / {Math.round(fp.y * 100)}%
                 </div>
               </div>
             </div>
           ) : (
-            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              <div style={{ borderRadius:12, overflow:'hidden', background:'#0a1628', position:'relative' }}>
-                <video controls style={{ width:'100%', maxHeight:220, display:'block' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ borderRadius: 12, overflow: 'hidden', background: '#0a1628', position: 'relative' }}>
+                <video controls style={{ width: '100%', maxHeight: 220, display: 'block' }}>
                   <source src={preview} />
                 </video>
                 <div style={{
-                  position:'absolute', top:8, left:8, background:'rgba(0,0,0,0.7)',
-                  color:'#fff', fontSize:'0.7rem', padding:'2px 8px', borderRadius:999,
+                  position: 'absolute', top: 8, left: 8, background: 'rgba(0,0,0,0.7)',
+                  color: '#fff', fontSize: '0.7rem', padding: '2px 8px', borderRadius: 999,
                 }}>
                   🎬 Video
                 </div>
@@ -803,37 +960,39 @@ export default function ImageUploader({
 
               {onSound && (
                 <button type="button" onClick={() => onSound(!soundEnabled)} style={{
-                  display:'flex', alignItems:'center', gap:10,
-                  padding:'0.75rem 1rem', borderRadius:12, cursor:'pointer',
-                  border:`2px solid ${soundEnabled ? '#2563eb' : '#e2e8f0'}`,
-                  background:soundEnabled ? '#eff6ff' : '#f8fafc',
-                  transition:'all 0.18s', fontFamily:'inherit',
-                  width:'100%', textAlign:'left',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '0.75rem 1rem', borderRadius: 12, cursor: 'pointer',
+                  border: `2px solid ${soundEnabled ? '#2563eb' : '#e2e8f0'}`,
+                  background: soundEnabled ? '#eff6ff' : '#f8fafc',
+                  transition: 'all 0.18s', fontFamily: 'inherit',
+                  width: '100%', textAlign: 'left',
                 }}>
                   <span style={{
-                    width:36, height:36, borderRadius:10, flexShrink:0,
-                    background:soundEnabled ? '#2563eb' : '#e2e8f0',
-                    display:'flex', alignItems:'center', justifyContent:'center',
-                    fontSize:'1.1rem', transition:'background 0.18s',
+                    width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                    background: soundEnabled ? '#2563eb' : '#e2e8f0',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '1.1rem', transition: 'background 0.18s',
                   }}>
                     {soundEnabled ? '🔊' : '🔇'}
                   </span>
-                  <div style={{ flex:1 }}>
-                    <p style={{ fontSize:'0.85rem', fontWeight:700,
-                                color:soundEnabled ? '#1d4ed8' : '#475569', margin:0 }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{
+                      fontSize: '0.85rem', fontWeight: 700,
+                      color: soundEnabled ? '#1d4ed8' : '#475569', margin: 0
+                    }}>
                       {soundEnabled ? 'Sonido activado' : 'Activar sonido para este video'}
                     </p>
-                    <p style={{ fontSize:'0.72rem', color:'#94a3b8', margin:'2px 0 0' }}>
+                    <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '2px 0 0' }}>
                       {soundEnabled
                         ? 'El visitante verá un control para subir/bajar el volumen'
                         : 'El video se reproducirá en silencio (recomendado para fondos)'}
                     </p>
                   </div>
                   <span style={{
-                    width:20, height:20, borderRadius:'50%', flexShrink:0,
-                    background:soundEnabled ? '#2563eb' : '#cbd5e1',
-                    display:'flex', alignItems:'center', justifyContent:'center',
-                    fontSize:'0.7rem', color:'#fff', fontWeight:700,
+                    width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                    background: soundEnabled ? '#2563eb' : '#cbd5e1',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.7rem', color: '#fff', fontWeight: 700,
                   }}>
                     {soundEnabled ? '✓' : ''}
                   </span>
@@ -844,24 +1003,26 @@ export default function ImageUploader({
 
           {uploading && (
             <div>
-              <div style={{ display:'flex', justifyContent:'space-between',
-                            fontSize:'0.75rem', color:'#64748b', marginBottom:4 }}>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between',
+                fontSize: '0.75rem', color: '#64748b', marginBottom: 4
+              }}>
                 <span>
-                  {progress < 45  ? 'Comprimiendo...'
-                  : progress < 100 ? `Subiendo a Cloudinary... ${progress}%`
-                  : '¡Listo!'}
+                  {progress < 45 ? 'Comprimiendo...'
+                    : progress < 100 ? `Subiendo a Cloudinary... ${progress}%`
+                      : '¡Listo!'}
                 </span>
                 <span>{progress}%</span>
               </div>
-              <div style={{ height:6, background:'#e2e8f0', borderRadius:3, overflow:'hidden' }}>
+              <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
                 <div style={{
-                  height:'100%', width:`${progress}%`,
-                  background:'linear-gradient(90deg,#1e3a5f,#d4a017)',
-                  borderRadius:3, transition:'width .3s',
+                  height: '100%', width: `${progress}%`,
+                  background: 'linear-gradient(90deg,#1e3a5f,#d4a017)',
+                  borderRadius: 3, transition: 'width .3s',
                 }} />
               </div>
               {progress < 100 && previewType === 'video' && (
-                <p style={{ fontSize:'0.7rem', color:'#94a3b8', marginTop:4, textAlign:'center' }}>
+                <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: 4, textAlign: 'center' }}>
                   Los videos grandes pueden tardar varios minutos. No cierres esta ventana.
                 </p>
               )}
@@ -872,9 +1033,9 @@ export default function ImageUploader({
           {!uploading && quality && previewType === 'image' && (() => {
             const saved = Math.round((1 - quality.finalSize / quality.origSize) * 100);
             const dimChanged = quality.finalW !== quality.origW || quality.finalH !== quality.origH;
-            const fmt = (b: number) => b >= 1024*1024
-              ? `${(b/1024/1024).toFixed(1)} MB`
-              : `${Math.round(b/1024)} KB`;
+            const fmt = (b: number) => b >= 1024 * 1024
+              ? `${(b / 1024 / 1024).toFixed(1)} MB`
+              : `${Math.round(b / 1024)} KB`;
             const isGood = saved >= 20;
             const isWarning = saved > 0 && saved < 20;
             const grew = saved < 0;
@@ -885,7 +1046,7 @@ export default function ImageUploader({
                 borderRadius: 10, padding: '0.6rem 0.875rem',
                 fontSize: '0.72rem', color: grew ? '#9f1239' : isWarning ? '#92400e' : '#166534',
               }}>
-                <div style={{ display:'flex', alignItems:'center', gap:6, fontWeight:700, marginBottom:4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 4 }}>
                   <span>{grew ? '⚠️' : isWarning ? '🟡' : '✅'}</span>
                   <span>
                     {grew
@@ -893,7 +1054,7 @@ export default function ImageUploader({
                       : `Comprimida ${saved}% · formato ${quality.format}`}
                   </span>
                 </div>
-                <div style={{ display:'flex', gap:14, flexWrap:'wrap', color:'inherit', opacity:0.85 }}>
+                <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', color: 'inherit', opacity: 0.85 }}>
                   <span>Original: <strong>{fmt(quality.origSize)}</strong> · {quality.origW}×{quality.origH}px</span>
                   <span>Final: <strong>{fmt(quality.finalSize)}</strong>{dimChanged ? ` · ${quality.finalW}×${quality.finalH}px` : ''}</span>
                 </div>
@@ -902,10 +1063,10 @@ export default function ImageUploader({
           })()}
 
           {!uploading && (
-            <div style={{ display:'flex', gap:10, alignItems:'center', flexWrap:'wrap' }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <button {...getRootProps()} type="button" style={{
-                background:'none', border:'none', cursor:'pointer', color:'#2563eb',
-                fontSize:'0.78rem', textDecoration:'underline', padding:0, fontFamily:'inherit',
+                background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb',
+                fontSize: '0.78rem', textDecoration: 'underline', padding: 0, fontFamily: 'inherit',
               }}>
                 <input {...getInputProps()} /> Cambiar archivo
               </button>
@@ -914,9 +1075,9 @@ export default function ImageUploader({
                   if (cropFile) setCropSrc(URL.createObjectURL(cropFile));
                   else if (preview) setCropSrc(preview);
                 }} style={{
-                  background:'none', border:'1.5px solid #e2e8f0', cursor:'pointer',
-                  color:'#475569', fontSize:'0.78rem', padding:'3px 10px',
-                  borderRadius:8, fontFamily:'inherit',
+                  background: 'none', border: '1.5px solid #e2e8f0', cursor: 'pointer',
+                  color: '#475569', fontSize: '0.78rem', padding: '3px 10px',
+                  borderRadius: 8, fontFamily: 'inherit',
                 }}>
                   ✂️ Recortar
                 </button>
@@ -928,9 +1089,9 @@ export default function ImageUploader({
 
       {error && (
         <p style={{
-          fontSize:'0.8rem', color:'#ef4444', background:'#fff1f2',
-          border:'1px solid #fecaca', borderRadius:8,
-          padding:'0.5rem 0.75rem', marginTop:8,
+          fontSize: '0.8rem', color: '#ef4444', background: '#fff1f2',
+          border: '1px solid #fecaca', borderRadius: 8,
+          padding: '0.5rem 0.75rem', marginTop: 8,
         }}>
           ❌ {error}
         </p>
