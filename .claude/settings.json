@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Fernando Jose/Documents/proyectos jose/jym-eventos-v2-completo/apps/web/**)",
+      "Bash(node -e \"console.log\\('x'\\)\")",
+      "Bash(sort -t: -k2 -n)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3010/galeria --max-time 20)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/servicios/hora-loca)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3010/servicios/hora-loca)",
+      "Bash(powershell -Command \"Stop-Process -Id 19360 -Force\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3010 -ErrorAction SilentlyContinue | Select-Object -Property OwningProcess\")",
+      "Bash(powershell -Command \"Stop-Process -Id 20860 -Force\")",
+      "Bash(powershell -Command \"Get-Process -Name node -ErrorAction SilentlyContinue | Select-Object Id,Path\")",
+      "Bash(grep -o \"FIREBASE_SERVICE_ACCOUNT[A-Z_]*=.\\\\{0,15\\\\}\" .env.local)",
+      "Bash(node -e ' *)",
+      "Bash(powershell -Command \"Stop-Process -Id 13280 -Force\")",
+      "Bash(powershell -Command \"Start-Process 'http://localhost:3010/servicios/hora-loca'\")",
+      "Bash(curl -s http://localhost:3010/servicios/hora-loca -o /tmp/hora-loca.html)"
+    ]
+  }
+}

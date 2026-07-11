@@ -20,8 +20,29 @@ async function getInitialGalleryItems(): Promise<GItem[]> {
   try {
     const snap = await adminDb.collection('gallery_items').orderBy('order', 'asc').limit(60).get();
     return snap.docs
-      .map(d => ({ id: d.id, ...(d.data() as any) }))
-      .filter((i: any) => i.visible !== false) as GItem[];
+      .map(d => {
+        const dt = d.data() as any;
+        // Reconstruimos el objeto campo a campo (en vez de spread crudo) para
+        // no arrastrar Timestamps u otros tipos de Firestore no serializables
+        // al pasarlo del Server Component a GaleriaClient — Next.js exige
+        // "plain objects" en ese límite.
+        const item: GItem = {
+          id: d.id,
+          url: dt.url || '',
+          alt: dt.alt || '',
+          categoria: dt.categoria || undefined,
+          subcategoria: dt.subcategoria || undefined,
+          visible: dt.visible !== false,
+          order: typeof dt.order === 'number' ? dt.order : 0,
+          focalX: typeof dt.focalX === 'number' ? dt.focalX : undefined,
+          focalY: typeof dt.focalY === 'number' ? dt.focalY : undefined,
+          tipo: dt.tipo || undefined,
+          sonidoPermitido: dt.sonidoPermitido === true,
+          albumId: dt.albumId || undefined,
+        };
+        return item;
+      })
+      .filter(i => i.visible !== false);
   } catch (e) {
     console.error('[galeria] Error leyendo gallery_items en el servidor:', e);
     return [];

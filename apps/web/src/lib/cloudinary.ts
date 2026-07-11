@@ -107,6 +107,22 @@ export function cxShareVideo(url: string): string {
 }
 
 /**
+ * Frame fijo de un video como portada estática (para tarjetas que hoy solo
+ * saben mostrar <img>, como "También te puede interesar"). Cloudinary genera
+ * el thumbnail cambiando el resource type de video a imagen y la extensión
+ * a .jpg — funciona con cualquier URL de video ya subida, sin reprocesar nada.
+ */
+export function cxVideoThumb(url: string): string {
+  if (!url) return '';
+  if (!isCloudinary(url)) return url;
+  const t = 'q_auto:best,f_jpg,w_1400,c_limit';
+  const clean = stripTransforms(url)
+    .replace('/video/upload/', '/upload/')
+    .replace(/\.(mp4|webm|mov|ogv|avi)(\?|$)/i, '.jpg$2');
+  return clean.replace('/upload/', `/upload/${t}/`);
+}
+
+/**
  * Calidad de video seleccionable manualmente por el usuario (engranaje del
  * reproductor, ver components/ui/CustomVideoPlayer.tsx). El componente ya
  * resuelve 'auto' llamando a cxVideo() directamente; esta función solo se

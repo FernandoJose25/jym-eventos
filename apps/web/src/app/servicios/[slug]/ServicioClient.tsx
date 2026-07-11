@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { collection, getDocs, where, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { cxHero, cxCard, cxVideo } from '@/lib/cloudinary';
+import { cxHero, cxCard, cxVideo, cxVideoThumb } from '@/lib/cloudinary';
 
 export const SERVICIOS_DATA: Record<string, any> = {
   'shows-infantiles': {
@@ -358,9 +358,13 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           })
           .map(d => {
             const dt = d.data();
+            // Portada: imagen tal cual, o si es video sacamos un frame fijo
+            // con cxVideoThumb — antes se descartaba y la tarjeta quedaba vacía.
             const img =
               (dt.mediaType === 'image' && dt.mediaSrc) ? dt.mediaSrc :
-                (dt.heroMediaType === 'image' && dt.heroMediaSrc) ? dt.heroMediaSrc : '';
+                (dt.mediaType === 'video' && dt.mediaSrc) ? cxVideoThumb(dt.mediaSrc) :
+                  (dt.heroMediaType === 'image' && dt.heroMediaSrc) ? dt.heroMediaSrc :
+                    (dt.heroMediaType === 'video' && dt.heroMediaSrc) ? cxVideoThumb(dt.heroMediaSrc) : '';
             return { id: d.id, title: dt.title || '', icon: dt.icon || '🎉', link: dt.link || '', img };
           })
           .filter((s: any) => s.title);
