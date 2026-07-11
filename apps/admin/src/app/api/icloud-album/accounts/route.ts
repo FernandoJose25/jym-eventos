@@ -14,10 +14,29 @@ import { icloudAlbumsCol } from '@/lib/icloudSync';
  * Colección: icloudAlbums/{adminUid}/albums/{albumId}
  */
 
-/* ── GET: listar álbumes conectados (sin exponer la lista completa de IDs vistos) ── */
+/* ── GET: listar álbumes conectados (sin exponer la lista completa de IDs vistos).
+   Con ?abrir=<id> devuelve, en cambio, solo las fotos/videos de ESE álbum que
+   todavía no se habían traído antes (no están en seenIds) — para revisión manual
+   en el importador sin repetir cada vez lo que ya se decidió (subido o descartado). ── */
 export async function GET(req: NextRequest) {
     const auth = await verifyToken(req);
     if (auth.response) return auth.response;
+
+    const abrirId = req.nextUrl.searchParams.get('abrir');
+    if (abrirId) {
+        const ref = icloudAlbumsCol(auth.uid).doc(abrirId);
+        const snap = await ref.get();
+        if (!snap.exists) return NextResponse.json({ error: 'Álbum no encontrado' }, { status: 404 });
+        const data = snap.data()!;
+        try {
+            const items = await listarICloud(data.url);
+            const seen: Set<string> = new Set(data.seenIds || []);
+            const nuevos = items.filter(it => !seen.has(it.id));
+            return NextResponse.json({ items: nuevos });
+        } catch (e: any) {
+            return NextResponse.json({ error: e.message || 'No se pudo leer el álbum de iCloud' }, { status: 400 });
+        }
+    }
 
     const snap = await icloudAlbumsCol(auth.uid).get();
     const albumes = snap.docs.map(d => {
@@ -80,15 +99,28 @@ export async function POST(req: NextRequest) {
     }
 }
 
-/* ── PATCH: pausar/reanudar la auto-importación de un álbum ya conectado ── */
+/* ── PATCH: pausar/reanudar la auto-importación de un álbum ya conectado,
+   o marcar fotos/videos como "ya vistos" tras decidirlos a mano en el
+   importador (subidos o descartados) para que no se repitan la próxima vez. ── */
 export async function PATCH(req: NextRequest) {
     const auth = await verifyToken(req);
     if (auth.response) return auth.response;
 
-    const { id, autoSync } = await req.json().catch(() => ({}));
+    const { id, autoSync, marcarVistos } = await req.json().catch(() => ({}));
     if (!id || typeof id !== 'string') {
         return NextResponse.json({ error: 'Falta el id del álbum' }, { status: 400 });
     }
+
+    if (Array.isArray(marcarVistos) && marcarVistos.length > 0) {
+        const ref = icloudAlbumsCol(auth.uid).doc(id);
+        const snap = await ref.get();
+        if (!snap.exists) return NextResponse.json({ error: 'Álbum no encontrado' }, { status: 404 });
+        const seen: Set<string> = new Set(snap.data()!.seenIds || []);
+        for (const itemId of marcarVistos) if (typeof itemId === 'string') seen.add(itemId);
+        await ref.set({ seenIds: [...seen] }, { merge: true });
+        return NextResponse.json({ ok: true });
+    }
+
     await icloudAlbumsCol(auth.uid).doc(id).set({ autoSync: !!autoSync }, { merge: true });
     return NextResponse.json({ ok: true });
 }
