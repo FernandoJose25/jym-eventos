@@ -17,3 +17,16 @@ export const SUBCATS: Record<string, string[]> = {
 };
 
 export const CATEGORIAS = Object.keys(SUBCATS);
+
+/** Descripción breve de cada categoría, usada en el prompt de clasificación con IA. */
+export const CATEGORIA_DESCRIPCIONES: Record<string, string> = {
+    'General': 'Fotos que no encajan claramente en ninguna otra categoría.',
+    'Shows Infantiles': 'Animación para niños con personajes o mascotas disfrazadas.',
+    'Show Hora Loca': 'Animación con humo, luces de colores, máscaras o percusión para adultos.',
+    'Activaciones Empresariales': 'Eventos corporativos, stands de marca, ferias o lanzamientos.',
+    'Decoración Temática': 'Escenografía, backdrop o centros de mesa, sin gente en primer plano.',
+    'Fotografía': 'Retratos o tomas fotográficas posadas, sin equipo de filmación visible.',
+    'Filmación y Fotografía': 'Producción con cámara de cine, drone/dron, gimbal o luces de video.',
+    'Catering': 'Comida servida, buffet o mesa de platos.',
+    'Catering y Carritos Snacks': 'Carrito de dulces/snacks o candy bar.',
+};
