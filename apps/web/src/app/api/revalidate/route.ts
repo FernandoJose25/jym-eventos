@@ -15,13 +15,15 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const { slug } = await req.json().catch(() => ({}));
+    const { slug, slugs } = await req.json().catch(() => ({}));
 
     revalidatePath('/galeria');
     revalidatePath('/albumes');
-    if (typeof slug === 'string' && slug) {
-        revalidatePath(`/albumes/${slug}`);
-    }
+
+    const todos = new Set<string>();
+    if (typeof slug === 'string' && slug) todos.add(slug);
+    if (Array.isArray(slugs)) for (const s of slugs) if (typeof s === 'string' && s) todos.add(s);
+    for (const s of todos) revalidatePath(`/albumes/${s}`);
 
     return NextResponse.json({ ok: true });
 }

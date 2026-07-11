@@ -9,12 +9,15 @@
  * exponer el secret de revalidación al navegador. Best-effort: si falla, no
  * bloquea el guardado.
  */
-export async function revalidarWeb(idToken: string, slug?: string) {
+export async function revalidarWeb(idToken: string, slugOSlugs?: string | string[]) {
     try {
+        const body = Array.isArray(slugOSlugs)
+            ? { slugs: slugOSlugs }
+            : slugOSlugs ? { slug: slugOSlugs } : {};
         await fetch('/api/revalidate-web', {
             method: 'POST',
             headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(slug ? { slug } : {}),
+            body: JSON.stringify(body),
         });
     } catch {
         // best-effort: nunca bloqueamos el guardado por esto

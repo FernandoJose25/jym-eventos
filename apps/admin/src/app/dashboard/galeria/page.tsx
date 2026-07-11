@@ -202,6 +202,12 @@ export default function GaleriaPage() {
       // Referencia al documento real en la colección `albums` (o '' si va suelta).
       albumId: formData.albumId || '',
     };
+    // Slugs a revalidar: el álbum anterior de esta foto (si cambió/se quitó)
+    // y el nuevo álbum asignado (si tiene uno).
+    const fotoAnterior = editId ? items.find(i => i.id === editId) : null;
+    const albumIdsRelevantes = new Set([fotoAnterior?.albumId, payload.albumId].filter(Boolean) as string[]);
+    const slugsAfectados = albumesDisponibles.filter(a => albumIdsRelevantes.has(a.id)).map(a => a.slug).filter(Boolean);
+
     if (mode === 'edit' && editId) {
       await updateDoc(doc(db, COL.GALERIA, editId), payload);
       toast.success('✅ Imagen actualizada');
@@ -213,7 +219,7 @@ export default function GaleriaPage() {
     setMode('idle');
     setFormData(BLANK);
     setEditId(null);
-    getToken().then(idToken => revalidarWeb(idToken)).catch(() => {});
+    getToken().then(idToken => revalidarWeb(idToken, slugsAfectados)).catch(() => {});
   };
 
   const toggleVisible = (item: any) => open({
@@ -259,17 +265,31 @@ export default function GaleriaPage() {
     toast.success(`✅ Álbum "${titulo}" creado`);
   };
 
+  /** Slugs de los álbumes a los que pertenecen los items dados (por sus
+   *  albumId actuales) — para revalidar en la web pública justo las páginas
+   *  de álbum afectadas, no solo el listado general. */
+  const slugsDeAlbumesDeItems = (ids: Set<string>): string[] => {
+    const albumIds = new Set<string>();
+    for (const it of items) if (ids.has(it.id) && it.albumId) albumIds.add(it.albumId);
+    return albumesDisponibles.filter(a => albumIds.has(a.id)).map(a => a.slug).filter(Boolean);
+  };
+
   /** Asigna el álbum elegido (bulkAlbumId) a todos los items seleccionados. */
   const handleAsignarAlbumEnLote = async () => {
     if (!bulkAlbumId) { toast.error('Elige o crea un álbum primero'); return; }
     setBulkBusy(true);
     try {
+      const idsAfectados = new Set(selected);
+      const albumDestino = albumesDisponibles.find(a => a.id === bulkAlbumId);
       const batch = writeBatch(db);
       selected.forEach(id => batch.update(doc(db, COL.GALERIA, id), { albumId: bulkAlbumId }));
       await batch.commit();
       toast.success(`✅ ${selected.size} item(s) agregados al álbum`);
       setSelected(new Set()); setSelMode(false); setBulkAlbumId('');
-      getToken().then(idToken => revalidarWeb(idToken)).catch(() => {});
+      // Revalida tanto los álbumes de origen (perdieron fotos) como el de destino.
+      const slugs = new Set(slugsDeAlbumesDeItems(idsAfectados));
+      if (albumDestino?.slug) slugs.add(albumDestino.slug);
+      getToken().then(idToken => revalidarWeb(idToken, [...slugs])).catch(() => {});
     } catch (e: any) {
       toast.error(e.message || 'Error agrupando en álbum');
     } finally {
@@ -284,6 +304,7 @@ export default function GaleriaPage() {
     if (!categoria) { toast.error('Elige una categoría primero'); return; }
     setBulkBusy(true);
     try {
+      const idsAfectados = new Set(selected);
       const batch = writeBatch(db);
       const payload: any = { categoria };
       if (subcategoria !== undefined) payload.subcategoria = subcategoria;
@@ -292,7 +313,8 @@ export default function GaleriaPage() {
       toast.success(`✅ Categoría actualizada en ${selected.size} item(s)`);
       setSelected(new Set()); setSelMode(false);
       setBulkCategoria(''); setBulkSubcatDrop(''); setBulkSubcategoria('');
-      getToken().then(idToken => revalidarWeb(idToken)).catch(() => {});
+      const slugs = slugsDeAlbumesDeItems(idsAfectados);
+      getToken().then(idToken => revalidarWeb(idToken, slugs)).catch(() => {});
     } catch (e: any) {
       toast.error(e.message || 'Error cambiando la categoría');
     } finally {
@@ -359,13 +381,16 @@ export default function GaleriaPage() {
     onConfirm: async () => {
       await deleteDoc(doc(db, COL.ALBUMES, album.id));
       toast.success('Álbum eliminado');
+      if (album.slug) getToken().then(idToken => revalidarWeb(idToken, album.slug)).catch(() => {});
     },
   });
 
   /** Saca una foto del álbum sin salir del panel de álbumes. */
   const handleQuitarDeAlbum = async (item: any) => {
+    const album = albumesDisponibles.find(a => a.id === item.albumId);
     await updateDoc(doc(db, COL.GALERIA, item.id), { albumId: '' });
     toast.success('Foto removida del álbum');
+    if (album?.slug) getToken().then(idToken => revalidarWeb(idToken, album.slug)).catch(() => {});
   };
 
   const fotosDelAlbumEnEdicion = albumEditId ? items.filter(i => i.albumId === albumEditId) : [];
@@ -373,12 +398,13 @@ export default function GaleriaPage() {
   const handlePublicarEnLote = async (visible: boolean) => {
     setBulkBusy(true);
     try {
+      const slugs = slugsDeAlbumesDeItems(selected);
       const batch = writeBatch(db);
       selected.forEach(id => batch.update(doc(db, COL.GALERIA, id), { visible }));
       await batch.commit();
       toast.success(`✅ ${selected.size} item(s) ${visible ? 'publicados' : 'ocultos'}`);
       setSelected(new Set());
-      getToken().then(idToken => revalidarWeb(idToken)).catch(() => {});
+      getToken().then(idToken => revalidarWeb(idToken, slugs)).catch(() => {});
     } catch (e: any) {
       toast.error(e.message || 'Error actualizando visibilidad');
     } finally {

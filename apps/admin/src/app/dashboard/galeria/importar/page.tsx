@@ -162,9 +162,9 @@ export default function ImportarDeGooglePhotosPage() {
 
   // Álbumes reales ya existentes (colección `albums`) — el mismo sistema
   // que usa el formulario manual de Galería y /dashboard/albumes.
-  const [albumesExistentes, setAlbumesExistentes] = useState<{ id: string; titulo: string }[]>([]);
+  const [albumesExistentes, setAlbumesExistentes] = useState<{ id: string; titulo: string; slug: string }[]>([]);
   useEffect(() => onSnapshot(query(collection(db, COL.ALBUMES), orderBy('order', 'asc')), snap => {
-    setAlbumesExistentes(snap.docs.map(d => ({ id: d.id, titulo: (d.data() as any).titulo || '' })));
+    setAlbumesExistentes(snap.docs.map(d => ({ id: d.id, titulo: (d.data() as any).titulo || '', slug: (d.data() as any).slug || '' })));
   }), []);
 
   // Categorías reales: las mismas que usa el formulario manual de Galería —
@@ -590,20 +590,28 @@ export default function ImportarDeGooglePhotosPage() {
       //    vinculado (grupoAlbumId) o uno nuevo creado en `albums` ahora mismo.
       const nombresDeEvento = [...new Set(aprobadas.map(f => f.eventoNombre.trim()).filter(Boolean))];
       const albumIdPorNombre: Record<string, string> = {};
+      const slugsAfectados = new Set<string>();
 
       for (const nombre of nombresDeEvento) {
         const yaVinculado = grupoAlbumId[nombre];
-        if (yaVinculado) { albumIdPorNombre[nombre] = yaVinculado; continue; }
+        if (yaVinculado) {
+          albumIdPorNombre[nombre] = yaVinculado;
+          const existente = albumesExistentes.find(a => a.id === yaVinculado);
+          if (existente?.slug) slugsAfectados.add(existente.slug);
+          continue;
+        }
 
         const primeraFoto = aprobadas.find(f => f.eventoNombre.trim() === nombre);
+        const slug = slugify(nombre);
         const ref = await addDoc(collection(db, COL.ALBUMES), {
           titulo: nombre,
-          slug: slugify(nombre),
+          slug,
           tipoEvento: '', cliente: '', fecha: new Date().toISOString().slice(0, 10), descripcion: '',
           coverUrl: primeraFoto?.cloudinaryUrl || '', coverFocalX: 0.5, coverFocalY: 0.5,
           visible: true, order: albumesExistentes.length + 1, createdAt: new Date().toISOString(),
         });
         albumIdPorNombre[nombre] = ref.id;
+        slugsAfectados.add(slug);
       }
 
       // 2) Guardar cada foto en gallery_items con su albumId ya resuelto
@@ -639,7 +647,7 @@ export default function ImportarDeGooglePhotosPage() {
 
       // Avisa a la web pública para que la galería/álbumes se actualicen ya,
       // sin esperar hasta 1 hora al refresco automático (ISR).
-      getToken().then(idToken => revalidarWeb(idToken)).catch(() => {});
+      getToken().then(idToken => revalidarWeb(idToken, [...slugsAfectados])).catch(() => {});
     } catch (e: any) {
       toast.error(e.message || 'Error guardando en la galería');
       setFase('revision');
