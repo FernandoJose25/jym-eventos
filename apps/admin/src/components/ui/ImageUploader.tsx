@@ -3,9 +3,8 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDropzone, FileRejection } from 'react-dropzone';
 import { validateFile } from '@/lib/file-validation';
 import { getToken } from '@/lib/get-token';
-import { storage, db, COL } from '@/lib/firebase';
+import { storage } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { doc, getDoc } from 'firebase/firestore';
 
 interface FP { x: number; y: number }
 interface CropBox { x: number; y: number; w: number; h: number }
@@ -14,6 +13,7 @@ interface Watermark { enabled: boolean; x: number; y: number; scale: number }
 
 const DEFAULT_FILTERS: Filters = { brightness: 100, contrast: 100, saturate: 100 };
 const DEFAULT_WATERMARK: Watermark = { enabled: false, x: 0.92, y: 0.92, scale: 0.16 };
+const WATERMARK_LOGO_URL = '/logo-watermark.png';
 
 interface Props {
   value?: string;
@@ -58,7 +58,6 @@ async function applyCropToFile(
   displayW: number,
   displayH: number,
   fileName: string,
-  rotation: 0 | 90 | 180 | 270 = 0,
   filters: Filters = DEFAULT_FILTERS,
   quality: number = 0.92,
   upscale: number = 1,
@@ -69,22 +68,10 @@ async function applyCropToFile(
   const cropW = Math.round(box.w * scaleX);
   const cropH = Math.round(box.h * scaleY);
 
-  // canvas intermedio: solo el recorte, sin rotar ni escalar
-  const src = document.createElement('canvas');
-  src.width = cropW;
-  src.height = cropH;
-  const sctx = src.getContext('2d')!;
-  sctx.drawImage(
-    img,
-    Math.round(box.x * scaleX), Math.round(box.y * scaleY),
-    cropW, cropH,
-    0, 0, cropW, cropH,
-  );
-
-  // canvas final: aplica rotación + escala (upscale) + filtros
-  const swap = rotation === 90 || rotation === 270;
-  const outW = Math.round((swap ? cropH : cropW) * upscale);
-  const outH = Math.round((swap ? cropW : cropH) * upscale);
+  // canvas final: aplica escala (upscale) + filtros sobre el recorte
+  // (la rotación ya viene horneada en `img`, aplicada en tiempo real en el modal)
+  const outW = Math.round(cropW * upscale);
+  const outH = Math.round(cropH * upscale);
   const canvas = document.createElement('canvas');
   canvas.width = outW;
   canvas.height = outH;
@@ -92,14 +79,12 @@ async function applyCropToFile(
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   ctx.filter = `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturate}%)`;
-
-  ctx.save();
-  ctx.translate(outW / 2, outH / 2);
-  ctx.rotate((rotation * Math.PI) / 180);
-  const drawW = swap ? outH : outW;
-  const drawH = swap ? outW : outH;
-  ctx.drawImage(src, -drawW / 2, -drawH / 2, drawW, drawH);
-  ctx.restore();
+  ctx.drawImage(
+    img,
+    Math.round(box.x * scaleX), Math.round(box.y * scaleY),
+    cropW, cropH,
+    0, 0, outW, outH,
+  );
 
   if (watermark) {
     ctx.filter = 'none';
@@ -158,7 +143,7 @@ function CropModal({
   aspect?: number;
   onApply: (
     box: CropBox, displayW: number, displayH: number, img: HTMLImageElement,
-    rotation: 0 | 90 | 180 | 270, filters: Filters, quality: number, upscale: number,
+    filters: Filters, quality: number, upscale: number,
     watermark: Watermark, logoUrl: string,
   ) => Promise<void>;
   onSkip: () => void;
@@ -173,25 +158,44 @@ function CropModal({
   const [corsError, setCorsError] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
-  /* ── rotación / filtros / calidad / marca de agua ── */
-  const [rotation, setRotation] = useState<0 | 90 | 180 | 270>(0);
+  /* ── rotación / filtros / calidad / marca de agua ──
+     La rotación se "hornea" de inmediato en un nuevo src (vía canvas) para
+     que el usuario vea la imagen ya orientada mientras recorta — no solo
+     un aviso de que se rotará al guardar. El resto del crop (drag, resize,
+     aspect ratio) sigue igual porque solo ve una imagen distinta. */
+  const [displaySrc, setDisplaySrc] = useState(src);
+  const [rotating, setRotating] = useState(false);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [quality, setQuality] = useState(0.92);
   const [upscale, setUpscale] = useState(1);
   const [watermark, setWatermark] = useState<Watermark>(DEFAULT_WATERMARK);
-  const [logoUrl, setLogoUrl] = useState('');
+  const logoUrl = WATERMARK_LOGO_URL;
   const [showAdjust, setShowAdjust] = useState(false);
   const wmDrag = useRef(false);
 
-  useEffect(() => {
-    if (!watermark.enabled || logoUrl) return;
-    getDoc(doc(db, COL.CONFIGURACION, 'navbar')).then(snap => {
-      const url = snap.exists() ? (snap.data().logo as string) : '';
-      if (url) setLogoUrl(url);
-    }).catch(() => {});
-  }, [watermark.enabled, logoUrl]);
-
   const cssFilter = `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturate}%)`;
+
+  /* ── rotar físicamente el src (canvas) para previsualizar en tiempo real ── */
+  const rotate = useCallback((delta: 90 | -90) => {
+    if (rotating) return;
+    setRotating(true);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalHeight;
+      canvas.height = img.naturalWidth;
+      const ctx = canvas.getContext('2d')!;
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((delta * Math.PI) / 180);
+      ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+      setDisplaySrc(canvas.toDataURL('image/png'));
+      setImgLoaded(false);
+      setRotating(false);
+    };
+    img.onerror = () => { setRotating(false); setCorsError(true); };
+    img.src = displaySrc;
+  }, [displaySrc, rotating]);
 
   const onWatermarkPointerDown = (e: React.PointerEvent) => {
     e.preventDefault();
@@ -423,7 +427,7 @@ function CropModal({
     setApplyErr('');
     setApplying(true);
     try {
-      await onApply(box, imgSize.w, imgSize.h, imgRef.current, rotation, filters, quality, upscale,
+      await onApply(box, imgSize.w, imgSize.h, imgRef.current, filters, quality, upscale,
         { ...watermark, enabled: watermark.enabled && !!logoUrl }, logoUrl);
     } catch (err: any) {
       const msg = String(err?.message || '');
@@ -489,8 +493,8 @@ function CropModal({
               { label: '⤢ Imagen completa', fn: fitFull },
               { label: '◎ Centrar', fn: centerBox },
               { label: '↺ Restablecer', fn: resetBox },
-              { label: '⟲ Rotar izq.', fn: () => setRotation(r => ((r + 270) % 360) as 0 | 90 | 180 | 270) },
-              { label: '⟳ Rotar der.', fn: () => setRotation(r => ((r + 90) % 360) as 0 | 90 | 180 | 270) },
+              { label: '⟲ Rotar izq.', fn: () => rotate(-90) },
+              { label: '⟳ Rotar der.', fn: () => rotate(90) },
             ].map(({ label, fn }) => (
               <button key={label} type="button" onClick={fn} disabled={applying} style={{
                 padding: '0.3rem 0.7rem', borderRadius: 8, border: '1.5px solid #e2e8f0',
@@ -573,10 +577,7 @@ function CropModal({
               />
               💧 Añadir marca de agua (logo de la empresa)
             </label>
-            {watermark.enabled && !logoUrl && (
-              <p style={{ fontSize: '0.7rem', color: '#94a3b8', margin: 0 }}>Cargando logo…</p>
-            )}
-            {watermark.enabled && logoUrl && (
+            {watermark.enabled && (
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
                 <span style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>Tamaño logo</span>
                 <input
@@ -610,7 +611,7 @@ function CropModal({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               ref={imgRef}
-              src={src}
+              src={displaySrc}
               alt="crop"
               crossOrigin="anonymous"
               onLoad={onImgLoad}
@@ -622,13 +623,17 @@ function CropModal({
               }}
             />
 
-            {rotation !== 0 && (
+            {rotating && (
               <div style={{
-                position: 'absolute', top: 6, left: 6, background: 'rgba(37,99,235,0.9)',
-                color: '#fff', fontSize: '0.65rem', padding: '2px 8px', borderRadius: 6,
-                pointerEvents: 'none', fontWeight: 700,
+                position: 'absolute', inset: 0, display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                pointerEvents: 'none',
               }}>
-                ⟳ Rotación {rotation}° se aplicará al guardar
+                <span style={{
+                  width: 28, height: 28, borderRadius: '50%',
+                  border: '3px solid rgba(255,255,255,0.25)', borderTopColor: '#fff',
+                  animation: 'spin .7s linear infinite', display: 'inline-block',
+                }} />
               </div>
             )}
 
@@ -1042,7 +1047,7 @@ export default function ImageUploader({
   /* ── crop apply — no try/catch: errores los maneja CropModal ── */
   const handleCropApply = useCallback(async (
     box: CropBox, displayW: number, displayH: number, img: HTMLImageElement,
-    rotation: 0 | 90 | 180 | 270, filters: Filters, quality: number, upscale: number,
+    filters: Filters, quality: number, upscale: number,
     watermark: Watermark, logoUrl: string,
   ): Promise<void> => {
     const newFp: FP = {
@@ -1056,7 +1061,7 @@ export default function ImageUploader({
       if (wmImg) wm = { img: wmImg, x: watermark.x, y: watermark.y, scale: watermark.scale };
     }
     const cropped = await applyCropToFile(img, box, displayW, displayH,
-      cropFile?.name ?? 'image.webp', rotation, filters, quality, upscale, wm);
+      cropFile?.name ?? 'image.webp', filters, quality, upscale, wm);
     setPreview(URL.createObjectURL(cropped));
     setPreviewType('image');
     setCropSrc('');   // cierra el modal

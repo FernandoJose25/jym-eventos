@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { ShareBar } from '@/components/ui/ShareBar';
+import { useLockBodyScroll } from '@/lib/hooks/useLockBodyScroll';
 
 interface GalleryItem {
   id:string; url:string; alt:string;
@@ -30,6 +31,8 @@ export default function GallerySection({ items }: { items: GalleryItem[] }) {
   const [centerIdx,  setCenterIdx]  = useState(0);
   const autoRef  = useRef<ReturnType<typeof setInterval>|null>(null);
   const dims = useCarouselDims();
+
+  useLockBodyScroll(activeIdx !== null);
 
   const total = items?.length || 0;
 
