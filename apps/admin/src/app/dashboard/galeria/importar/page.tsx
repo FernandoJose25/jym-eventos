@@ -636,6 +636,10 @@ export default function ImportarDeGooglePhotosPage() {
           order,
           row: 1,
           createdAt: new Date().toISOString(),
+          // Los videos importados nunca traen audio verificado — quedan sin
+          // sonido hasta que el admin los revise y lo permita explícitamente
+          // desde Galería (evita publicar por accidente conversaciones privadas).
+          ...(f.tipo === 'video' ? { sonidoPermitido: false } : {}),
           ...(f.icloudId ? { icloudId: f.icloudId } : {}),
         });
       }

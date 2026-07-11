@@ -16,6 +16,9 @@ interface GItem {
   visible: boolean; order: number;
   focalX?: number; focalY?: number;
   tipo?: string;
+  // Solo aplica a videos: si no es exactamente `true`, el reproductor los
+  // fuerza muteados y el visitante no puede activar el sonido.
+  sonidoPermitido?: boolean;
   // `albumId` referencia la colección `albums` (id real del documento, no
   // un slug de texto) — se usa para armar cada álbum en /albumes/[slug].
   albumId?: string;
@@ -675,7 +678,7 @@ export default function GaleriaClient() {
 
             {/* Media — sin nada encima */}
             {isVideo(visibles[lightbox]) ? (
-              <CustomVideoPlayer key={visibles[lightbox].id} src={visibles[lightbox].url} />
+              <CustomVideoPlayer key={visibles[lightbox].id} src={visibles[lightbox].url} sonidoPermitido={visibles[lightbox].sonidoPermitido === true} />
             ) : (
               <img src={cxFull(visibles[lightbox].url)}
                 alt={visibles[lightbox].alt || 'Evento J&M'}

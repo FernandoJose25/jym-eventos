@@ -13,7 +13,7 @@ import { SUBCATS } from '@/lib/galeriaTaxonomy';
 import { getToken } from '@/lib/get-token';
 import { revalidarWeb } from '@/lib/revalidateWeb';
 
-const BLANK = { categoria: 'General', subcategoria: '', tipo: 'imagen', visible: true, alt: '', albumId: '' };
+const BLANK = { categoria: 'General', subcategoria: '', tipo: 'imagen', visible: true, alt: '', albumId: '', sonidoPermitido: false };
 
 const TIPOS_EVENTO_ALBUM = ['Quinceañero', 'Cumpleaños', 'Boda', 'Baby Shower', 'Corporativo', 'Bautizo', 'Graduación', 'Otro'];
 
@@ -80,6 +80,7 @@ export default function GaleriaPage() {
   const [mode, setMode] = useState<'idle' | 'add' | 'edit'>('idle');
   const [editId, setEditId] = useState<string | null>(null);
   const [filterCat, setFilterCat] = useState('Todas');
+  const [soloVideos, setSoloVideos] = useState(false);
   const [searchQ, setSearchQ] = useState('');
   const [formData, setFormData] = useState<any>(BLANK);
   const [cats, setCats] = useState<string[]>(Object.keys(SUBCATS));
@@ -183,6 +184,7 @@ export default function GaleriaPage() {
       focalY: item.focalY ?? 0.5,
       mediaType: item.tipo || 'imagen',
       albumId: item.albumId || '',
+      sonidoPermitido: !!item.sonidoPermitido,
     });
     setEditId(item.id);
     setMode('edit');
@@ -201,6 +203,9 @@ export default function GaleriaPage() {
       visible: formData.visible ?? true,
       // Referencia al documento real en la colección `albums` (o '' si va suelta).
       albumId: formData.albumId || '',
+      // Solo aplica a videos: si no es true, el reproductor público lo fuerza
+      // muteado y el visitante no puede activar el sonido.
+      sonidoPermitido: !!formData.sonidoPermitido,
     };
     // Slugs a revalidar: el álbum anterior de esta foto (si cambió/se quitó)
     // y el nuevo álbum asignado (si tiene uno).
@@ -412,11 +417,35 @@ export default function GaleriaPage() {
     }
   };
 
-  // Category filter first, then smart search
+  /** Permite/quita el sonido de los VIDEOS seleccionados (las imágenes
+   *  seleccionadas junto a ellos se ignoran, no tienen este campo). */
+  const handleSonidoEnLote = async (sonidoPermitido: boolean) => {
+    const idsVideo = [...selected].filter(id => items.find(i => i.id === id)?.tipo === 'video');
+    if (idsVideo.length === 0) { toast.error('No hay videos entre los seleccionados'); return; }
+    setBulkBusy(true);
+    try {
+      const slugs = slugsDeAlbumesDeItems(new Set(idsVideo));
+      const batch = writeBatch(db);
+      idsVideo.forEach(id => batch.update(doc(db, COL.GALERIA, id), { sonidoPermitido }));
+      await batch.commit();
+      toast.success(`✅ Sonido ${sonidoPermitido ? 'permitido' : 'quitado'} en ${idsVideo.length} video(s)`);
+      setSelected(new Set());
+      getToken().then(idToken => revalidarWeb(idToken, slugs)).catch(() => {});
+    } catch (e: any) {
+      toast.error(e.message || 'Error actualizando el sonido');
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  // Category filter first, then "solo videos" (para la acción de sonido en
+  // lote, sin tener que ir foto por foto buscándolos entre las imágenes),
+  // luego smart search.
   const catFiltered = filterCat === 'Todas' ? items : items.filter(i => i.categoria === filterCat);
+  const tipoFiltered = soloVideos ? catFiltered.filter(i => i.tipo === 'video') : catFiltered;
   const { results: filtrados, suggestions } = useMemo(
-    () => smartSearch(catFiltered, searchQ),
-    [catFiltered, searchQ]
+    () => smartSearch(tipoFiltered, searchQ),
+    [tipoFiltered, searchQ]
   );
 
   const activeCount = items.filter(i => i.visible).length;
@@ -534,6 +563,8 @@ export default function GaleriaPage() {
                 focal={{ x: formData.focalX ?? 0.5, y: formData.focalY ?? 0.5 }}
                 previewAspect={4 / 3} previewLabel="Galería (paisaje 4:3)"
                 onComplete={(url, fp, type) => setFormData((p: any) => ({ ...p, url, focalX: fp.x, focalY: fp.y, mediaType: type }))}
+                soundEnabled={!!formData.sonidoPermitido}
+                onSound={v => setFormData((p: any) => ({ ...p, sonidoPermitido: v }))}
               />
             </div>
 
@@ -742,6 +773,16 @@ export default function GaleriaPage() {
                 )}
               </button>
             ))}
+            {/* Filtro rápido de solo videos — para aplicar/quitar sonido en
+                lote sin buscarlos uno por uno entre las fotos. */}
+            <button onClick={() => setSoloVideos(v => !v)}
+              className={`chip${soloVideos ? ' active' : ''}`}
+              title="Muestra únicamente los videos, para permitir/quitar sonido en lote">
+              🎬 Solo videos
+              <span style={{ marginLeft: 4, fontSize: '0.65rem', opacity: .7 }}>
+                {catFiltered.filter(i => i.tipo === 'video').length}
+              </span>
+            </button>
           </div>
         </div>
       )}
@@ -1236,6 +1277,24 @@ export default function GaleriaPage() {
             style={{ background: 'rgba(245,158,11,.2)', color: '#fde68a', border: '1px solid rgba(245,158,11,.4)', borderRadius: 8, padding: '0.5rem 0.7rem', fontSize: '0.78rem', fontWeight: 700, cursor: bulkBusy ? 'not-allowed' : 'pointer' }}>
             <EyeOff size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Ocultar
           </button>
+
+          {/* Permitir/quitar sonido en lote — solo tiene sentido si hay videos
+              entre los seleccionados; las imágenes no se ven afectadas. */}
+          {items.some(i => selected.has(i.id) && i.tipo === 'video') && (
+            <>
+              <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,.15)' }} />
+              <button onClick={() => handleSonidoEnLote(true)} disabled={bulkBusy}
+                title="Permite que el visitante active el sonido de los videos seleccionados"
+                style={{ background: 'rgba(37,99,235,.2)', color: '#93c5fd', border: '1px solid rgba(37,99,235,.4)', borderRadius: 8, padding: '0.5rem 0.7rem', fontSize: '0.78rem', fontWeight: 700, cursor: bulkBusy ? 'not-allowed' : 'pointer' }}>
+                🔊 Permitir sonido
+              </button>
+              <button onClick={() => handleSonidoEnLote(false)} disabled={bulkBusy}
+                title="Los videos seleccionados se reproducirán siempre en silencio, sin que el visitante pueda activarlo"
+                style={{ background: 'rgba(100,116,139,.2)', color: '#cbd5e1', border: '1px solid rgba(100,116,139,.4)', borderRadius: 8, padding: '0.5rem 0.7rem', fontSize: '0.78rem', fontWeight: 700, cursor: bulkBusy ? 'not-allowed' : 'pointer' }}>
+                🔇 Quitar sonido
+              </button>
+            </>
+          )}
 
           <button onClick={() => { setSelected(new Set()); setSelMode(false); }}
             style={{ background: 'transparent', color: 'rgba(255,255,255,.6)', border: 'none', fontSize: '0.78rem', cursor: 'pointer' }}>
