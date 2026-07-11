@@ -105,7 +105,7 @@ export default function GaleriaPage() {
   const [bulkSubcatDrop, setBulkSubcatDrop] = useState('');
   const [bulkSubcategoria, setBulkSubcategoria] = useState('');
   const [bulkBusy, setBulkBusy] = useState(false);
-  const [watermarkModalItems, setWatermarkModalItems] = useState<{ id: string; url: string; alt?: string }[] | null>(null);
+  const [watermarkModalItems, setWatermarkModalItems] = useState<{ id: string; url: string; alt?: string; tipo?: string }[] | null>(null);
 
   // Pestaña de la página: fotos sueltas o gestión de álbumes (antes era una
   // ruta aparte /dashboard/albumes; ahora vive aquí para no fragmentar el flujo).
@@ -329,12 +329,13 @@ export default function GaleriaPage() {
     }
   };
 
-  /** Abre el modal secuencial de marca de agua para los items seleccionados. */
+  /** Abre el modal secuencial de marca de agua para los items seleccionados
+   *  (fotos y videos por igual). */
   const handleAbrirMarcaDeAguaEnLote = () => {
     const lista = items
-      .filter(i => selected.has(i.id) && i.tipo !== 'video')
-      .map(i => ({ id: i.id, url: i.url, alt: i.alt }));
-    if (lista.length === 0) { toast.error('Selecciona al menos una foto (los videos no aplican aquí)'); return; }
+      .filter(i => selected.has(i.id))
+      .map(i => ({ id: i.id, url: i.url, alt: i.alt, tipo: i.tipo }));
+    if (lista.length === 0) { toast.error('Selecciona al menos un archivo'); return; }
     setWatermarkModalItems(lista);
   };
 
@@ -1286,13 +1287,11 @@ export default function GaleriaPage() {
             </button>
           )}
 
-          {items.some(i => selected.has(i.id) && i.tipo !== 'video') && (
-            <button onClick={handleAbrirMarcaDeAguaEnLote} disabled={bulkBusy}
-              title="Añade el logo de la empresa a cada foto seleccionada, eligiendo la posición foto por foto"
-              style={{ background: 'rgba(6,182,212,.2)', color: '#67e8f9', border: '1px solid rgba(6,182,212,.4)', borderRadius: 8, padding: '0.5rem 0.7rem', fontSize: '0.78rem', fontWeight: 700, cursor: bulkBusy ? 'not-allowed' : 'pointer' }}>
-              <Droplet size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Marca de agua
-            </button>
-          )}
+          <button onClick={handleAbrirMarcaDeAguaEnLote} disabled={bulkBusy}
+            title="Añade el logo de la empresa a cada foto o video seleccionado, eligiendo la posición uno por uno"
+            style={{ background: 'rgba(6,182,212,.2)', color: '#67e8f9', border: '1px solid rgba(6,182,212,.4)', borderRadius: 8, padding: '0.5rem 0.7rem', fontSize: '0.78rem', fontWeight: 700, cursor: bulkBusy ? 'not-allowed' : 'pointer' }}>
+            <Droplet size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Marca de agua
+          </button>
 
           <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,.15)' }} />
 
