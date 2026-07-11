@@ -15,13 +15,13 @@ export async function POST(req: NextRequest) {
     const secret = process.env.REVALIDATE_SECRET;
     if (!webUrl || !secret) return NextResponse.json({ ok: false, error: 'No configurado' });
 
-    const { slug } = await req.json().catch(() => ({}));
+    const { slug, slugs } = await req.json().catch(() => ({}));
 
     try {
         await fetch(`${webUrl.replace(/\/$/, '')}/api/revalidate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-revalidate-secret': secret },
-            body: JSON.stringify(slug ? { slug } : {}),
+            body: JSON.stringify({ ...(slug ? { slug } : {}), ...(Array.isArray(slugs) ? { slugs } : {}) }),
         });
         return NextResponse.json({ ok: true });
     } catch {
