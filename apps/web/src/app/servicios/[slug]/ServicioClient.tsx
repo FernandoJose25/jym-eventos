@@ -329,6 +329,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
   const [statsVisible, setStatsVisible] = useState(false);
   const [visibleCards, setVisibleCards] = useState<Set<string>>(new Set());
   const [otrosServicios, setOtrosServicios] = useState<any[]>([]);
+  const [galeriaFotos, setGaleriaFotos] = useState<any[]>([]);
   const statsRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -369,7 +370,25 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           const j = Math.floor(Math.random() * (i + 1));
           [pool[i], pool[j]] = [pool[j], pool[i]];
         }
-        setOtrosServicios(pool.slice(0, 3));
+        // Si Firestore no trae nada (colección vacía, todo oculto, etc.) caemos
+        // al listado estático de SERVICIOS_DATA para que la sección "También
+        // te puede interesar" nunca quede vacía en producción.
+        const staticFallback = (SERVICIOS_DATA[rawSlug]?.relacionados || []).map((r: any) => ({
+          title: r.title, icon: r.icon, link: r.href?.replace(/^\//, '') || '', img: r.img || '',
+        }));
+        setOtrosServicios(pool.length > 0 ? pool.slice(0, 3) : staticFallback);
+
+        /* Mini-galería del servicio — 8 fotos reales filtradas por categoría */
+        const norm = (s: string) => (s || '').trim().toLowerCase();
+        const tituloServicio = match?.data()?.title || SERVICIOS_DATA[rawSlug]?.title || '';
+        if (tituloServicio) {
+          const gSnap = await getDocs(query(collection(db, 'gallery_items'), orderBy('order', 'asc')));
+          const fotos = gSnap.docs
+            .map(d => ({ id: d.id, ...d.data() } as any))
+            .filter(f => f.visible !== false && f.categoria && norm(f.categoria) === norm(tituloServicio) && f.tipo !== 'video')
+            .slice(0, 8);
+          setGaleriaFotos(fotos);
+        }
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     };
@@ -397,7 +416,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
     }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
     cards.forEach(c => obs.observe(c));
     return () => obs.disconnect();
-  }, [loading]);
+  }, [loading, otrosServicios, galeriaFotos]);
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#050d1a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1005,6 +1024,64 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
               </div>
             </div>
           </div>
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════
+          GALERÍA DEL SERVICIO — 8 fotos reales filtradas por categoría
+      ═══════════════════════════════════════════ */}
+      {galeriaFotos.length > 0 && (
+        <section style={{ padding: 'clamp(5rem,9vw,8rem) 0', background: '#fff' }}>
+          <div className="container">
+            <div data-reveal="gal-header" style={{ textAlign: 'center', marginBottom: 'clamp(2.5rem,5vw,4rem)', opacity: isVisible('gal-header') ? 1 : 0, transform: isVisible('gal-header') ? 'none' : 'translateY(24px)', transition: 'all .7s ease' }}>
+              <p style={{ color: accentColor, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Momentos Reales</p>
+              <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#0c1e30', margin: 0, letterSpacing: '-.03em' }}>
+                Así se Ve {title} en Vivo
+              </h2>
+            </div>
+
+            <div className="srv-gallery-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '0.9rem' }}>
+              {galeriaFotos.map((f: any, i: number) => {
+                const rid = `gal-${i}`;
+                return (
+                  <div key={f.id} data-reveal={rid}
+                    style={{
+                      borderRadius: 16, overflow: 'hidden', position: 'relative',
+                      aspectRatio: '1/1',
+                      opacity: isVisible(rid) ? 1 : 0,
+                      transform: isVisible(rid) ? 'none' : 'translateY(24px)',
+                      transition: `all .55s ${i * 0.06}s ease`,
+                    }}>
+                    <img src={cxCard(f.url)} alt={f.alt || title} loading="lazy" decoding="async"
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .5s ease' }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }} />
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ textAlign: 'center', marginTop: 'clamp(2rem,4vw,3rem)' }}>
+              <a href="/galeria" style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '0.85rem 2rem', borderRadius: 999,
+                background: 'transparent', color: accentColor,
+                fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none',
+                fontFamily: 'var(--font-jakarta)',
+                border: `1.5px solid ${accentColor}50`,
+                transition: 'all .3s ease',
+              }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = `${accentColor}10`; el.style.borderColor = accentColor; }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'transparent'; el.style.borderColor = `${accentColor}50`; }}>
+                Ver galería completa →
+              </a>
+            </div>
+          </div>
+
+          <style>{`
+            @media (max-width: 860px) { .srv-gallery-grid { grid-template-columns: repeat(3,1fr) !important; } }
+            @media (max-width: 560px) { .srv-gallery-grid { grid-template-columns: repeat(2,1fr) !important; } }
+          `}</style>
         </section>
       )}
 
