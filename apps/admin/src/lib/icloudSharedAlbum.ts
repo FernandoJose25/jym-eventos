@@ -122,3 +122,28 @@ export async function sincronizarAlbumesICloud(idToken: string, id?: string): Pr
     if (!res.ok) throw new Error(data.error || 'No se pudo sincronizar');
     return data.resultados;
 }
+
+/** Abre un álbum ya conectado trayendo SOLO lo que aún no se había traído antes
+ *  (no está en seenIds) — para revisión manual sin repetir en cada apertura lo
+ *  que ya se decidió subir o descartar. */
+export async function listarNuevosDeAlbumICloud(albumId: string, idToken: string): Promise<ICloudItem[]> {
+    const res = await fetch(`/api/icloud-album/accounts?abrir=${encodeURIComponent(albumId)}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'No se pudo leer el álbum de iCloud');
+    return data.items as ICloudItem[];
+}
+
+/** Marca fotos/videos como "ya vistos" en un álbum conectado — para que no
+ *  vuelvan a aparecer la próxima vez que se abra/sincronice, sin importar si
+ *  se subieron a la galería o se descartaron. */
+export async function marcarVistosICloud(albumId: string, ids: string[], idToken: string): Promise<void> {
+    if (ids.length === 0) return;
+    const res = await fetch('/api/icloud-album/accounts', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: albumId, marcarVistos: ids }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'No se pudo actualizar el álbum');
+}
