@@ -148,7 +148,22 @@ export default function GaleriaPage() {
     toast.success(`✅ Álbum "${titulo}" creado`);
   };
 
-  const subcatsDisponibles = SUBCATS[formData.categoria] || [];
+  // Subcategorías predefinidas (SUBCATS) + las que ya se usaron de verdad en
+  // fotos de ESA MISMA categoría (útil para categorías personalizadas, como
+  // los Servicios reales, que no tienen lista fija) — nunca mezcladas con
+  // subcategorías de otras categorías.
+  const subcatsDeCategoria = (categoria: string): string[] => {
+    const predefinidas = SUBCATS[categoria] || [];
+    const usadas = new Set<string>();
+    for (const it of items) {
+      if (it.categoria === categoria && it.subcategoria) usadas.add(it.subcategoria);
+    }
+    const combinadas = [...predefinidas];
+    for (const s of usadas) if (!combinadas.includes(s)) combinadas.push(s);
+    return combinadas;
+  };
+
+  const subcatsDisponibles = subcatsDeCategoria(formData.categoria);
 
   const openAdd = () => {
     setFormData(BLANK);
@@ -1154,7 +1169,7 @@ export default function GaleriaPage() {
             {cats.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
 
-          {bulkCategoria && (SUBCATS[bulkCategoria] || []).length > 0 && (
+          {bulkCategoria && (
             <select
               value={bulkSubcatDrop}
               onChange={e => {
@@ -1164,22 +1179,21 @@ export default function GaleriaPage() {
               }}
               style={{ borderRadius: 8, border: 'none', padding: '0.5rem 0.6rem', fontSize: '0.8rem', minWidth: 140 }}>
               <option value="">Sin subcategoría</option>
-              {(SUBCATS[bulkCategoria] || []).map(s => <option key={s} value={s}>{s}</option>)}
+              {subcatsDeCategoria(bulkCategoria).map(s => <option key={s} value={s}>{s}</option>)}
+              <option value="Otro">+ Nueva subcategoría…</option>
             </select>
           )}
 
-          {bulkCategoria && (bulkSubcatDrop === 'Otro' || (SUBCATS[bulkCategoria] || []).length === 0) && (
-            <input value={bulkSubcategoria} placeholder="Subcategoría"
+          {bulkCategoria && bulkSubcatDrop === 'Otro' && (
+            <input value={bulkSubcategoria} placeholder="Nombre de la subcategoría"
+              autoFocus
               onChange={e => setBulkSubcategoria(e.target.value)}
-              style={{ borderRadius: 8, border: 'none', padding: '0.5rem 0.6rem', fontSize: '0.8rem', width: 130 }} />
+              style={{ borderRadius: 8, border: 'none', padding: '0.5rem 0.6rem', fontSize: '0.8rem', width: 150 }} />
           )}
 
           {bulkCategoria && (
             <button
-              onClick={() => handleAsignarCategoriaEnLote(
-                bulkCategoria,
-                (SUBCATS[bulkCategoria] || []).length === 0 || bulkSubcatDrop ? bulkSubcategoria : undefined,
-              )}
+              onClick={() => handleAsignarCategoriaEnLote(bulkCategoria, bulkSubcategoria)}
               disabled={bulkBusy}
               style={{ background: '#d4a017', color: '#0a1628', border: 'none', borderRadius: 8, padding: '0.5rem 0.8rem', fontWeight: 700, fontSize: '0.78rem', cursor: bulkBusy ? 'not-allowed' : 'pointer' }}>
               Aplicar
