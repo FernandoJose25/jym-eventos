@@ -7,7 +7,8 @@ import { db, COL } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { useModal } from '@/components/ui/Modal';
 import ImageUploader from '@/components/ui/ImageUploader';
-import { Plus, Eye, EyeOff, Trash2, Filter, Search, X, Pencil, Sparkles, CheckSquare, Square, Layers } from 'lucide-react';
+import WatermarkBatchModal from '@/components/ui/WatermarkBatchModal';
+import { Plus, Eye, EyeOff, Trash2, Filter, Search, X, Pencil, Sparkles, CheckSquare, Square, Layers, Droplet } from 'lucide-react';
 import Link from 'next/link';
 import { SUBCATS } from '@/lib/galeriaTaxonomy';
 import { getToken } from '@/lib/get-token';
@@ -104,6 +105,7 @@ export default function GaleriaPage() {
   const [bulkSubcatDrop, setBulkSubcatDrop] = useState('');
   const [bulkSubcategoria, setBulkSubcategoria] = useState('');
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [watermarkModalItems, setWatermarkModalItems] = useState<{ id: string; url: string; alt?: string }[] | null>(null);
 
   // Pestaña de la página: fotos sueltas o gestión de álbumes (antes era una
   // ruta aparte /dashboard/albumes; ahora vive aquí para no fragmentar el flujo).
@@ -325,6 +327,23 @@ export default function GaleriaPage() {
     } finally {
       setBulkBusy(false);
     }
+  };
+
+  /** Abre el modal secuencial de marca de agua para los items seleccionados. */
+  const handleAbrirMarcaDeAguaEnLote = () => {
+    const lista = items
+      .filter(i => selected.has(i.id) && i.tipo !== 'video')
+      .map(i => ({ id: i.id, url: i.url, alt: i.alt }));
+    if (lista.length === 0) { toast.error('Selecciona al menos una foto (los videos no aplican aquí)'); return; }
+    setWatermarkModalItems(lista);
+  };
+
+  /** Guarda la nueva URL (ya con marca de agua horneada) de un item puntual
+   *  y revalida solo el álbum al que pertenece, sin esperar a cerrar el modal. */
+  const handleAplicarMarcaDeAguaAUno = async (id: string, newUrl: string) => {
+    await updateDoc(doc(db, COL.GALERIA, id), { url: newUrl });
+    const slugs = slugsDeAlbumesDeItems(new Set([id]));
+    getToken().then(idToken => revalidarWeb(idToken, slugs)).catch(() => {});
   };
 
   // ── Panel de Álbumes (fusionado dentro de Galería) ────────────────────
@@ -1267,6 +1286,14 @@ export default function GaleriaPage() {
             </button>
           )}
 
+          {items.some(i => selected.has(i.id) && i.tipo !== 'video') && (
+            <button onClick={handleAbrirMarcaDeAguaEnLote} disabled={bulkBusy}
+              title="Añade el logo de la empresa a cada foto seleccionada, eligiendo la posición foto por foto"
+              style={{ background: 'rgba(6,182,212,.2)', color: '#67e8f9', border: '1px solid rgba(6,182,212,.4)', borderRadius: 8, padding: '0.5rem 0.7rem', fontSize: '0.78rem', fontWeight: 700, cursor: bulkBusy ? 'not-allowed' : 'pointer' }}>
+              <Droplet size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Marca de agua
+            </button>
+          )}
+
           <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,.15)' }} />
 
           <button onClick={() => handlePublicarEnLote(true)} disabled={bulkBusy}
@@ -1301,6 +1328,14 @@ export default function GaleriaPage() {
             Cancelar
           </button>
         </div>
+      )}
+
+      {watermarkModalItems && (
+        <WatermarkBatchModal
+          items={watermarkModalItems}
+          onApplyOne={handleAplicarMarcaDeAguaAUno}
+          onClose={() => { setWatermarkModalItems(null); setSelected(new Set()); setSelMode(false); }}
+        />
       )}
     </div>
   );
