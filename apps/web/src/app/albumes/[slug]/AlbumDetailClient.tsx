@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { cxCard, cxFull, cxVideo, cxShareVideo } from '@/lib/cloudinary';
 import { ShareBar } from '@/components/ui/ShareBar';
 import CustomVideoPlayer from '@/components/ui/CustomVideoPlayer';
+import { useLockBodyScroll } from '@/lib/hooks/useLockBodyScroll';
 import type { AlbumFoto } from '@/types';
 
 const isVideo = (item: AlbumFoto) =>
@@ -10,6 +11,8 @@ const isVideo = (item: AlbumFoto) =>
 
 export default function AlbumDetailClient({ fotos }: { fotos: AlbumFoto[] }) {
   const [lightbox, setLightbox] = useState<number | null>(null);
+
+  useLockBodyScroll(lightbox !== null);
 
   useEffect(() => {
     if (lightbox === null) return;

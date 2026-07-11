@@ -9,6 +9,7 @@ import { cxCard, cxFull, cxVideo, cxShareVideo } from '@/lib/cloudinary';
 import { ShareBar } from '@/components/ui/ShareBar';
 import CapybaraLoader from '@/components/ui/CapybaraLoader';
 import CustomVideoPlayer from '@/components/ui/CustomVideoPlayer';
+import { useLockBodyScroll } from '@/lib/hooks/useLockBodyScroll';
 
 interface GItem {
   id: string; url: string; alt: string;
@@ -267,6 +268,8 @@ export default function GaleriaClient() {
   }, [displayItems]);
 
   const haySubs = catActiva !== 'Todos' && subcats.length > 1;
+
+  useLockBodyScroll(lightbox !== null);
 
   // Lightbox keyboard
   useEffect(() => {
