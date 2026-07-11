@@ -29,6 +29,7 @@ export interface ICloudListedItem {
     height: number;
     thumbUrl: string;
     fullUrl: string;
+    tipo: 'imagen' | 'video';
 }
 
 /** Extrae el token del link público, en cualquiera de los 2 formatos que usa Apple. */
@@ -85,40 +86,47 @@ async function resolverUrls(token: string, host: string, photoGuids: string[]): 
     return out;
 }
 
-/** Lee un álbum compartido y devuelve metadata + miniatura + URL de resolución completa de cada foto. */
+/** Lee un álbum compartido y devuelve metadata + miniatura + URL de resolución completa de cada foto/video. */
 export async function listarICloud(albumUrl: string): Promise<ICloudListedItem[]> {
     const token = extraerTokenICloud(albumUrl);
     const { photos, host } = await webstream(token);
 
-    // Solo fotos (los videos de álbumes compartidos quedan fuera por ahora)
-    const soloFotos = photos.filter(p => p.mediaAssetType !== 'video');
-    if (soloFotos.length === 0) {
-        throw new Error('El álbum está vacío o solo tiene videos (aún no soportados)');
+    if (photos.length === 0) {
+        throw new Error('El álbum está vacío');
     }
 
-    const porFoto = soloFotos.map(p => {
+    const porItem = photos.map(p => {
         const ders = Object.values(p.derivatives || {});
         if (ders.length === 0) return null;
+        // La derivative más pesada es siempre la de mayor calidad disponible: el
+        // archivo de video original en el caso de videos, o la foto a resolución
+        // completa en el caso de fotos. La más liviana sirve como miniatura/poster.
         const ordenadas = [...ders].sort((a, b) => Number(a.fileSize) - Number(b.fileSize));
-        return { guid: p.photoGuid, thumb: ordenadas[0], full: ordenadas[ordenadas.length - 1] };
-    }).filter(Boolean) as { guid: string; thumb: AppleDerivative; full: AppleDerivative }[];
+        return {
+            guid: p.photoGuid,
+            thumb: ordenadas[0],
+            full: ordenadas[ordenadas.length - 1],
+            tipo: (p.mediaAssetType === 'video' ? 'video' : 'imagen') as 'imagen' | 'video',
+        };
+    }).filter(Boolean) as { guid: string; thumb: AppleDerivative; full: AppleDerivative; tipo: 'imagen' | 'video' }[];
 
-    // Un solo request resuelve las URLs de TODOS los checksums (miniatura y completa) de todas las fotos
-    const urls = await resolverUrls(token, host, soloFotos.map(p => p.photoGuid));
+    // Un solo request resuelve las URLs de TODOS los checksums (miniatura y completa) de todos los items
+    const urls = await resolverUrls(token, host, photos.map(p => p.photoGuid));
 
-    const items = porFoto
+    const items = porItem
         .map(p => ({
             id: p.guid,
-            filename: `${p.guid}.jpg`,
+            filename: `${p.guid}.${p.tipo === 'video' ? 'mov' : 'jpg'}`,
             width: Number(p.full.width) || 0,
             height: Number(p.full.height) || 0,
             thumbUrl: urls[p.thumb.checksum] || '',
             fullUrl: urls[p.full.checksum] || '',
+            tipo: p.tipo,
         }))
         .filter(it => it.thumbUrl && it.fullUrl);
 
     if (items.length === 0) {
-        throw new Error('No se pudieron resolver las URLs de las fotos de este álbum');
+        throw new Error('No se pudieron resolver las URLs de las fotos/videos de este álbum');
     }
     return items;
 }
@@ -139,12 +147,13 @@ async function runWithConcurrency<T, R>(items: T[], limit: number, worker: (item
 export interface ResultadoImportICloud {
     id: string;
     cloudinaryUrl?: string;
+    tipo?: 'imagen' | 'video';
     error?: string;
 }
 
-/** Descarga cada foto de Apple y la sube a Cloudinary. Devuelve un resultado por cada una. */
+/** Descarga cada foto/video de Apple y lo sube a Cloudinary en su calidad original (sin transformar). Devuelve un resultado por cada uno. */
 export async function importarYSubirICloud(
-    items: { id: string; fullUrl: string; filename: string }[],
+    items: { id: string; fullUrl: string; filename: string; tipo?: 'imagen' | 'video' }[],
     concurrencia = 3,
 ): Promise<ResultadoImportICloud[]> {
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
@@ -156,9 +165,10 @@ export async function importarYSubirICloud(
     const folder = 'jym/galeria-importada';
 
     return runWithConcurrency(items, concurrencia, async (it) => {
+        const tipo: 'imagen' | 'video' = it.tipo === 'video' ? 'video' : 'imagen';
         try {
             const res = await fetch(it.fullUrl);
-            if (!res.ok) throw new Error(`iCloud devolvió ${res.status} al descargar esta foto`);
+            if (!res.ok) throw new Error(`iCloud devolvió ${res.status} al descargar este archivo`);
             const buf = Buffer.from(await res.arrayBuffer());
 
             const timestamp = Math.round(Date.now() / 1000);
@@ -166,19 +176,20 @@ export async function importarYSubirICloud(
             const signature = createHash('sha1').update(paramsToSign + apiSecret).digest('hex');
 
             const form = new FormData();
-            form.append('file', new Blob([buf]), it.filename || `${it.id}.jpg`);
+            form.append('file', new Blob([buf]), it.filename || `${it.id}.${tipo === 'video' ? 'mov' : 'jpg'}`);
             form.append('api_key', apiKey);
             form.append('timestamp', String(timestamp));
             form.append('signature', signature);
             form.append('folder', folder);
 
-            const upRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+            const resourceType = tipo === 'video' ? 'video' : 'image';
+            const upRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
                 method: 'POST',
                 body: form,
             });
-            if (!upRes.ok) throw new Error('Cloudinary rechazó esta imagen');
+            if (!upRes.ok) throw new Error(`Cloudinary rechazó este ${tipo === 'video' ? 'video' : 'archivo'}`);
             const upData = await upRes.json();
-            return { id: it.id, cloudinaryUrl: upData.secure_url as string };
+            return { id: it.id, cloudinaryUrl: upData.secure_url as string, tipo };
         } catch (e: any) {
             return { id: it.id, error: e.message || 'Error importando esta foto' };
         }

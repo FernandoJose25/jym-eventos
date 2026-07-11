@@ -14,13 +14,15 @@ export interface ICloudItem {
     height: number;
     /** URL de Apple, se puede usar directo en un <img> (no necesita CORS para solo mostrarla) */
     thumbUrl: string;
-    /** URL de Apple en resolución completa; el servidor la descarga y sube a Cloudinary al importar */
+    /** URL de Apple en resolución/calidad original; el servidor la descarga y sube a Cloudinary al importar, sin transformar */
     fullUrl: string;
+    tipo: 'imagen' | 'video';
 }
 
 export interface ResultadoImportICloud {
     id: string;
     cloudinaryUrl?: string;
+    tipo?: 'imagen' | 'video';
     error?: string;
 }
 
@@ -38,7 +40,7 @@ export async function listarAlbumICloud(albumUrl: string, idToken: string): Prom
 
 /** Descarga (en el servidor) las fotos elegidas y las sube a Cloudinary. Devuelve un resultado por cada una. */
 export async function importarDeICloud(
-    items: { id: string; fullUrl: string; filename: string }[],
+    items: { id: string; fullUrl: string; filename: string; tipo?: 'imagen' | 'video' }[],
     idToken: string,
 ): Promise<ResultadoImportICloud[]> {
     const res = await fetch('/api/icloud-album', {

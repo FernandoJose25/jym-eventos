@@ -70,16 +70,18 @@ export async function sincronizarAlbumICloud(uid: string, albumId: string): Prom
         albumDocId = nuevoAlbum.id;
     }
 
-    // 2) Subir a Cloudinary
+    // 2) Subir a Cloudinary (en su calidad/resolución original, sin transformar)
     const subidas = await importarYSubirICloud(
-        nuevos.map(it => ({ id: it.id, fullUrl: it.fullUrl, filename: it.filename })),
+        nuevos.map(it => ({ id: it.id, fullUrl: it.fullUrl, filename: it.filename, tipo: it.tipo })),
         3,
     );
-    const exitosas = subidas.filter(s => s.cloudinaryUrl) as { id: string; cloudinaryUrl: string }[];
+    const exitosas = subidas.filter(s => s.cloudinaryUrl) as { id: string; cloudinaryUrl: string; tipo?: 'imagen' | 'video' }[];
+    const fotosExitosas = exitosas.filter(s => s.tipo !== 'video');
+    const videosExitosos = exitosas.filter(s => s.tipo === 'video');
 
-    // 3) Clasificar con IA
+    // 3) Clasificar con IA (solo fotos — el modelo de visión no admite video)
     const clasificadas = await clasificarFotosEnLotes(
-        exitosas.map(s => ({ id: s.id, url: urlParaClasificar(s.cloudinaryUrl) })),
+        fotosExitosas.map(s => ({ id: s.id, url: urlParaClasificar(s.cloudinaryUrl) })),
     );
 
     // 4) Guardar en gallery_items — visible:false, para que quede pendiente de un vistazo
@@ -88,7 +90,7 @@ export async function sincronizarAlbumICloud(uid: string, albumId: string): Prom
     let order = gallerySnap.size;
     let coverUrl = '';
 
-    for (const s of exitosas) {
+    for (const s of fotosExitosas) {
         const c = clasificadas[s.id];
         order += 1;
         if (!coverUrl) coverUrl = s.cloudinaryUrl;
@@ -100,6 +102,23 @@ export async function sincronizarAlbumICloud(uid: string, albumId: string): Prom
             albumId: albumDocId,
             focalX: 0.5, focalY: 0.5,
             tipo: 'imagen',
+            visible: false, // pendiente de aprobar en el panel antes de salir a la web pública
+            order, row: 1,
+            createdAt: new Date().toISOString(),
+            origen: 'icloud-auto',
+        });
+    }
+
+    for (const s of videosExitosos) {
+        order += 1;
+        await adminDb.collection('gallery_items').doc(`${Date.now()}_${s.id}`).set({
+            url: s.cloudinaryUrl,
+            alt: 'Video de evento J&M',
+            categoria: 'General',
+            subcategoria: '',
+            albumId: albumDocId,
+            focalX: 0.5, focalY: 0.5,
+            tipo: 'video',
             visible: false, // pendiente de aprobar en el panel antes de salir a la web pública
             order, row: 1,
             createdAt: new Date().toISOString(),
