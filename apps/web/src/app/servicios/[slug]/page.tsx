@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { adminDb } from '@/lib/firebase-admin';
 import { SITE_URL } from '@/lib/site';
+import JsonLd from '@/components/ui/JsonLd';
 import ServicioClient, { SERVICIOS_DATA } from './ServicioClient';
 
 async function findServicio(slug: string) {
@@ -94,5 +95,31 @@ export default async function Page(
     initialData = JSON.parse(JSON.stringify(initialData));
   }
 
-  return <ServicioClient initialData={initialData} />;
+  const canonical = `${SITE_URL}/servicios/${slug}`;
+  const serviceSchema = initialData ? {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    serviceType: initialData.title,
+    name: `${initialData.title} en Sechura, Piura`,
+    description: initialData.desc || initialData.detail?.hero_desc || initialData.hero
+      || `${initialData.title} para tu evento en Sechura, Piura.`,
+    url: canonical,
+    areaServed: {
+      '@type': 'City',
+      name: 'Sechura, Piura, Perú',
+    },
+    provider: {
+      '@type': 'LocalBusiness',
+      name: 'J&M Decoraciones y Eventos',
+      url: SITE_URL,
+      telephone: '+51945203708',
+    },
+  } : null;
+
+  return (
+    <>
+      {serviceSchema && <JsonLd data={serviceSchema} />}
+      <ServicioClient initialData={initialData} />
+    </>
+  );
 }
