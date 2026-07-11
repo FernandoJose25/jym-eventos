@@ -22,6 +22,7 @@ import {
   listarCuentasICloud, conectarAlbumICloud, desconectarAlbumICloud,
   type ICloudItem, type CuentaICloud,
 } from '@/lib/icloudSharedAlbum';
+import { revalidarWeb } from '@/lib/revalidateWeb';
 
 type EstadoFoto = 'pendiente' | 'procesando' | 'lista' | 'error';
 type Fuente = 'google' | 'icloud';
@@ -617,8 +618,8 @@ export default function ImportarDeGooglePhotosPage() {
         await setDoc(doc(db, COL.GALERIA, id), {
           url: f.cloudinaryUrl,
           alt: f.alt || f.subcategoria || f.categoria || 'Evento J&M',
-          categoria: f.categoria,
-          subcategoria: f.subcategoria,
+          categoria: f.categoria.trim(),
+          subcategoria: f.subcategoria.trim(),
           albumId: eventoNombre ? (albumIdPorNombre[eventoNombre] || '') : '',
           focalX: 0.5,
           focalY: 0.5,
@@ -635,6 +636,10 @@ export default function ImportarDeGooglePhotosPage() {
       setFilas(prev => prev.filter(f => !aprobadas.includes(f)));
       setGrupoAlbumId({});
       setFase('revision');
+
+      // Avisa a la web pública para que la galería/álbumes se actualicen ya,
+      // sin esperar hasta 1 hora al refresco automático (ISR).
+      getToken().then(idToken => revalidarWeb(idToken)).catch(() => {});
     } catch (e: any) {
       toast.error(e.message || 'Error guardando en la galería');
       setFase('revision');
@@ -670,7 +675,7 @@ export default function ImportarDeGooglePhotosPage() {
   const seleccionarTodasLasListas = (marcar: boolean) => {
     setFilas(prev => prev.map(f => (f.estado === 'lista' ? { ...f, seleccionada: marcar } : f)));
   };
-  const aplicarALoteSeleccionado = (patch: Partial<Pick<FilaFoto, 'categoria' | 'subcategoria' | 'subcatDrop' | 'eventoNombre'>>) => {
+  const aplicarALoteSeleccionado = (patch: Partial<Pick<FilaFoto, 'categoria' | 'subcategoria' | 'subcatDrop' | 'eventoNombre' | 'alt'>>) => {
     setFilas(prev => prev.map(f => (f.seleccionada ? { ...f, ...patch } : f)));
   };
 
@@ -1003,37 +1008,73 @@ export default function ImportarDeGooglePhotosPage() {
                 Seleccionar todas las subidas ({totalListas})
               </label>
 
-              {totalSeleccionadas > 0 && (
-                <>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e3a5f' }}>
-                    {totalSeleccionadas} seleccionada(s) —
-                  </span>
-                  <select defaultValue="" onChange={e => {
-                    if (!e.target.value) return;
-                    aplicarALoteSeleccionado({ categoria: e.target.value, subcategoria: '', subcatDrop: '' });
-                    e.target.value = '';
-                  }} style={{ fontSize: '0.78rem', padding: '5px 8px', borderRadius: 7, border: '1px solid #93c5fd', color: '#1e3a5f' }}>
-                    <option value="">Asignar categoría a las seleccionadas...</option>
-                    {cats.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                  <input list="lista-eventos" placeholder="Asignar evento a las seleccionadas (Enter)"
-                    onKeyDown={e => {
-                      if (e.key !== 'Enter') return;
-                      const v = (e.target as HTMLInputElement).value.trim();
-                      if (!v) return;
-                      aplicarALoteSeleccionado({ eventoNombre: v });
-                      (e.target as HTMLInputElement).value = '';
-                    }}
-                    style={{ fontSize: '0.78rem', padding: '5px 8px', borderRadius: 7, border: '1px solid #93c5fd', color: '#1e3a5f', minWidth: 200 }} />
-                  <button type="button" onClick={() => seleccionarTodasLasListas(false)}
-                    style={{
-                      fontSize: '0.75rem', color: '#64748b', background: 'transparent',
-                      border: 'none', cursor: 'pointer', textDecoration: 'underline', marginLeft: 'auto',
-                    }}>
-                    Quitar selección
-                  </button>
-                </>
-              )}
+              {totalSeleccionadas > 0 && (() => {
+                // Subcategoría solo tiene sentido en lote si TODAS las seleccionadas
+                // ya comparten la misma categoría (si no, no hay una lista de
+                // subcategorías predefinidas única que ofrecer).
+                const categoriasSeleccionadas = new Set(filas.filter(f => f.seleccionada).map(f => f.categoria));
+                const categoriaComun = categoriasSeleccionadas.size === 1 ? [...categoriasSeleccionadas][0] : '';
+                const subcatsComunes = categoriaComun ? (SUBCATS[categoriaComun] || []) : [];
+                return (
+                  <>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1e3a5f' }}>
+                      {totalSeleccionadas} seleccionada(s) —
+                    </span>
+                    <select defaultValue="" onChange={e => {
+                      if (!e.target.value) return;
+                      aplicarALoteSeleccionado({ categoria: e.target.value, subcategoria: '', subcatDrop: '' });
+                      e.target.value = '';
+                    }} style={{ fontSize: '0.78rem', padding: '5px 8px', borderRadius: 7, border: '1px solid #93c5fd', color: '#1e3a5f' }}>
+                      <option value="">Asignar categoría...</option>
+                      {cats.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+
+                    {categoriaComun && (
+                      <select defaultValue="__sin_elegir__" onChange={e => {
+                        const v = e.target.value;
+                        if (v === '__sin_elegir__') return;
+                        if (v === '__ninguna__') { aplicarALoteSeleccionado({ subcategoria: '', subcatDrop: '' }); }
+                        else if (v === '__otro__') { aplicarALoteSeleccionado({ subcategoria: '', subcatDrop: 'Otro' }); }
+                        else { aplicarALoteSeleccionado({ subcategoria: v, subcatDrop: v }); }
+                        e.target.value = '__sin_elegir__';
+                      }} style={{ fontSize: '0.78rem', padding: '5px 8px', borderRadius: 7, border: '1px solid #93c5fd', color: '#1e3a5f' }}>
+                        <option value="__sin_elegir__">Asignar subcategoría...</option>
+                        <option value="__ninguna__">Sin subcategoría</option>
+                        {subcatsComunes.map(s => <option key={s} value={s}>{s}</option>)}
+                        <option value="__otro__">Otro (escribir en la tarjeta)</option>
+                      </select>
+                    )}
+
+                    <input placeholder="Asignar descripción (Enter)"
+                      onKeyDown={e => {
+                        if (e.key !== 'Enter') return;
+                        const v = (e.target as HTMLInputElement).value.trim();
+                        if (!v) return;
+                        aplicarALoteSeleccionado({ alt: v });
+                        (e.target as HTMLInputElement).value = '';
+                      }}
+                      style={{ fontSize: '0.78rem', padding: '5px 8px', borderRadius: 7, border: '1px solid #93c5fd', color: '#1e3a5f', minWidth: 160 }} />
+
+                    <input list="lista-eventos" placeholder="Asignar evento (Enter)"
+                      onKeyDown={e => {
+                        if (e.key !== 'Enter') return;
+                        const v = (e.target as HTMLInputElement).value.trim();
+                        if (!v) return;
+                        aplicarALoteSeleccionado({ eventoNombre: v });
+                        (e.target as HTMLInputElement).value = '';
+                      }}
+                      style={{ fontSize: '0.78rem', padding: '5px 8px', borderRadius: 7, border: '1px solid #93c5fd', color: '#1e3a5f', minWidth: 160 }} />
+
+                    <button type="button" onClick={() => seleccionarTodasLasListas(false)}
+                      style={{
+                        fontSize: '0.75rem', color: '#64748b', background: 'transparent',
+                        border: 'none', cursor: 'pointer', textDecoration: 'underline', marginLeft: 'auto',
+                      }}>
+                      Quitar selección
+                    </button>
+                  </>
+                );
+              })()}
             </div>
           )}
 

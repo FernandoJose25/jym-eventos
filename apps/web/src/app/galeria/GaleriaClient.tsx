@@ -205,16 +205,19 @@ export default function GaleriaClient() {
 
   useEffect(() => { setSubActiva('Todos'); setSearchQ(''); }, [catActiva]);
 
-  // Pipeline: category → subcategory → search (sobre displayItems, que ya
-  // trae las fotos de álbum consolidadas en una sola tarjeta)
-  const catFiltered = catActiva === 'Todos' ? displayItems : displayItems.filter(i => i.categoria === catActiva);
-
-  // Deduplicate subcategories: normalize to "Primera letra mayúscula, resto minúscula"
-  // so "PROMOCIONES", "PROmociones", "promociones" → "Promociones"
+  // Normaliza para comparar/agrupar: recorta espacios y unifica may/minúsculas,
+  // así "BMCABINAS", "BMCabinas ", " bmcabinas" caen en el mismo grupo aunque
+  // se hayan guardado con distinto casing (ej. importador vs formulario manual).
+  const norm = (s: string) => s.trim().toLowerCase();
+  // Para mostrar: "Primera letra mayúscula, resto minúscula" — "PROMOCIONES" → "Promociones"
   const toDisplay = (s: string) => {
     const t = s.trim();
     return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
   };
+
+  // Pipeline: category → subcategory → search (sobre displayItems, que ya
+  // trae las fotos de álbum consolidadas en una sola tarjeta)
+  const catFiltered = catActiva === 'Todos' ? displayItems : displayItems.filter(i => i.categoria && norm(i.categoria) === norm(catActiva));
 
   const subcats = useMemo(() => {
     const seen = new Set<string>();
@@ -247,17 +250,17 @@ export default function GaleriaClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visibles]);
 
-  // Build category list dynamically from loaded items
+  // Build category list dynamically from loaded items — normalizado (norm) para
+  // que dos escrituras del mismo nombre ("BMCABINAS" vs "BMCabinas") no salgan
+  // como chips separados; se muestra con el casing de la PRIMERA aparición.
   const cats = useMemo(() => {
-    const seen = new Set<string>();
-    const result: { id: string; icon: string }[] = [];
+    const seen = new Map<string, { id: string; icon: string }>();
     for (const item of displayItems) {
-      if (item.categoria && !seen.has(item.categoria)) {
-        seen.add(item.categoria);
-        result.push({ id: item.categoria, icon: CAT_ICONS[item.categoria] ?? '✨' });
-      }
+      if (!item.categoria) continue;
+      const key = norm(item.categoria);
+      if (!seen.has(key)) seen.set(key, { id: item.categoria, icon: CAT_ICONS[item.categoria] ?? '✨' });
     }
-    return [{ id: 'Todos', icon: '🎪' }, ...result];
+    return [{ id: 'Todos', icon: '🎪' }, ...seen.values()];
   }, [displayItems]);
 
   const haySubs = catActiva !== 'Todos' && subcats.length > 1;
@@ -360,7 +363,7 @@ export default function GaleriaClient() {
           {/* Categorías principales */}
           <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: '1rem', flexWrap: 'wrap' }}>
             {cats.map(cat => {
-              const count = cat.id === 'Todos' ? displayItems.length : displayItems.filter(i => i.categoria === cat.id).length;
+              const count = cat.id === 'Todos' ? displayItems.length : displayItems.filter(i => i.categoria && norm(i.categoria) === norm(cat.id)).length;
               if (cat.id !== 'Todos' && count === 0) return null;
               const active = catActiva === cat.id;
               return (
