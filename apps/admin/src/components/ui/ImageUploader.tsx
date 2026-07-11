@@ -41,6 +41,37 @@ interface Props {
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 
 /* ─── canvas crop ─── */
+
+/**
+ * Hornea el EXIF Orientation de fotos de celular en los píxeles físicos,
+ * una sola vez, al recibir el archivo — antes de que el editor de recorte
+ * lo toque. Sin esto, `<img>` en el DOM respeta el EXIF (se ve derecha)
+ * pero una decodificación posterior vía `new Image()` desatachada del DOM
+ * (usada por el rotate manual y por applyCropToFile) puede interpretarlo
+ * de forma distinta, produciendo una rotación que no coincide entre lo que
+ * el usuario ve en el editor y el archivo final que sube a Cloudinary.
+ * `createImageBitmap` con `imageOrientation: 'from-image'` aplica el EXIF
+ * de forma explícita y determinista en un único punto.
+ */
+async function normalizeExifOrientation(file: File): Promise<File> {
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/png'));
+    if (!blob) return file;
+    return new File([blob], file.name.replace(/\.\w+$/, '.png'), { type: 'image/png' });
+  } catch {
+    // Navegador sin soporte de createImageBitmap con imageOrientation, o
+    // archivo no decodificable por esa vía — se sigue con el original.
+    return file;
+  }
+}
+
 async function loadWatermarkImg(url: string): Promise<HTMLImageElement | null> {
   if (!url) return null;
   return new Promise(res => {
@@ -1027,8 +1058,9 @@ export default function ImageUploader({
         setPreviewType('video');
         upload(file);
       } else {
-        setCropFile(file);
-        setCropSrc(URL.createObjectURL(file));
+        const normalized = await normalizeExifOrientation(file);
+        setCropFile(normalized);
+        setCropSrc(URL.createObjectURL(normalized));
       }
     },
   });
