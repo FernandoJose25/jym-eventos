@@ -5,6 +5,10 @@
  * Toda la lógica de protocolo (token, shard host, checksums) vive en el
  * servidor (`/api/icloud-album`) — desde aquí solo mandamos el link que
  * pega el usuario y recibimos fotos ya listas para mostrar/importar.
+ *
+ * Flujo 100% manual: se trae SIEMPRE el álbum completo y quien llama filtra
+ * contra su propia galería (gallery_items) qué ya está subido. No hay
+ * sincronización automática ni "vistos" ocultos que se puedan desincronizar.
  */
 
 export interface ICloudItem {
@@ -26,7 +30,8 @@ export interface ResultadoImportICloud {
     error?: string;
 }
 
-/** Lee un álbum compartido público y devuelve todas sus fotos (metadata + miniatura). */
+/** Lee un álbum compartido público y devuelve TODAS sus fotos/videos (metadata + miniatura),
+ *  sin filtrar nada — quien llama decide qué mostrar comparando contra su propia galería. */
 export async function listarAlbumICloud(albumUrl: string, idToken: string): Promise<ICloudItem[]> {
     const res = await fetch('/api/icloud-album', {
         method: 'POST',
@@ -54,20 +59,15 @@ export async function importarDeICloud(
 }
 
 /* ══════════════ Sesión persistente de álbumes de iCloud ══════════════
-   Igual que las cuentas de Google Photos: el link se guarda una sola vez
-   (no hay login real, pero sí queda "conectado") y desde ahí las fotos
-   nuevas que aparezcan en el álbum se auto-importan solas (Vercel Cron),
-   sin tener que volver a pegar el link cada vez que se entra a Galería. */
+   El link se guarda una sola vez (no hay login real, pero sí queda
+   "conectado" como las cuentas de Google Photos) para no tener que volver
+   a pegarlo cada vez que se entra a Galería a importar. */
 
 export interface CuentaICloud {
     id: string;
     url: string;
     nombre: string;
     addedAt: string | null;
-    lastSyncedAt: string | null;
-    lastSyncError: string | null;
-    autoSync: boolean;
-    fotosVistas: number;
 }
 
 /** Lista los álbumes de iCloud ya conectados (guardados) por este admin. */
@@ -92,16 +92,6 @@ export async function conectarAlbumICloud(url: string, nombre: string, idToken: 
     return { id: data.id, items: data.items as ICloudItem[] };
 }
 
-/** Pausa o reanuda la auto-importación de un álbum ya conectado. */
-export async function alternarAutoSyncICloud(id: string, autoSync: boolean, idToken: string): Promise<void> {
-    const res = await fetch('/api/icloud-album/accounts', {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, autoSync }),
-    });
-    if (!res.ok) throw new Error((await res.json()).error || 'No se pudo actualizar el álbum');
-}
-
 /** Desconecta un álbum guardado (deja de sincronizarse; no borra fotos ya importadas). */
 export async function desconectarAlbumICloud(id: string, idToken: string): Promise<void> {
     const res = await fetch(`/api/icloud-album/accounts?id=${encodeURIComponent(id)}`, {
@@ -109,41 +99,4 @@ export async function desconectarAlbumICloud(id: string, idToken: string): Promi
         headers: { Authorization: `Bearer ${idToken}` },
     });
     if (!res.ok) throw new Error((await res.json()).error || 'No se pudo desconectar el álbum');
-}
-
-/** Fuerza una sincronización ahora mismo (uno o todos los álbumes conectados). */
-export async function sincronizarAlbumesICloud(idToken: string, id?: string): Promise<{ albumId: string; nuevas: number; error?: string }[]> {
-    const res = await fetch('/api/icloud-album/sync', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(id ? { id } : {}),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'No se pudo sincronizar');
-    return data.resultados;
-}
-
-/** Abre un álbum ya conectado trayendo SOLO lo que aún no se había traído antes
- *  (no está en seenIds) — para revisión manual sin repetir en cada apertura lo
- *  que ya se decidió subir o descartar. */
-export async function listarNuevosDeAlbumICloud(albumId: string, idToken: string): Promise<ICloudItem[]> {
-    const res = await fetch(`/api/icloud-album/accounts?abrir=${encodeURIComponent(albumId)}`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'No se pudo leer el álbum de iCloud');
-    return data.items as ICloudItem[];
-}
-
-/** Marca fotos/videos como "ya vistos" en un álbum conectado — para que no
- *  vuelvan a aparecer la próxima vez que se abra/sincronice, sin importar si
- *  se subieron a la galería o se descartaron. */
-export async function marcarVistosICloud(albumId: string, ids: string[], idToken: string): Promise<void> {
-    if (ids.length === 0) return;
-    const res = await fetch('/api/icloud-album/accounts', {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: albumId, marcarVistos: ids }),
-    });
-    if (!res.ok) throw new Error((await res.json()).error || 'No se pudo actualizar el álbum');
 }
