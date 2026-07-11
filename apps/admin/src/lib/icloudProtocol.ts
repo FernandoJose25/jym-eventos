@@ -19,7 +19,17 @@ export interface ApplePhoto {
     derivatives: Record<string, AppleDerivative>;
     caption?: string;
     dateCreated?: string;
-    mediaAssetType?: string; // 'video' cuando está presente; no siempre viene
+    mediaAssetType?: string; // 'video' cuando está presente
+}
+
+/** Los videos traen sus derivatives con claves de calidad ('720p','360p') y
+ *  un 'PosterFrame' (miniatura JPEG); las fotos traen claves numéricas
+ *  (tamaño en px del lado largo). Se usa como respaldo si algún día
+ *  mediaAssetType no viniera en la respuesta de Apple. */
+function esVideo(p: ApplePhoto): boolean {
+    if (p.mediaAssetType === 'video') return true;
+    const keys = Object.keys(p.derivatives || {});
+    return keys.includes('PosterFrame') || keys.some(k => /^\d+p$/.test(k));
 }
 
 export interface ICloudListedItem {
@@ -96,18 +106,27 @@ export async function listarICloud(albumUrl: string): Promise<ICloudListedItem[]
     }
 
     const porItem = photos.map(p => {
-        const ders = Object.values(p.derivatives || {});
-        if (ders.length === 0) return null;
-        // La derivative más pesada es siempre la de mayor calidad disponible: el
-        // archivo de video original en el caso de videos, o la foto a resolución
-        // completa en el caso de fotos. La más liviana sirve como miniatura/poster.
-        const ordenadas = [...ders].sort((a, b) => Number(a.fileSize) - Number(b.fileSize));
-        return {
-            guid: p.photoGuid,
-            thumb: ordenadas[0],
-            full: ordenadas[ordenadas.length - 1],
-            tipo: (p.mediaAssetType === 'video' ? 'video' : 'imagen') as 'imagen' | 'video',
-        };
+        const derEntries = Object.entries(p.derivatives || {});
+        if (derEntries.length === 0) return null;
+        const tipo: 'imagen' | 'video' = esVideo(p) ? 'video' : 'imagen';
+
+        let thumb: AppleDerivative;
+        let full: AppleDerivative;
+        if (tipo === 'video') {
+            // El poster (frame JPEG) es la miniatura; entre las derivatives de
+            // video reales (todo lo que no sea PosterFrame) tomamos la de mayor
+            // fileSize, que es la de mejor calidad que Apple ofrece vía este
+            // protocolo (normalmente hasta 720p — no siempre el original).
+            const poster = p.derivatives['PosterFrame'];
+            const videoDers = derEntries.filter(([k]) => k !== 'PosterFrame').map(([, v]) => v);
+            thumb = poster || videoDers[0];
+            full = [...videoDers].sort((a, b) => Number(a.fileSize) - Number(b.fileSize)).pop() || thumb;
+        } else {
+            const ordenadas = [...derEntries.map(([, v]) => v)].sort((a, b) => Number(a.fileSize) - Number(b.fileSize));
+            thumb = ordenadas[0];
+            full = ordenadas[ordenadas.length - 1];
+        }
+        return { guid: p.photoGuid, thumb, full, tipo };
     }).filter(Boolean) as { guid: string; thumb: AppleDerivative; full: AppleDerivative; tipo: 'imagen' | 'video' }[];
 
     // Un solo request resuelve las URLs de TODOS los checksums (miniatura y completa) de todos los items
@@ -116,7 +135,7 @@ export async function listarICloud(albumUrl: string): Promise<ICloudListedItem[]
     const items = porItem
         .map(p => ({
             id: p.guid,
-            filename: `${p.guid}.${p.tipo === 'video' ? 'mov' : 'jpg'}`,
+            filename: `${p.guid}.${p.tipo === 'video' ? 'mp4' : 'jpg'}`,
             width: Number(p.full.width) || 0,
             height: Number(p.full.height) || 0,
             thumbUrl: urls[p.thumb.checksum] || '',

@@ -45,6 +45,7 @@ interface FilaFoto {
   eventoNombre: string;   // grupo/evento al que pertenece esta foto (editable)
   clasificada: boolean;   // true una vez que la IA ya la clasificó (independiente de si se subió o no)
   tipo: 'imagen' | 'video';
+  subcatDrop?: string;    // valor elegido en el <select> de subcategoría; 'Otro' revela el input libre (mismo patrón que /dashboard/galeria)
 }
 
 type Fase = 'idle' | 'conectando' | 'esperando-seleccion' | 'listando' | 'revision' | 'guardando';
@@ -933,12 +934,16 @@ export default function ImportarDeGooglePhotosPage() {
             {nombresDeGrupo.map(n => <option key={n} value={n} />)}
           </datalist>
 
+          <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '0 0 6px' }}>
+            1) Sube las fotos/videos → 2) opcional: clasifica con IA (o edita la categoría a mano en cada tarjeta) → 3) guarda en la galería. Puedes saltarte el paso 2 y guardar directo con la categoría "General".
+          </p>
           <div style={{
             display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center',
             marginBottom: 18, position: 'sticky', top: 0, background: '#fff',
             padding: '0.75rem 0', zIndex: 5,
           }}>
             <button onClick={handleSubirFotos} disabled={totalPendientes === 0}
+              title="Sube las fotos/videos a Cloudinary. Después de esto ya puedes guardarlas directo en la galería, sin necesidad de usar la IA."
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 background: totalPendientes === 0 ? '#e2e8f0' : '#1e3a5f',
@@ -950,7 +955,7 @@ export default function ImportarDeGooglePhotosPage() {
               <ImagePlus size={16} />
               {progreso.total > 0 && progreso.hecho < progreso.total && totalSinClasificar === 0
                 ? `Subiendo... ${progreso.hecho}/${progreso.total}`
-                : `Subir fotos (${totalPendientes})`}
+                : `1. Subir fotos/videos (${totalPendientes})`}
             </button>
 
             <button onClick={handleClasificarConIA} disabled={totalSinClasificar === 0}
@@ -966,10 +971,11 @@ export default function ImportarDeGooglePhotosPage() {
               <Sparkles size={16} />
               {progreso.total > 0 && progreso.hecho < progreso.total && totalSinClasificar > 0
                 ? `Clasificando y agrupando... ${progreso.hecho}/${progreso.total}`
-                : `Clasificar con IA (${totalSinClasificar})`}
+                : `2. Clasificar con IA — opcional (${totalSinClasificar})`}
             </button>
 
             <button onClick={handleGuardarEnGaleria} disabled={totalListas === 0 || fase === 'guardando'}
+              title="Guarda en la galería todo lo que ya se subió, tenga o no clasificación de la IA. Lo que no se haya clasificado se guarda con categoría General."
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 background: totalListas === 0 ? '#e2e8f0' : '#1e3a5f',
@@ -979,7 +985,7 @@ export default function ImportarDeGooglePhotosPage() {
                 cursor: totalListas === 0 ? 'not-allowed' : 'pointer',
               }}>
               <Save size={16} />
-              {fase === 'guardando' ? 'Guardando...' : `Guardar en galería (${filas.filter(f => f.incluida && f.estado === 'lista').length})`}
+              {fase === 'guardando' ? 'Guardando...' : `3. Guardar en galería (${filas.filter(f => f.incluida && f.estado === 'lista').length})`}
             </button>
 
             <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
@@ -1093,19 +1099,43 @@ export default function ImportarDeGooglePhotosPage() {
                       )}
 
                       <select value={f.categoria}
-                        onChange={e => actualizarFila(f.id, { categoria: e.target.value, subcategoria: '' })}
+                        onChange={e => actualizarFila(f.id, { categoria: e.target.value, subcategoria: '', subcatDrop: '' })}
                         style={{ fontSize: '0.78rem', padding: '4px 6px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
                         {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
 
-                      {(SUBCATS[f.categoria] || []).length > 0 && (
-                        <select value={f.subcategoria}
-                          onChange={e => actualizarFila(f.id, { subcategoria: e.target.value })}
-                          style={{ fontSize: '0.78rem', padding: '4px 6px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
-                          <option value="">Sin subcategoría</option>
-                          {(SUBCATS[f.categoria] || []).map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                      )}
+                      {(() => {
+                        const subcatsDisponibles = SUBCATS[f.categoria] || [];
+                        if (subcatsDisponibles.length === 0) {
+                          // Categoría sin subcategorías predefinidas: campo libre, igual que en Galería
+                          return (
+                            <input value={f.subcategoria} placeholder="Subcategoría (personalizada)"
+                              onChange={e => actualizarFila(f.id, { subcategoria: e.target.value })}
+                              style={{ fontSize: '0.78rem', padding: '4px 6px', borderRadius: 6, border: '1px solid #e2e8f0' }} />
+                          );
+                        }
+                        // Mismo patrón que /dashboard/galeria: select con "Otro" que revela un input libre
+                        const dropValue = f.subcatDrop ?? (subcatsDisponibles.includes(f.subcategoria) ? f.subcategoria : f.subcategoria ? 'Otro' : '');
+                        return (
+                          <>
+                            <select value={dropValue}
+                              onChange={e => {
+                                const v = e.target.value;
+                                actualizarFila(f.id, { subcatDrop: v, subcategoria: v === 'Otro' ? '' : v });
+                              }}
+                              style={{ fontSize: '0.78rem', padding: '4px 6px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                              <option value="">Sin subcategoría</option>
+                              {subcatsDisponibles.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                            {(dropValue === 'Otro' || (!subcatsDisponibles.includes(f.subcategoria) && f.subcategoria)) && (
+                              <input value={f.subcategoria} placeholder="Ej: Quinceañero, Aniversario, etc."
+                                autoFocus
+                                onChange={e => actualizarFila(f.id, { subcategoria: e.target.value })}
+                                style={{ fontSize: '0.78rem', padding: '4px 6px', borderRadius: 6, border: '1px solid #d4a017' }} />
+                            )}
+                          </>
+                        );
+                      })()}
 
                       <input value={f.alt} placeholder="Descripción (alt)"
                         onChange={e => actualizarFila(f.id, { alt: e.target.value })}
