@@ -5,12 +5,28 @@ import { adminDb } from '@/lib/firebase-admin';
 import { SITE_URL } from '@/lib/site';
 import { getAlbumesVisibles } from '@/lib/albums';
 import { cxCard } from '@/lib/cloudinary';
-import GaleriaClient from './GaleriaClient';
+import GaleriaClient, { type GItem } from './GaleriaClient';
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_TITLE = 'Galería de Eventos';
-const DEFAULT_DESC = 'Fotos y videos reales de shows infantiles, decoración temática, quinceaños y eventos corporativos realizados en Sechura, Piura.';
+const DEFAULT_TITLE = 'Galería de Eventos en Sechura, Piura';
+const DEFAULT_DESC = 'Fotos y videos reales de bodas, quinceañeros, shows infantiles, decoración temática y eventos corporativos realizados en Sechura, Piura.';
+
+// Trae los primeros items directo de Firestore EN EL SERVIDOR, para que el
+// HTML que recibe Google (y cualquier vista previa) ya traiga fotos y alt
+// reales — antes, GaleriaClient los cargaba solo en el navegador después
+// del primer render, así que un rastreador veía la página vacía.
+async function getInitialGalleryItems(): Promise<GItem[]> {
+  try {
+    const snap = await adminDb.collection('gallery_items').orderBy('order', 'asc').limit(60).get();
+    return snap.docs
+      .map(d => ({ id: d.id, ...(d.data() as any) }))
+      .filter((i: any) => i.visible !== false) as GItem[];
+  } catch (e) {
+    console.error('[galeria] Error leyendo gallery_items en el servidor:', e);
+    return [];
+  }
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   try {
@@ -34,7 +50,10 @@ export default async function Page() {
   // Los álbumes viven en su propia colección con SEO dedicado por evento
   // (/albumes/[slug]). Aquí solo mostramos una tira de acceso rápido —
   // ya no existe un ítem de navegación separado para "Álbumes".
-  const albumes = await getAlbumesVisibles();
+  const [albumes, initialItems] = await Promise.all([
+    getAlbumesVisibles(),
+    getInitialGalleryItems(),
+  ]);
 
   return (
     <>
@@ -95,7 +114,7 @@ export default async function Page() {
           </div>
         </section>
       )}
-      <GaleriaClient />
+      <GaleriaClient initialItems={initialItems} />
     </>
   );
 }

@@ -11,7 +11,7 @@ import CapybaraLoader from '@/components/ui/CapybaraLoader';
 import CustomVideoPlayer from '@/components/ui/CustomVideoPlayer';
 import { useLockBodyScroll } from '@/lib/hooks/useLockBodyScroll';
 
-interface GItem {
+export interface GItem {
   id: string; url: string; alt: string;
   categoria?: string; subcategoria?: string;
   visible: boolean; order: number;
@@ -140,10 +140,14 @@ function smartSearch(items: GItem[], q: string): { results: GItem[]; suggestions
   return { results: [], suggestions };
 }
 
-export default function GaleriaClient() {
-  const [items, setItems] = useState<GItem[]>([]);
+export default function GaleriaClient({ initialItems = [] }: { initialItems?: GItem[] }) {
+  // `initialItems` llega ya renderizado desde el servidor (page.tsx), así
+  // que el primer HTML que ve Google trae fotos y alt reales — antes este
+  // componente arrancaba vacío y solo pintaba algo tras el fetch en el
+  // navegador, invisible para cualquier rastreador.
+  const [items, setItems] = useState<GItem[]>(initialItems);
   const [albums, setAlbums] = useState<AlbumDoc[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialItems.length === 0);
   const [catActiva, setCatActiva] = useState('Todos');
   const [subActiva, setSubActiva] = useState('Todos');
   const [searchQ, setSearchQ] = useState('');
@@ -317,10 +321,11 @@ export default function GaleriaClient() {
             📸 Momentos Mágicos
           </div>
           <h1 style={{ color: '#fff', fontSize: 'clamp(2rem,5vw,3.5rem)', marginBottom: '1rem' }}>
-            Galería de <em>Eventos</em>
+            Galería de <em>Eventos en Sechura</em>
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '1.05rem', maxWidth: 560, margin: '0 auto' }}>
-            Descubre la alegría, los colores y la magia que vivimos en cada celebración que organizamos.
+            Fotos y videos reales de bodas, quinceañeros, shows infantiles y decoración temática
+            que hicimos en Sechura, Piura — descubre la alegría, los colores y la magia de cada celebración.
           </p>
         </div>
       </section>
