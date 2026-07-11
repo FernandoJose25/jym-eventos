@@ -10,6 +10,8 @@ import ImageUploader from '@/components/ui/ImageUploader';
 import { Plus, Eye, EyeOff, Trash2, Filter, Search, X, Pencil, Sparkles, CheckSquare, Square, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { SUBCATS } from '@/lib/galeriaTaxonomy';
+import { getToken } from '@/lib/get-token';
+import { revalidarWeb } from '@/lib/revalidateWeb';
 
 const BLANK = { categoria: 'General', subcategoria: '', tipo: 'imagen', visible: true, alt: '', albumId: '' };
 
@@ -91,12 +93,15 @@ export default function GaleriaPage() {
   const [creandoAlbum, setCreandoAlbum] = useState(false);
   const [nuevoAlbumTitulo, setNuevoAlbumTitulo] = useState('');
 
-  // Selección múltiple en el grid, para agrupar/publicar/ocultar en lote.
+  // Selección múltiple en el grid, para agrupar/publicar/ocultar/recategorizar en lote.
   const [selMode, setSelMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkAlbumId, setBulkAlbumId] = useState('');
   const [bulkCreandoAlbum, setBulkCreandoAlbum] = useState(false);
   const [bulkNuevoTitulo, setBulkNuevoTitulo] = useState('');
+  const [bulkCategoria, setBulkCategoria] = useState('');
+  const [bulkSubcatDrop, setBulkSubcatDrop] = useState('');
+  const [bulkSubcategoria, setBulkSubcategoria] = useState('');
   const [bulkBusy, setBulkBusy] = useState(false);
 
   // Pestaña de la página: fotos sueltas o gestión de álbumes (antes era una
@@ -173,8 +178,8 @@ export default function GaleriaPage() {
     const payload = {
       url: formData.url,
       alt: formData.alt || formData.subcategoria || formData.categoria || 'Evento J&M',
-      categoria: formData.categoria || 'General',
-      subcategoria: formData.subcategoria || '',
+      categoria: (formData.categoria || 'General').trim(),
+      subcategoria: (formData.subcategoria || '').trim(),
       focalX: formData.focalX ?? 0.5,
       focalY: formData.focalY ?? 0.5,
       tipo: formData.mediaType || formData.tipo || 'imagen',
@@ -193,6 +198,7 @@ export default function GaleriaPage() {
     setMode('idle');
     setFormData(BLANK);
     setEditId(null);
+    getToken().then(idToken => revalidarWeb(idToken)).catch(() => {});
   };
 
   const toggleVisible = (item: any) => open({
@@ -248,8 +254,32 @@ export default function GaleriaPage() {
       await batch.commit();
       toast.success(`✅ ${selected.size} item(s) agregados al álbum`);
       setSelected(new Set()); setSelMode(false); setBulkAlbumId('');
+      getToken().then(idToken => revalidarWeb(idToken)).catch(() => {});
     } catch (e: any) {
       toast.error(e.message || 'Error agrupando en álbum');
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  /** Cambia categoría (y opcionalmente subcategoría) de todos los items
+   *  seleccionados a la vez — para recategorizar en lote fotos ya publicadas
+   *  sin tener que abrir una por una. */
+  const handleAsignarCategoriaEnLote = async (categoria: string, subcategoria?: string) => {
+    if (!categoria) { toast.error('Elige una categoría primero'); return; }
+    setBulkBusy(true);
+    try {
+      const batch = writeBatch(db);
+      const payload: any = { categoria };
+      if (subcategoria !== undefined) payload.subcategoria = subcategoria;
+      selected.forEach(id => batch.update(doc(db, COL.GALERIA, id), payload));
+      await batch.commit();
+      toast.success(`✅ Categoría actualizada en ${selected.size} item(s)`);
+      setSelected(new Set()); setSelMode(false);
+      setBulkCategoria(''); setBulkSubcatDrop(''); setBulkSubcategoria('');
+      getToken().then(idToken => revalidarWeb(idToken)).catch(() => {});
+    } catch (e: any) {
+      toast.error(e.message || 'Error cambiando la categoría');
     } finally {
       setBulkBusy(false);
     }
@@ -284,6 +314,7 @@ export default function GaleriaPage() {
       coverFocalY: albumFormData.coverFocalY ?? 0.5,
       visible: albumFormData.visible ?? true,
     };
+    let slugAfectado = payload.slug;
     if (albumMode === 'edit' && albumEditId) {
       await updateDoc(doc(db, COL.ALBUMES, albumEditId), payload);
       toast.success('✅ Álbum actualizado');
@@ -292,6 +323,7 @@ export default function GaleriaPage() {
       toast.success('✅ Álbum creado');
     }
     setAlbumMode('idle'); setAlbumFormData(ALBUM_BLANK); setAlbumEditId(null);
+    getToken().then(idToken => revalidarWeb(idToken, slugAfectado)).catch(() => {});
   };
 
   const toggleAlbumVisible = (album: any) => open({
@@ -331,6 +363,7 @@ export default function GaleriaPage() {
       await batch.commit();
       toast.success(`✅ ${selected.size} item(s) ${visible ? 'publicados' : 'ocultos'}`);
       setSelected(new Set());
+      getToken().then(idToken => revalidarWeb(idToken)).catch(() => {});
     } catch (e: any) {
       toast.error(e.message || 'Error actualizando visibilidad');
     } finally {
@@ -1106,6 +1139,50 @@ export default function GaleriaPage() {
               style={{ background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 0.8rem', fontWeight: 700, fontSize: '0.78rem', cursor: bulkBusy ? 'not-allowed' : 'pointer' }}>
               <Layers size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />
               Agrupar
+            </button>
+          )}
+
+          <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,.15)' }} />
+
+          {/* Recategorizar en lote — para corregir decenas de fotos importadas
+              con la categoría equivocada sin editarlas una por una. */}
+          <select
+            value={bulkCategoria}
+            onChange={e => { setBulkCategoria(e.target.value); setBulkSubcatDrop(''); setBulkSubcategoria(''); }}
+            style={{ borderRadius: 8, border: 'none', padding: '0.5rem 0.6rem', fontSize: '0.8rem', minWidth: 150 }}>
+            <option value="">Cambiar categoría…</option>
+            {cats.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+
+          {bulkCategoria && (SUBCATS[bulkCategoria] || []).length > 0 && (
+            <select
+              value={bulkSubcatDrop}
+              onChange={e => {
+                const v = e.target.value;
+                setBulkSubcatDrop(v);
+                setBulkSubcategoria(v === 'Otro' ? '' : v);
+              }}
+              style={{ borderRadius: 8, border: 'none', padding: '0.5rem 0.6rem', fontSize: '0.8rem', minWidth: 140 }}>
+              <option value="">Sin subcategoría</option>
+              {(SUBCATS[bulkCategoria] || []).map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          )}
+
+          {bulkCategoria && (bulkSubcatDrop === 'Otro' || (SUBCATS[bulkCategoria] || []).length === 0) && (
+            <input value={bulkSubcategoria} placeholder="Subcategoría"
+              onChange={e => setBulkSubcategoria(e.target.value)}
+              style={{ borderRadius: 8, border: 'none', padding: '0.5rem 0.6rem', fontSize: '0.8rem', width: 130 }} />
+          )}
+
+          {bulkCategoria && (
+            <button
+              onClick={() => handleAsignarCategoriaEnLote(
+                bulkCategoria,
+                (SUBCATS[bulkCategoria] || []).length === 0 || bulkSubcatDrop ? bulkSubcategoria : undefined,
+              )}
+              disabled={bulkBusy}
+              style={{ background: '#d4a017', color: '#0a1628', border: 'none', borderRadius: 8, padding: '0.5rem 0.8rem', fontWeight: 700, fontSize: '0.78rem', cursor: bulkBusy ? 'not-allowed' : 'pointer' }}>
+              Aplicar
             </button>
           )}
 
