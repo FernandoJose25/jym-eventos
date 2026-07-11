@@ -18,7 +18,10 @@ import {
   type PickedMediaItem, type CuentaGoogle,
 } from '@/lib/googlePhotosPicker';
 import {
-  listarAlbumICloud, importarDeICloud, type ICloudItem,
+  listarAlbumICloud, importarDeICloud,
+  listarCuentasICloud, conectarAlbumICloud, alternarAutoSyncICloud,
+  desconectarAlbumICloud, sincronizarAlbumesICloud,
+  type ICloudItem, type CuentaICloud,
 } from '@/lib/icloudSharedAlbum';
 
 type EstadoFoto = 'pendiente' | 'procesando' | 'lista' | 'error';
@@ -40,6 +43,7 @@ interface FilaFoto {
   calidad: 'buena' | 'regular' | 'mala';
   motivoCalidad: string;
   eventoNombre: string;   // grupo/evento al que pertenece esta foto (editable)
+  clasificada: boolean;   // true una vez que la IA ya la clasificó (independiente de si se subió o no)
 }
 
 type Fase = 'idle' | 'conectando' | 'esperando-seleccion' | 'listando' | 'revision' | 'guardando';
@@ -118,8 +122,29 @@ export default function ImportarDeGooglePhotosPage() {
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventosDetectadosRef = useRef<string[]>([]); // nombres de evento vistos en esta sesión, para que la IA los reutilice
 
-  // ── iCloud: álbum compartido (link público, sin login) ──
+  // ── iCloud: álbum compartido (link público, sin login de por medio, pero
+  // con SESIÓN GUARDADA — igual que las cuentas de Google Photos, no hay que
+  // volver a pegar el link cada vez que se entra a Galería, y las fotos
+  // nuevas que aparezcan en el álbum se auto-importan solas) ──
   const [icloudUrl, setIcloudUrl] = useState('');
+  const [icloudNombre, setIcloudNombre] = useState('');
+  const [cuentasICloud, setCuentasICloud] = useState<CuentaICloud[]>([]);
+  const [cargandoICloud, setCargandoICloud] = useState(true);
+  const [conectandoICloud, setConectandoICloud] = useState(false);
+  const [sincronizando, setSincronizando] = useState<string>(''); // id del álbum sincronizando ahora, o 'all'
+  const [desconectandoICloud, setDesconectandoICloud] = useState('');
+
+  const recargarCuentasICloud = async () => {
+    try {
+      const idToken = await getToken();
+      setCuentasICloud(await listarCuentasICloud(idToken));
+    } catch {
+      // primera vez / sin nada guardado aún: no mostramos nada
+    } finally {
+      setCargandoICloud(false);
+    }
+  };
+  useEffect(() => { recargarCuentasICloud(); }, []);
 
   // Álbumes reales ya existentes (colección `albums`) — el mismo sistema
   // que usa el formulario manual de Galería y /dashboard/albumes.
@@ -268,6 +293,7 @@ export default function ImportarDeGooglePhotosPage() {
           calidad: 'buena',
           motivoCalidad: '',
           eventoNombre: '',
+          clasificada: false,
         });
       });
 
@@ -286,43 +312,121 @@ export default function ImportarDeGooglePhotosPage() {
   };
 
   /* ── 2b. iCloud: cargar álbum compartido por link (sin login, sin OAuth) ── */
-  const handleCargarICloud = async () => {
+  const cargarItemsICloudEnGrid = (items: ICloudItem[]) => {
+    const nuevasFilas: FilaFoto[] = items.map(item => ({
+      id: item.id,
+      origen: 'icloud',
+      icloudItem: item,
+      thumb: item.thumbUrl, // URL directa de Apple — no necesita CORS solo para mostrarla en un <img>
+      incluida: true,
+      estado: 'pendiente',
+      categoria: 'General',
+      subcategoria: '',
+      alt: '',
+      calidad: 'buena',
+      motivoCalidad: '',
+      eventoNombre: '',
+      clasificada: false,
+    }));
+    setFilas(nuevasFilas);
+    eventosDetectadosRef.current = [];
+    setFase('revision');
+  };
+
+  /* ── iCloud: conectar y GUARDAR un álbum de forma persistente — desde ahora
+     queda guardado (no hay que volver a pegar el link) y las fotos NUEVAS que
+     se agreguen a ese álbum compartido se auto-importan solas. ── */
+  const handleConectarICloud = async () => {
     if (!icloudUrl.trim()) return;
+    setErrorGlobal('');
+    setConectandoICloud(true);
+    setFase('listando');
+    try {
+      const idToken = await getToken();
+      const { items } = await conectarAlbumICloud(icloudUrl.trim(), icloudNombre.trim(), idToken);
+      toast.success('Álbum de iCloud conectado y guardado. Las fotos nuevas que agregues ahí se importarán solas.');
+      setIcloudUrl('');
+      setIcloudNombre('');
+      await recargarCuentasICloud();
+      if (items.length > 0) cargarItemsICloudEnGrid(items);
+      else setFase('idle');
+    } catch (e: any) {
+      setErrorGlobal(e.message || 'No se pudo conectar el álbum de iCloud');
+      setFase('idle');
+    } finally {
+      setConectandoICloud(false);
+    }
+  };
+
+  /* ── iCloud: abrir un álbum YA guardado (sin pegar el link de nuevo) ── */
+  const handleUsarAlbumICloud = async (cuenta: CuentaICloud) => {
     setErrorGlobal('');
     setFase('listando');
     try {
       const idToken = await getToken();
-      const items = await listarAlbumICloud(icloudUrl.trim(), idToken);
+      const items = await listarAlbumICloud(cuenta.url, idToken);
       if (items.length === 0) {
         setErrorGlobal('No se encontraron fotos en ese álbum (o está vacío).');
         setFase('idle');
         return;
       }
-      const nuevasFilas: FilaFoto[] = items.map(item => ({
-        id: item.id,
-        origen: 'icloud',
-        icloudItem: item,
-        thumb: item.thumbUrl, // URL directa de Apple — no necesita CORS solo para mostrarla en un <img>
-        incluida: true,
-        estado: 'pendiente',
-        categoria: 'General',
-        subcategoria: '',
-        alt: '',
-        calidad: 'buena',
-        motivoCalidad: '',
-        eventoNombre: '',
-      }));
-      setFilas(nuevasFilas);
-      eventosDetectadosRef.current = [];
-      setFase('revision');
+      cargarItemsICloudEnGrid(items);
     } catch (e: any) {
       setErrorGlobal(e.message || 'No se pudo leer el álbum de iCloud');
       setFase('idle');
     }
   };
 
-  /* ── 3. Subir a Cloudinary + clasificar y agrupar por evento con IA (Groq vision, en lotes) ── */
-  const handleProcesarConIA = async () => {
+  /* ── iCloud: forzar sincronización ahora (trae solo las fotos nuevas desde la
+     última vez, las clasifica con IA y las guarda directo en la galería como
+     pendientes de aprobar — lo mismo que hace el cron automático). ── */
+  const handleSincronizarICloud = async (id?: string) => {
+    setSincronizando(id || 'all');
+    try {
+      const idToken = await getToken();
+      const resultados = await sincronizarAlbumesICloud(idToken, id);
+      const nuevas = resultados.reduce((acc, r) => acc + r.nuevas, 0);
+      const conError = resultados.find(r => r.error);
+      if (conError) toast.error(conError.error!);
+      else if (nuevas > 0) toast.success(`${nuevas} foto(s) nueva(s) importada(s) y clasificada(s). Revísalas en Galería antes de publicarlas.`);
+      else toast.success('Todo al día — no había fotos nuevas.');
+      await recargarCuentasICloud();
+    } catch (e: any) {
+      toast.error(e.message || 'No se pudo sincronizar');
+    } finally {
+      setSincronizando('');
+    }
+  };
+
+  /* ── iCloud: pausar/reanudar la auto-importación de un álbum guardado ── */
+  const handleAlternarAutoSyncICloud = async (cuenta: CuentaICloud) => {
+    try {
+      const idToken = await getToken();
+      await alternarAutoSyncICloud(cuenta.id, !cuenta.autoSync, idToken);
+      setCuentasICloud(prev => prev.map(c => c.id === cuenta.id ? { ...c, autoSync: !c.autoSync } : c));
+    } catch (e: any) {
+      toast.error(e.message || 'No se pudo actualizar el álbum');
+    }
+  };
+
+  /* ── iCloud: desconectar un álbum guardado (no borra fotos ya importadas) ── */
+  const handleDesconectarICloud = async (cuenta: CuentaICloud) => {
+    setDesconectandoICloud(cuenta.id);
+    try {
+      const idToken = await getToken();
+      await desconectarAlbumICloud(cuenta.id, idToken);
+      setCuentasICloud(prev => prev.filter(c => c.id !== cuenta.id));
+      toast.success(`Álbum "${cuenta.nombre}" desconectado`);
+    } catch (e: any) {
+      toast.error(e.message || 'No se pudo desconectar el álbum');
+    } finally {
+      setDesconectandoICloud('');
+    }
+  };
+
+  /* ── 3a. Subir a Cloudinary (independiente de la IA — deja las fotos listas para guardar,
+     con la categoría que tengan en ese momento, sea 'General' por defecto o ya editada a mano) ── */
+  const handleSubirFotos = async () => {
     const pendientes = filas.filter(f => f.incluida && f.estado === 'pendiente');
     if (pendientes.length === 0) return;
 
@@ -379,15 +483,42 @@ export default function ImportarDeGooglePhotosPage() {
       }
     }
 
-    // 2) Clasificar y agrupar en lotes pequeños, para que la IA compare fotos entre sí
-    const lotes = chunk(subidas, LOTE_IA);
+    // 2) Ya subidas: quedan "listas" para guardar de inmediato, sin depender de la IA.
+    //    La categoría/subcategoría/descripción que tengan en este momento (por defecto
+    //    'General' o lo que el usuario ya haya editado a mano) es la que se usará si
+    //    nunca se manda a clasificar con IA.
+    for (const s of subidas) {
+      actualizarFila(s.fila.id, {
+        estado: 'lista',
+        cloudinaryUrl: s.cloudinaryUrl,
+      });
+      setProgreso(p => ({ ...p, hecho: p.hecho + 1 }));
+    }
+
+    if (subidas.length > 0) {
+      toast.success(`${subidas.length} foto(s) subida(s). Puedes clasificarlas con IA o editar categoría/descripción a mano y guardar.`);
+    }
+  };
+
+  /* ── 3b. Clasificar con IA (Groq vision, en lotes) las fotos que YA están subidas
+     y todavía no pasaron por la IA. Es independiente de la subida y del guardado:
+     se puede guardar sin usar esto, y se puede volver a llamar para clasificar
+     fotos nuevas que se hayan subido después. ── */
+  const handleClasificarConIA = async () => {
+    const sinClasificar = filas.filter(f => f.incluida && f.estado === 'lista' && f.cloudinaryUrl && !f.clasificada);
+    if (sinClasificar.length === 0) return;
+
+    const idToken = await getToken();
+    setProgreso({ hecho: 0, total: sinClasificar.length });
+
+    const lotes = chunk(sinClasificar, LOTE_IA);
     await runWithConcurrency(lotes, LOTES_EN_PARALELO, async (lote) => {
       try {
         const res = await fetch('/api/classify-foto', {
           method: 'POST',
           headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            fotos: lote.map(s => ({ id: s.fila.id, url: urlParaClasificar(s.cloudinaryUrl) })),
+            fotos: lote.map(f => ({ id: f.id, url: urlParaClasificar(f.cloudinaryUrl!) })),
             eventosConocidos: eventosDetectadosRef.current,
           }),
         });
@@ -396,10 +527,10 @@ export default function ImportarDeGooglePhotosPage() {
         const resultados: Record<string, any> = {};
         for (const r of data.fotos || []) resultados[r.id] = r;
 
-        for (const s of lote) {
-          const r = resultados[s.fila.id];
+        for (const f of lote) {
+          const r = resultados[f.id];
           if (!r) {
-            actualizarFila(s.fila.id, { estado: 'error', error: 'La IA no devolvió resultado para esta foto' });
+            actualizarFila(f.id, { error: 'La IA no devolvió resultado para esta foto' });
             continue;
           }
           if (r.nombreGrupo && !eventosDetectadosRef.current.includes(r.nombreGrupo)) {
@@ -413,9 +544,7 @@ export default function ImportarDeGooglePhotosPage() {
               setGrupoAlbumId(prev => ({ ...prev, [r.nombreGrupo]: match.id }));
             }
           }
-          actualizarFila(s.fila.id, {
-            estado: 'lista',
-            cloudinaryUrl: s.cloudinaryUrl,
+          actualizarFila(f.id, {
             categoria: r.categoria,
             subcategoria: r.subcategoria,
             alt: r.alt,
@@ -423,11 +552,12 @@ export default function ImportarDeGooglePhotosPage() {
             motivoCalidad: r.motivoCalidad,
             eventoNombre: r.nombreGrupo || '',
             incluida: r.calidad !== 'mala', // auto-descarta las de mala calidad, editable después
+            clasificada: true,
           });
         }
       } catch (e: any) {
-        for (const s of lote) {
-          actualizarFila(s.fila.id, { estado: 'error', error: e.message || 'Error procesando este lote' });
+        for (const f of lote) {
+          actualizarFila(f.id, { error: e.message || 'Error procesando este lote' });
         }
       } finally {
         setProgreso(p => ({ ...p, hecho: p.hecho + lote.length }));
@@ -519,6 +649,7 @@ export default function ImportarDeGooglePhotosPage() {
   const totalIncluidas = filas.filter(f => f.incluida).length;
   const totalListas = filas.filter(f => f.estado === 'lista').length;
   const totalPendientes = filas.filter(f => f.incluida && f.estado === 'pendiente').length;
+  const totalSinClasificar = filas.filter(f => f.incluida && f.estado === 'lista' && f.cloudinaryUrl && !f.clasificada).length;
 
   // Nombres de evento existentes (para autocompletar / fusionar grupos a mano)
   const nombresDeGrupo = useMemo(() => {
@@ -553,7 +684,7 @@ export default function ImportarDeGooglePhotosPage() {
         Importar fotos
       </h1>
       <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: 24 }}>
-        Trae fotos desde Google Photos o desde un álbum compartido de iCloud; la IA las clasifica por categoría, calidad y las agrupa por evento; tú revisas y apruebas antes de publicar.
+        Trae fotos desde Google Photos o desde un álbum compartido de iCloud, súbelas, y luego —si quieres— pide a la IA que las clasifique por categoría, calidad y las agrupe por evento. Clasificar con IA es opcional: también puedes elegir la categoría a mano y guardar directamente.
       </p>
 
       {errorGlobal && (
@@ -654,33 +785,129 @@ export default function ImportarDeGooglePhotosPage() {
       )}
 
       {fase === 'idle' && fuente === 'icloud' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 520 }}>
-          <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>
-            En tu iPhone: <strong>Fotos → selecciona las fotos del evento → Compartir → Álbum compartido</strong> (o
-            agrégalas a uno existente) → en el álbum, activa <strong>"Sitio web público"</strong> → copia el link y pégalo aquí.
-          </p>
-          <input
-            value={icloudUrl}
-            onChange={e => setIcloudUrl(e.target.value)}
-            placeholder="https://www.icloud.com/sharedalbum/#B..."
-            style={{
-              padding: '0.65rem 0.9rem', borderRadius: 10, border: '1.5px solid #e2e8f0',
-              fontSize: '0.85rem', fontFamily: 'inherit',
-            }}
-          />
-          <button onClick={handleCargarICloud} disabled={!icloudUrl.trim()} type="button" style={{
-            display: 'flex', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
-            background: icloudUrl.trim() ? '#1e3a5f' : '#e2e8f0',
-            color: icloudUrl.trim() ? '#fff' : '#94a3b8',
-            border: 'none', borderRadius: 12, padding: '0.85rem 1.5rem', fontWeight: 700,
-            fontSize: '0.9rem', cursor: icloudUrl.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit',
-          }}>
-            <ImagePlus size={18} /> Cargar álbum
-          </button>
-          <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0 }}>
-            No pide iniciar sesión ni contraseña — funciona con cualquier álbum compartido públicamente.
-            Trae todas las fotos del álbum; abajo, en cada foto, podrás destildar "Incluir en la galería" para las que no quieras publicar.
-          </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 560 }}>
+          {cargandoICloud ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8', fontSize: '0.85rem' }}>
+              <Loader2 size={16} className="spin" style={{ animation: 'spin 1s linear infinite' }} />
+              Revisando álbumes de iCloud conectados...
+            </div>
+          ) : (
+            <>
+              {cuentasICloud.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <p style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em', margin: 0 }}>
+                    Álbumes conectados — no piden pegar el link de nuevo, y se sincronizan solos
+                  </p>
+                  {cuentasICloud.map(c => (
+                    <div key={c.id} style={{
+                      display: 'flex', flexDirection: 'column', gap: 6, background: '#f8fafc',
+                      border: '1px solid #e2e8f0', borderRadius: 12, padding: '0.7rem 0.9rem',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ flex: 1, fontSize: '0.85rem', color: '#0a1628', fontWeight: 700 }}>
+                          ☁️ {c.nombre}
+                        </span>
+                        <button onClick={() => handleUsarAlbumICloud(c)} style={{
+                          display: 'flex', alignItems: 'center', gap: 6, background: '#1e3a5f', color: '#fff',
+                          border: 'none', borderRadius: 8, padding: '0.5rem 0.9rem', fontWeight: 700,
+                          fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap',
+                        }}>
+                          <ImagePlus size={14} /> Abrir
+                        </button>
+                        <button onClick={() => handleSincronizarICloud(c.id)} disabled={sincronizando !== ''}
+                          title="Trae ahora mismo solo las fotos nuevas desde la última vez, las clasifica con IA y las deja pendientes de aprobar en Galería"
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32,
+                            background: 'transparent', border: '1px solid #d4a017', borderRadius: 8, color: '#b45309',
+                            cursor: sincronizando !== '' ? 'not-allowed' : 'pointer', flexShrink: 0,
+                          }}>
+                          {sincronizando === c.id
+                            ? <Loader2 size={14} className="spin" style={{ animation: 'spin 1s linear infinite' }} />
+                            : <Sparkles size={14} />}
+                        </button>
+                        <button onClick={() => handleDesconectarICloud(c)} disabled={desconectandoICloud === c.id}
+                          title="Desconectar este álbum"
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32,
+                            background: 'transparent', border: '1px solid #fecaca', borderRadius: 8, color: '#ef4444',
+                            cursor: desconectandoICloud === c.id ? 'not-allowed' : 'pointer', flexShrink: 0,
+                          }}>
+                          {desconectandoICloud === c.id
+                            ? <Loader2 size={14} className="spin" style={{ animation: 'spin 1s linear infinite' }} />
+                            : <LogOut size={14} />}
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: '0.7rem', color: '#94a3b8' }}>
+                        <span>{c.fotosVistas} foto(s) vista(s)</span>
+                        <span>·</span>
+                        <span>{c.lastSyncedAt ? `Última sincronización: ${new Date(c.lastSyncedAt).toLocaleString('es-PE')}` : 'Nunca sincronizado'}</span>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', marginLeft: 'auto' }}>
+                          <input type="checkbox" checked={c.autoSync} onChange={() => handleAlternarAutoSyncICloud(c)} />
+                          Auto-importar fotos nuevas
+                        </label>
+                      </div>
+                      {c.lastSyncError && (
+                        <p style={{ fontSize: '0.7rem', color: '#ef4444', margin: 0 }}>⚠️ {c.lastSyncError}</p>
+                      )}
+                    </div>
+                  ))}
+                  <button onClick={() => handleSincronizarICloud()} disabled={sincronizando !== ''} type="button" style={{
+                    display: 'flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
+                    background: 'transparent', border: '1px solid #d4a017', color: '#b45309',
+                    borderRadius: 8, padding: '0.4rem 0.8rem', fontWeight: 700,
+                    fontSize: '0.75rem', cursor: sincronizando !== '' ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+                  }}>
+                    <Sparkles size={13} /> {sincronizando === 'all' ? 'Sincronizando...' : 'Sincronizar todos ahora'}
+                  </button>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: cuentasICloud.length > 0 ? '1px solid #e2e8f0' : 'none', paddingTop: cuentasICloud.length > 0 ? 14 : 0 }}>
+                <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>
+                  {cuentasICloud.length > 0 ? 'Conectar otro álbum: ' : ''}
+                  En tu iPhone: <strong>Fotos → selecciona las fotos del evento → Compartir → Álbum compartido</strong> (o
+                  agrégalas a uno existente) → en el álbum, activa <strong>"Sitio web público"</strong> → copia el link y pégalo aquí.
+                </p>
+                <input
+                  value={icloudNombre}
+                  onChange={e => setIcloudNombre(e.target.value)}
+                  placeholder="Nombre del álbum/evento (ej. Quinceañero Valentina)"
+                  style={{
+                    padding: '0.65rem 0.9rem', borderRadius: 10, border: '1.5px solid #e2e8f0',
+                    fontSize: '0.85rem', fontFamily: 'inherit',
+                  }}
+                />
+                <input
+                  value={icloudUrl}
+                  onChange={e => setIcloudUrl(e.target.value)}
+                  placeholder="https://www.icloud.com/sharedalbum/#B..."
+                  style={{
+                    padding: '0.65rem 0.9rem', borderRadius: 10, border: '1.5px solid #e2e8f0',
+                    fontSize: '0.85rem', fontFamily: 'inherit',
+                  }}
+                />
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button onClick={handleConectarICloud} disabled={!icloudUrl.trim() || conectandoICloud} type="button" style={{
+                    display: 'flex', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
+                    background: icloudUrl.trim() ? '#1e3a5f' : '#e2e8f0',
+                    color: icloudUrl.trim() ? '#fff' : '#94a3b8',
+                    border: 'none', borderRadius: 12, padding: '0.85rem 1.5rem', fontWeight: 700,
+                    fontSize: '0.9rem', cursor: (icloudUrl.trim() && !conectandoICloud) ? 'pointer' : 'not-allowed', fontFamily: 'inherit',
+                  }}>
+                    {conectandoICloud
+                      ? <Loader2 size={18} className="spin" style={{ animation: 'spin 1s linear infinite' }} />
+                      : <ImagePlus size={18} />}
+                    Conectar y guardar álbum
+                  </button>
+                </div>
+                <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0 }}>
+                  No pide iniciar sesión ni contraseña — funciona con cualquier álbum compartido públicamente.
+                  Queda guardado hasta que le des "Desconectar", y las fotos nuevas que agregues a ese álbum se auto-importan solas
+                  (clasificadas por IA, pendientes de tu aprobación en Galería) sin que tengas que volver a abrir esta pantalla.
+                </p>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -707,19 +934,35 @@ export default function ImportarDeGooglePhotosPage() {
             marginBottom: 18, position: 'sticky', top: 0, background: '#fff',
             padding: '0.75rem 0', zIndex: 5,
           }}>
-            <button onClick={handleProcesarConIA} disabled={totalPendientes === 0}
+            <button onClick={handleSubirFotos} disabled={totalPendientes === 0}
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
-                background: totalPendientes === 0 ? '#e2e8f0' : '#d4a017',
-                color: totalPendientes === 0 ? '#94a3b8' : '#0a1628',
+                background: totalPendientes === 0 ? '#e2e8f0' : '#1e3a5f',
+                color: totalPendientes === 0 ? '#94a3b8' : '#fff',
                 border: 'none', borderRadius: 10, padding: '0.7rem 1.25rem',
                 fontWeight: 700, fontSize: '0.85rem',
                 cursor: totalPendientes === 0 ? 'not-allowed' : 'pointer',
               }}>
+              <ImagePlus size={16} />
+              {progreso.total > 0 && progreso.hecho < progreso.total && totalSinClasificar === 0
+                ? `Subiendo... ${progreso.hecho}/${progreso.total}`
+                : `Subir fotos (${totalPendientes})`}
+            </button>
+
+            <button onClick={handleClasificarConIA} disabled={totalSinClasificar === 0}
+              title="Clasifica por categoría/subcategoría, agrupa por evento y redacta la descripción de cada foto ya subida. No es obligatorio: puedes editar la categoría a mano y guardar directamente."
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: totalSinClasificar === 0 ? '#e2e8f0' : '#d4a017',
+                color: totalSinClasificar === 0 ? '#94a3b8' : '#0a1628',
+                border: 'none', borderRadius: 10, padding: '0.7rem 1.25rem',
+                fontWeight: 700, fontSize: '0.85rem',
+                cursor: totalSinClasificar === 0 ? 'not-allowed' : 'pointer',
+              }}>
               <Sparkles size={16} />
-              {progreso.total > 0 && progreso.hecho < progreso.total
+              {progreso.total > 0 && progreso.hecho < progreso.total && totalSinClasificar > 0
                 ? `Clasificando y agrupando... ${progreso.hecho}/${progreso.total}`
-                : `Clasificar con IA (${totalPendientes})`}
+                : `Clasificar con IA (${totalSinClasificar})`}
             </button>
 
             <button onClick={handleGuardarEnGaleria} disabled={totalListas === 0 || fase === 'guardando'}
