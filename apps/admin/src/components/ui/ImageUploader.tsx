@@ -5,6 +5,7 @@ import { validateFile } from '@/lib/file-validation';
 import { getToken } from '@/lib/get-token';
 import { storage } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import VideoEditorModal from '@/components/ui/VideoEditorModal';
 
 interface FP { x: number; y: number }
 interface CropBox { x: number; y: number; w: number; h: number }
@@ -901,6 +902,8 @@ export default function ImageUploader({
 
   const [cropSrc, setCropSrc] = useState('');
   const [cropFile, setCropFile] = useState<File | null>(null);
+  const [videoEditSrc, setVideoEditSrc] = useState('');
+  const [videoEditFile, setVideoEditFile] = useState<File | null>(null);
 
   /* ── upload ── */
   const upload = useCallback(async (file: File, currentFp?: FP) => {
@@ -1054,9 +1057,8 @@ export default function ImageUploader({
       const kind = resolveFileType(file);
       setQuality(null);
       if (kind === 'video') {
-        setPreview(URL.createObjectURL(file));
-        setPreviewType('video');
-        upload(file);
+        setVideoEditFile(file);
+        setVideoEditSrc(URL.createObjectURL(file));
       } else {
         const normalized = await normalizeExifOrientation(file);
         setCropFile(normalized);
@@ -1108,6 +1110,22 @@ export default function ImageUploader({
     upload(cropFile);
   };
 
+  /* ── video apply/skip ── */
+  const handleVideoApply = async (file: File) => {
+    setVideoEditSrc('');
+    setPreview(URL.createObjectURL(file));
+    setPreviewType('video');
+    upload(file);
+  };
+
+  const handleVideoSkip = () => {
+    if (!videoEditFile) return;
+    setVideoEditSrc('');
+    setPreview(URL.createObjectURL(videoEditFile));
+    setPreviewType('video');
+    upload(videoEditFile);
+  };
+
   const op = `${fp.x * 100}% ${fp.y * 100}%`;
   const sizeLabel = acceptVideo
     ? 'JPEG · PNG · WebP · HEIC · MP4 · MOV — Máx 100 MB · Incluye fotos enviadas como documento en WhatsApp'
@@ -1132,6 +1150,15 @@ export default function ImageUploader({
           aspect={cropAspect}
           onApply={handleCropApply}
           onSkip={handleCropSkip}
+        />
+      )}
+
+      {/* VIDEO EDITOR MODAL */}
+      {videoEditSrc && (
+        <VideoEditorModal
+          src={videoEditSrc}
+          onApply={handleVideoApply}
+          onSkip={handleVideoSkip}
         />
       )}
 
