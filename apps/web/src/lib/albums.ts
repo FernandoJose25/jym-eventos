@@ -88,6 +88,7 @@ export async function getFotosDeAlbum(albumId: string): Promise<AlbumFoto[]> {
         focalX: i.focalX,
         focalY: i.focalY,
         order: i.order,
+        sonidoPermitido: i.sonidoPermitido === true,
       }));
   } catch (e) {
     console.error('[albums] Error leyendo fotos del álbum:', e);

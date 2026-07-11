@@ -42,14 +42,18 @@ function fmtTime(s: number) {
 /**
  * `src` debe ser la URL CRUDA de Cloudinary (sin transformar) — este
  * componente arma la URL final según la calidad elegida por el usuario.
+ * `sonidoPermitido` (default false): si es false, el video se reproduce
+ * SIEMPRE muteado y el control de volumen queda deshabilitado — el
+ * visitante no puede activar el sonido bajo ninguna circunstancia (para
+ * videos con conversaciones/audio que no se quiere hacer público).
  */
-function CustomVideoPlayer({ src }: { src: string }) {
+function CustomVideoPlayer({ src, sonidoPermitido = false }: { src: string; sonidoPermitido?: boolean }) {
   const videoRef  = useRef<HTMLVideoElement>(null);
   const wrapRef   = useRef<HTMLDivElement>(null);
   const timerRef  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const [playing,     setPlaying]     = useState(false);
-  const [muted,       setMuted]       = useState(false);
+  const [muted,       setMuted]       = useState(!sonidoPermitido);
   const [volume,      setVolume]      = useState(1);
   const [progress,    setProgress]    = useState(0);
   const [cur,         setCur]         = useState(0);
@@ -103,13 +107,17 @@ function CustomVideoPlayer({ src }: { src: string }) {
   useEffect(() => {
     const v = videoRef.current; if (!v) return;
 
-    // Detectar iOS Safari donde video.volume es de solo lectura
-    try {
-      const old = v.volume;
-      v.volume = old > 0.5 ? 0.3 : 0.7;
-      if (Math.abs(v.volume - (old > 0.5 ? 0.3 : 0.7)) > 0.05) setVolRO(true);
-      else v.volume = old;
-    } catch { setVolRO(true); }
+    if (!sonidoPermitido) {
+      v.muted = true;
+    } else {
+      // Detectar iOS Safari donde video.volume es de solo lectura
+      try {
+        const old = v.volume;
+        v.volume = old > 0.5 ? 0.3 : 0.7;
+        if (Math.abs(v.volume - (old > 0.5 ? 0.3 : 0.7)) > 0.05) setVolRO(true);
+        else v.volume = old;
+      } catch { setVolRO(true); }
+    }
 
     v.play().catch(() => {});
 
@@ -203,6 +211,7 @@ function CustomVideoPlayer({ src }: { src: string }) {
   };
 
   const changeVol = (val: number) => {
+    if (!sonidoPermitido) return;
     const v = videoRef.current; if (!v) return;
     try { v.volume = val; } catch {}
     v.muted = val === 0;
@@ -210,6 +219,7 @@ function CustomVideoPlayer({ src }: { src: string }) {
   };
 
   const toggleMute = () => {
+    if (!sonidoPermitido) return;
     const v = videoRef.current; if (!v) return;
     v.muted = !v.muted; setMuted(v.muted);
   };
@@ -262,6 +272,7 @@ function CustomVideoPlayer({ src }: { src: string }) {
         src={computedSrc}
         autoPlay
         playsInline
+        muted={!sonidoPermitido}
         onClick={e => { e.stopPropagation(); if (ctrlVisible) togglePlay(); else bump(); }}
         style={{
           width: '100%', maxHeight: isFull ? '100dvh' : '72vh',
@@ -397,11 +408,21 @@ function CustomVideoPlayer({ src }: { src: string }) {
 
           <div style={{ flex: 1 }} />
 
-          {/* Volumen */}
+          {/* Volumen — deshabilitado por completo si no se permite sonido */}
           <button
-            style={{ ...VBTN, background: panel === 'vol' ? 'rgba(212,160,23,0.4)' : 'rgba(255,255,255,0.15)' }}
-            onClick={e => { e.stopPropagation(); setPanel(p => p === 'vol' ? 'none' : 'vol'); }}>
-            {muted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
+            style={{
+              ...VBTN,
+              background: panel === 'vol' ? 'rgba(212,160,23,0.4)' : 'rgba(255,255,255,0.15)',
+              opacity: sonidoPermitido ? 1 : 0.4,
+              cursor: sonidoPermitido ? 'pointer' : 'not-allowed',
+            }}
+            title={sonidoPermitido ? undefined : 'Este video no tiene sonido disponible'}
+            onClick={e => {
+              e.stopPropagation();
+              if (!sonidoPermitido) return;
+              setPanel(p => p === 'vol' ? 'none' : 'vol');
+            }}>
+            {!sonidoPermitido || muted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
           </button>
 
           {/* Pantalla completa */}

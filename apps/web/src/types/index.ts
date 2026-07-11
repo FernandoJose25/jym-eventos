@@ -37,4 +37,7 @@ export interface AlbumFoto {
   focalX?: number;
   focalY?: number;
   order?: number;
+  // Solo aplica a videos: si no es exactamente `true`, el reproductor los
+  // fuerza muteados y el visitante no puede activar el sonido.
+  sonidoPermitido?: boolean;
 }
