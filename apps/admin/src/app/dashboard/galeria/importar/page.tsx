@@ -8,7 +8,7 @@ import { SUBCATS, CATEGORIAS } from '@/lib/galeriaTaxonomy';
 import { toast } from 'sonner';
 import {
   ArrowLeft, ImagePlus, Loader2, CheckCircle2, XCircle, Sparkles,
-  AlertTriangle, Trash2, Save, Pencil, UserPlus, LogOut, CircleUserRound,
+  AlertTriangle, Trash2, Save, Pencil, UserPlus, LogOut, CircleUserRound, Video,
 } from 'lucide-react';
 import {
   createPickerSession, pollPickerSession,
@@ -44,6 +44,7 @@ interface FilaFoto {
   motivoCalidad: string;
   eventoNombre: string;   // grupo/evento al que pertenece esta foto (editable)
   clasificada: boolean;   // true una vez que la IA ya la clasificó (independiente de si se subió o no)
+  tipo: 'imagen' | 'video';
 }
 
 type Fase = 'idle' | 'conectando' | 'esperando-seleccion' | 'listando' | 'revision' | 'guardando';
@@ -294,6 +295,7 @@ export default function ImportarDeGooglePhotosPage() {
           motivoCalidad: '',
           eventoNombre: '',
           clasificada: false,
+          tipo: 'imagen',
         });
       });
 
@@ -326,7 +328,8 @@ export default function ImportarDeGooglePhotosPage() {
       calidad: 'buena',
       motivoCalidad: '',
       eventoNombre: '',
-      clasificada: false,
+      clasificada: item.tipo === 'video', // los videos no pasan por la IA — se dan por "clasificados" para no bloquear el flujo
+      tipo: item.tipo,
     }));
     setFilas(nuevasFilas);
     eventosDetectadosRef.current = [];
@@ -462,6 +465,7 @@ export default function ImportarDeGooglePhotosPage() {
             id: f.id,
             fullUrl: f.icloudItem!.fullUrl,
             filename: f.icloudItem!.filename,
+            tipo: f.icloudItem!.tipo,
           })),
           idToken,
         );
@@ -613,7 +617,7 @@ export default function ImportarDeGooglePhotosPage() {
           albumId: eventoNombre ? (albumIdPorNombre[eventoNombre] || '') : '',
           focalX: 0.5,
           focalY: 0.5,
-          tipo: 'imagen',
+          tipo: f.tipo,
           visible: true,
           order,
           row: 1,
@@ -1036,6 +1040,15 @@ export default function ImportarDeGooglePhotosPage() {
                   }}>
                     <div style={{ position: 'relative', aspectRatio: '4/3', background: '#e2e8f0' }}>
                       <img src={f.thumb} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {f.tipo === 'video' && (
+                        <div style={{
+                          position: 'absolute', top: 6, left: 6, display: 'flex', alignItems: 'center', gap: 4,
+                          background: 'rgba(10,22,40,.75)', color: '#fff', borderRadius: 8,
+                          padding: '3px 7px', fontSize: '0.65rem', fontWeight: 700,
+                        }}>
+                          <Video size={12} /> Video
+                        </div>
+                      )}
                       <div style={{ position: 'absolute', top: 6, right: 6 }}>
                         {f.estado === 'procesando' && <Loader2 size={16} color="#fff" style={{ animation: 'spin 1s linear infinite' }} />}
                         {f.estado === 'lista' && <CheckCircle2 size={16} color="#22c55e" />}

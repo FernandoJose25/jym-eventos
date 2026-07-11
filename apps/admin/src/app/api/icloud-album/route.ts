@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'import') {
-        const items = body?.items as { id: string; fullUrl: string; filename: string }[];
+        const items = body?.items as { id: string; fullUrl: string; filename: string; tipo?: 'imagen' | 'video' }[];
         if (!Array.isArray(items) || items.length === 0) {
             return NextResponse.json({ error: 'No hay fotos que importar' }, { status: 400 });
         }
