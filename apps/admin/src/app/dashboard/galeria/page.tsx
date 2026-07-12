@@ -484,15 +484,17 @@ export default function GaleriaPage() {
               : <>{albumesDisponibles.filter(a => a.visible).length} álbumes publicados de {albumesDisponibles.length}</>}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+        <div className="galeria-header-actions" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {view === 'fotos' ? (
             <>
-              <Link href="/dashboard/galeria/importar" style={{
+              <Link href="/dashboard/galeria/importar" className="galeria-btn-import" style={{
                 display: 'flex', alignItems: 'center', gap: 6, background: '#d4a017', color: '#0a1628',
                 border: 'none', borderRadius: 10, padding: '0.6rem 1rem', fontWeight: 700,
-                fontSize: '0.82rem', textDecoration: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                fontSize: '0.82rem', textDecoration: 'none', cursor: 'pointer',
               }}>
-                <Sparkles size={15} /> Importar imágenes desde Google Photos o Icloud
+                <Sparkles size={15} style={{ flexShrink: 0 }} />
+                <span className="galeria-btn-import-full">Importar imágenes desde Google Photos o Icloud</span>
+                <span className="galeria-btn-import-short">Importar</span>
               </Link>
               <button
                 onClick={() => { setSelMode(m => !m); setSelected(new Set()); }}
@@ -503,7 +505,7 @@ export default function GaleriaPage() {
                   fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap',
                 }}>
                 {selMode ? <CheckSquare size={15} /> : <Square size={15} />}
-                {selMode ? 'Cancelar selección' : 'Seleccionar'}
+                {selMode ? 'Cancelar' : 'Seleccionar'}
               </button>
               <button onClick={openAdd} className="btn-primary" style={{ whiteSpace: 'nowrap' }}>
                 <Plus size={16} /> Agregar
@@ -1197,13 +1199,13 @@ export default function GaleriaPage() {
 
       {/* Barra flotante de acciones en lote — pestaña Fotos */}
       {view === 'fotos' && selMode && selected.size > 0 && (
-        <div style={{
+        <div className="galeria-bulkbar" style={{
           position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 40,
           background: '#0a1628', borderRadius: 16, padding: '0.9rem 1.1rem',
           boxShadow: '0 12px 32px rgba(10,22,40,0.35)', display: 'flex', alignItems: 'center',
-          gap: 12, flexWrap: 'wrap', maxWidth: 'calc(100vw - 2rem)',
+          gap: 12, maxWidth: 'calc(100vw - 2rem)', overflowX: 'auto',
         }}>
-          <span style={{ color: '#fff', fontSize: '0.82rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+          <span style={{ color: '#fff', fontSize: '0.82rem', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>
             {selected.size} seleccionado{selected.size === 1 ? '' : 's'}
           </span>
 
@@ -1323,7 +1325,7 @@ export default function GaleriaPage() {
           )}
 
           <button onClick={() => { setSelected(new Set()); setSelMode(false); }}
-            style={{ background: 'transparent', color: 'rgba(255,255,255,.6)', border: 'none', fontSize: '0.78rem', cursor: 'pointer' }}>
+            style={{ background: 'transparent', color: 'rgba(255,255,255,.6)', border: 'none', fontSize: '0.78rem', cursor: 'pointer', flexShrink: 0 }}>
             Cancelar
           </button>
         </div>

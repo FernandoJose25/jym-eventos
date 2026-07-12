@@ -160,7 +160,7 @@ export default function HeroSection({ data }: { data: HeroData }) {
           zIndex: 10,
 
           width: '100%',
-          maxWidth: '1200px',
+          maxWidth: 'clamp(1200px, 62vw, 1680px)',
 
           margin: '0 auto',
 
@@ -197,7 +197,7 @@ export default function HeroSection({ data }: { data: HeroData }) {
 
             color: '#f5c842',
 
-            fontSize: '0.78rem',
+            fontSize: 'clamp(0.78rem, 0.85vw, 1rem)',
             fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.14em',
@@ -237,11 +237,11 @@ export default function HeroSection({ data }: { data: HeroData }) {
           style={{
             color: 'rgba(255,255,255,0.82)',
 
-            fontSize: '1.15rem',
+            fontSize: 'clamp(1.15rem, 1.4vw, 1.6rem)',
 
             lineHeight: 1.8,
 
-            maxWidth: '760px',
+            maxWidth: 'min(760px, 60vw)',
 
             margin: '0 auto 2.8rem',
 

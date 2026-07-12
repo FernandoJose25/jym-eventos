@@ -416,6 +416,32 @@ select.admin-input {
     flex-direction: column !important;
   }
 
+  /* Galeria header: botón de importar se acorta y ocupa todo el ancho */
+  .galeria-header-actions {
+    width: 100%;
+  }
+
+  .galeria-btn-import {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .galeria-btn-import-full {
+    display: none;
+  }
+
+  .galeria-btn-import-short {
+    display: inline !important;
+  }
+
+  /* Galeria: barra flotante de acciones en lote pegada a los bordes, con scroll horizontal */
+  .galeria-bulkbar {
+    left: 1rem !important;
+    right: 1rem !important;
+    transform: none !important;
+    max-width: none !important;
+  }
+
   /* Buttons full-width in mobile edit panels */
   .mobile-btn-full {
     width: 100% !important;
@@ -451,6 +477,11 @@ select.admin-input {
 
 /* ── Sticky action bar for forms on mobile ── */
 .mobile-action-bar {
+  display: none;
+}
+
+/* ── Galeria: texto corto del botón de importar, oculto salvo en móvil ── */
+.galeria-btn-import-short {
   display: none;
 }
 
