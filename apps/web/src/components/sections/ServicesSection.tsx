@@ -2,6 +2,7 @@
 import { useRef, useCallback } from 'react';
 import Link from 'next/link';
 import VideoSoundControl from '@/components/ui/VideoSoundControl';
+import { SERVICE_ICONS, isIconKey } from '@/lib/serviceIcons';
 
 interface Service {
   id:string; title:string; icon:string; desc:string;
@@ -145,13 +146,15 @@ function AtvCard({ s, idx }: { s: Service; idx: number }) {
             transition:'transform 0.1s ease-out',
             transformStyle:'preserve-3d',
           }}>
-            {/* Emoji con "profundidad" */}
+            {/* Ícono (SVG dorado si es una clave del picker, emoji si es texto libre) con "profundidad" */}
             <div style={{
-              fontSize:'2.75rem', lineHeight:1,
+              lineHeight:1,
               filter:'drop-shadow(0 6px 12px rgba(0,0,0,0.5))',
               transform:'translateZ(20px)',
             }}>
-              {s.icon || '🎭'}
+              {isIconKey(s.icon)
+                ? (() => { const Icon = SERVICE_ICONS[s.icon]; return <Icon size={44} strokeWidth={1.75} color="#f5c842" />; })()
+                : <span style={{ fontSize:'2.75rem' }}>{s.icon || '🎭'}</span>}
             </div>
 
             {/* Título */}

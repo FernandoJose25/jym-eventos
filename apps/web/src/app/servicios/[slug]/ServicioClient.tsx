@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { collection, getDocs, where, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cxHero, cxCard, cxVideo, cxVideoThumb } from '@/lib/cloudinary';
+import { SERVICE_ICONS, isIconKey } from '@/lib/serviceIcons';
 
 export const SERVICIOS_DATA: Record<string, any> = {
   'shows-infantiles': {
@@ -369,18 +370,32 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           })
           .filter((s: any) => s.title);
 
-        /* Fisher-Yates shuffle → tomar 3 */
+        /* Fisher-Yates shuffle → tomar hasta 6, sin repetir servicio */
         for (let i = pool.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [pool[i], pool[j]] = [pool[j], pool[i]];
         }
-        // Si Firestore no trae nada (colección vacía, todo oculto, etc.) caemos
-        // al listado estático de SERVICIOS_DATA para que la sección "También
-        // te puede interesar" nunca quede vacía en producción.
-        const staticFallback = (SERVICIOS_DATA[rawSlug]?.relacionados || []).map((r: any) => ({
-          title: r.title, icon: r.icon, link: r.href?.replace(/^\//, '') || '', img: r.img || '',
-        }));
-        setOtrosServicios(pool.length > 0 ? pool.slice(0, 3) : staticFallback);
+        // Si Firestore no trae suficientes (colección vacía, todo oculto, etc.)
+        // completamos con el listado estático de SERVICIOS_DATA para que la
+        // sección "También te puede interesar" nunca quede corta en producción.
+        // Se junta el `relacionados` de TODOS los servicios (no solo el actual)
+        // para tener variedad real, se deduplica por link y se mezcla también.
+        const seenLinks = new Set(pool.map((s: any) => s.link));
+        const staticPool = Object.entries(SERVICIOS_DATA)
+          .filter(([slug]) => slug !== rawSlug)
+          .flatMap(([, data]: [string, any]) => data?.relacionados || [])
+          .map((r: any) => ({
+            title: r.title, icon: r.icon, link: r.href?.replace(/^\//, '') || '', img: r.img || '',
+          }))
+          .filter((r: any) => r.link && !seenLinks.has(r.link) && (seenLinks.add(r.link), true));
+
+        for (let i = staticPool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [staticPool[i], staticPool[j]] = [staticPool[j], staticPool[i]];
+        }
+
+        const combined = [...pool, ...staticPool].slice(0, 6);
+        setOtrosServicios(combined);
 
         /* Mini-galería del servicio — 8 fotos reales filtradas por categoría */
         const norm = (s: string) => (s || '').trim().toLowerCase();
@@ -1123,7 +1138,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
             </div>
 
             {/* Cards grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(otrosServicios.length, 3)},1fr)`, gap: '1.25rem' }} className="srv-rel-grid">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.25rem' }} className="srv-rel-grid">
               {otrosServicios.map((r: any, i: number) => {
                 const rid = `rel-${i}`;
                 const relSlug = (r.link || '').replace('servicios/', '').replace('.html', '');
@@ -1199,10 +1214,11 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                         background: 'rgba(8,17,32,0.7)', backdropFilter: 'blur(12px)',
                         border: `1.5px solid ${relColor}40`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '1.6rem',
                         boxShadow: `0 4px 16px rgba(0,0,0,0.4), 0 0 0 4px ${relColor}15`,
                       }}>
-                        {r.icon}
+                        {isIconKey(r.icon)
+                          ? (() => { const Icon = SERVICE_ICONS[r.icon]; return <Icon size={22} strokeWidth={1.75} color="#f5c842" />; })()
+                          : <span style={{ fontSize: '1.6rem' }}>{r.icon}</span>}
                       </div>
 
                       {/* Content — bottom */}

@@ -6,9 +6,11 @@ import { db, COL } from '@/lib/firebase';
 import { toast } from 'sonner';
 import { slugify } from '@/lib/utils';
 import ImageUploader from '@/components/ui/ImageUploader';
+import IconPicker from '@/components/ui/IconPicker';
 import Link from 'next/link';
 import { ArrowLeft, Save, Sparkles } from 'lucide-react';
 import { authHeaders } from '@/lib/get-token';
+import { SERVICE_ICONS, isIconKey } from '@/lib/serviceIcons';
 
 export default function NuevoServicioPage() {
   const router     = useRouter();
@@ -18,7 +20,7 @@ export default function NuevoServicioPage() {
   const [form,       setForm]       = useState({
     title:     '',
     slug:      '',
-    icon:      '🎉',
+    icon:      'party',
     desc:      '',
     order:     10,
     mediaSrc:   '',
@@ -155,28 +157,30 @@ export default function NuevoServicioPage() {
 
         <div className="cfg-3col" style={{ gap:16 }}>
           {/* Ícono */}
-          <div>
+          <div style={{ gridColumn: 'span 2' }}>
             <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>
-              Ícono (emoji)
+              Ícono
             </label>
-            <input type="text" value={form.icon} onChange={e=>set('icon',e.target.value)}
-                   className="admin-input" style={{ textAlign:'center', fontSize:'1.5rem' }}/>
+            <IconPicker value={form.icon} onChange={v=>set('icon',v)} />
           </div>
-          {/* Orden */}
-          <div>
-            <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>
-              Orden en navbar
-            </label>
-            <input type="number" value={form.order} onChange={e=>set('order',+e.target.value)} className="admin-input"/>
-          </div>
-          {/* Preview ícono */}
-          <div>
-            <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>
-              Vista previa navbar
-            </label>
-            <div style={{ background:'#0a1628', borderRadius:8, padding:'0.6rem 1rem', display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ fontSize:'1.2rem' }}>{form.icon||'🎉'}</span>
-              <span style={{ color:'#f5c842', fontSize:'0.82rem', fontWeight:600 }}>{form.title||'Nombre'}</span>
+          {/* Orden + Preview */}
+          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+            <div>
+              <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>
+                Orden en navbar
+              </label>
+              <input type="number" value={form.order} onChange={e=>set('order',+e.target.value)} className="admin-input"/>
+            </div>
+            <div>
+              <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>
+                Vista previa navbar
+              </label>
+              <div style={{ background:'#0a1628', borderRadius:8, padding:'0.6rem 1rem', display:'flex', alignItems:'center', gap:8 }}>
+                {isIconKey(form.icon)
+                  ? (() => { const Icon = SERVICE_ICONS[form.icon]; return <Icon size={18} color="#f5c842" />; })()
+                  : <span style={{ fontSize:'1.2rem' }}>{form.icon||'🎉'}</span>}
+                <span style={{ color:'#f5c842', fontSize:'0.82rem', fontWeight:600 }}>{form.title||'Nombre'}</span>
+              </div>
             </div>
           </div>
         </div>

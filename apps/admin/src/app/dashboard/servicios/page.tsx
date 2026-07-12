@@ -6,7 +6,9 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { useModal } from '@/components/ui/Modal';
 import ImageUploader from '@/components/ui/ImageUploader';
+import IconPicker from '@/components/ui/IconPicker';
 import { Plus, Eye, EyeOff, Trash2, Edit2, Check, X, GripVertical } from 'lucide-react';
+import { SERVICE_ICONS, isIconKey } from '@/lib/serviceIcons';
 
 export default function ServiciosPage() {
   const [servicios, setServicios] = useState<any[]>([]);
@@ -25,7 +27,7 @@ export default function ServiciosPage() {
     const currentSlug = s.link
       ? s.link.replace('servicios/', '').replace('.html', '')
       : s.id;
-    setEditData({ title: s.title, icon: s.icon || '🎉', desc: s.desc || '', order: s.order || 1, slug: currentSlug });
+    setEditData({ title: s.title, icon: s.icon || 'party', desc: s.desc || '', order: s.order || 1, slug: currentSlug });
   };
 
   const cancelEdit = () => { setEditingId(null); setEditData({}); };
@@ -124,11 +126,9 @@ export default function ServiciosPage() {
                   /* ── Modo edición ── */
                   <div>
                     <div className="grid-edit-service" style={{ marginBottom: 12 }}>
-                      <div>
+                      <div style={{ gridColumn: '1 / -1' }}>
                         <label style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', display: 'block', marginBottom: 4 }}>Ícono</label>
-                        <input type="text" value={editData.icon}
-                          onChange={e => setEditData((p: any) => ({ ...p, icon: e.target.value }))}
-                          className="admin-input" style={{ textAlign: 'center', fontSize: '1.4rem', padding: '0.4rem' }} />
+                        <IconPicker value={editData.icon} onChange={v => setEditData((p: any) => ({ ...p, icon: v }))} />
                       </div>
                       <div>
                         <label style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', display: 'block', marginBottom: 4 }}>Nombre *</label>
@@ -214,12 +214,17 @@ export default function ServiciosPage() {
                         ? (s.mediaType === 'video'
                           ? <video src={s.mediaSrc} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           : <img src={s.mediaSrc} alt={s.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />)
-                        : (s.icon || '🎉')}
+                        : isIconKey(s.icon)
+                          ? (() => { const Icon = SERVICE_ICONS[s.icon]; return <Icon size={22} color="#f5c842" />; })()
+                          : (s.icon || 'party')}
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontWeight: 600, color: '#0a1628', fontSize: '0.9rem', margin: 0 }}>
-                        {s.icon} {s.title}
+                      <p style={{ fontWeight: 600, color: '#0a1628', fontSize: '0.9rem', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {isIconKey(s.icon)
+                          ? (() => { const Icon = SERVICE_ICONS[s.icon]; return <Icon size={15} color="#d4a017" />; })()
+                          : <span>{s.icon}</span>}
+                        {s.title}
                       </p>
                       {s.desc && (
                         <p style={{

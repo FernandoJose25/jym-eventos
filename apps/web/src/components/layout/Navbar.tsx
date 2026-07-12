@@ -5,8 +5,18 @@ import { usePathname } from 'next/navigation';
 import { collection, query, where, orderBy, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ChevronDown } from 'lucide-react';
+import { SERVICE_ICONS, isIconKey } from '@/lib/serviceIcons';
 
-interface NavService { id: string; title: string; icon: string; order: number; link: string }
+interface NavService { id: string; title: string; icon: string; order: number; link: string; mediaSrc?: string; mediaType?: string; desc?: string }
+
+/** Icono SVG dorado si `icon` es una clave conocida (elegida desde el admin); si no, se asume emoji libre. */
+function ServiceIcon({ icon, size = 16 }: { icon: string; size?: number }) {
+  if (isIconKey(icon)) {
+    const Icon = SERVICE_ICONS[icon];
+    return <Icon size={size} strokeWidth={2} style={{ color: '#f5c842' }} />;
+  }
+  return <span style={{ fontSize: size * 0.95 }}>{icon}</span>;
+}
 interface NavConfig { nombre?: string; tagline?: string; logo?: string }
 
 const toSlugUrl = (link: string) => {
@@ -332,10 +342,11 @@ export default function Navbar() {
                           <div style={{
                             width: 30, height: 30, borderRadius: 9, flexShrink: 0,
                             background: active ? 'rgba(212,160,23,0.22)' : 'rgba(255,255,255,0.06)',
+                            border: active ? '1px solid rgba(212,160,23,0.3)' : '1px solid transparent',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '0.92rem', transition: 'background 0.13s',
+                            transition: 'background 0.13s',
                           }}>
-                            {s.icon}
+                            <ServiceIcon icon={s.icon} size={15} />
                           </div>
                           <span style={{
                             fontSize: '0.8rem', fontWeight: active ? 600 : 500,
@@ -375,49 +386,66 @@ export default function Navbar() {
                 {services.length > 1 && (() => {
                   const featured = services[0];
                   const href = toSlugUrl(featured.link);
+                  const isVideo = featured.mediaType === 'video' || !!featured.mediaSrc?.match(/\.(mp4|webm|mov)/i);
                   return (
                     <Link href={href} style={{
                       position: 'relative', overflow: 'hidden', textDecoration: 'none',
-                      borderRadius: 16, padding: '1.1rem',
-                      background: 'linear-gradient(160deg, rgba(30,58,95,0.55), rgba(10,22,40,0.4))',
+                      borderRadius: 16,
                       border: '1px solid rgba(212,160,23,0.2)',
-                      display: 'flex', flexDirection: 'column', gap: '0.6rem',
+                      display: 'flex', flexDirection: 'column',
+                      minHeight: 230,
                     }}>
-                      <div style={{
-                        position: 'absolute', inset: 0, pointerEvents: 'none',
-                        background: 'radial-gradient(circle at 85% 0%, rgba(245,200,66,0.14), transparent 55%)',
-                      }} />
-                      <span style={{
-                        alignSelf: 'flex-start', fontSize: '0.6rem', fontWeight: 700,
-                        letterSpacing: '.06em', textTransform: 'uppercase',
-                        color: '#0a1628', background: 'linear-gradient(135deg,#b8860b,#f5c842)',
-                        padding: '0.25rem 0.55rem', borderRadius: 9999,
-                      }}>
-                        Destacado
-                      </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      {/* Fondo: imagen/video real del servicio, o degradado si no hay */}
+                      <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+                        {featured.mediaSrc ? (
+                          isVideo ? (
+                            <video autoPlay muted loop playsInline
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}>
+                              <source src={featured.mediaSrc} type="video/mp4" />
+                            </video>
+                          ) : (
+                            <img src={featured.mediaSrc} alt={featured.title} loading="lazy" decoding="async"
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                          )
+                        ) : (
+                          <div style={{ width: '100%', height: '100%', background: 'linear-gradient(160deg,#1e3a5f,#0a1628)' }} />
+                        )}
                         <div style={{
-                          width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                          background: 'rgba(212,160,23,0.2)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.15rem',
-                        }}>
-                          {featured.icon}
-                        </div>
-                        <p style={{ fontFamily: 'var(--font-playfair)', color: '#fff', fontSize: '1.02rem', fontWeight: 700, margin: 0 }}>
-                          {featured.title}
-                        </p>
+                          position: 'absolute', inset: 0,
+                          background: 'linear-gradient(0deg, rgba(8,12,22,0.95) 10%, rgba(8,12,22,0.55) 55%, rgba(8,12,22,0.15) 100%)',
+                        }} />
                       </div>
-                      <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.55, margin: 0 }}>
-                        Descubre cómo lo hacemos posible para tu evento.
-                      </p>
-                      <span style={{
-                        marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                        padding: '0.55rem', borderRadius: 10,
-                        background: 'linear-gradient(135deg,#b8860b,#f5c842)',
-                        color: '#0a1628', fontSize: '0.8rem', fontWeight: 700,
-                      }}>
-                        Ver detalles →
-                      </span>
+
+                      <div style={{ position: 'relative', zIndex: 1, padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', flex: 1 }}>
+                        <span style={{
+                          alignSelf: 'flex-start', fontSize: '0.6rem', fontWeight: 700,
+                          letterSpacing: '.06em', textTransform: 'uppercase',
+                          color: '#0a1628', background: 'linear-gradient(135deg,#b8860b,#f5c842)',
+                          padding: '0.25rem 0.55rem', borderRadius: 9999,
+                          boxShadow: '0 4px 14px rgba(212,160,23,0.35)',
+                        }}>
+                          Destacado
+                        </span>
+
+                        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <p style={{ fontFamily: 'var(--font-playfair)', color: '#fff', fontSize: '1.15rem', fontWeight: 700, margin: 0, textShadow: '0 2px 10px rgba(0,0,0,0.6)' }}>
+                            {featured.title}
+                          </p>
+                          {featured.desc && (
+                            <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5, margin: 0, textShadow: '0 1px 6px rgba(0,0,0,0.6)' }}>
+                              {featured.desc.slice(0, 78)}{featured.desc.length > 78 ? '…' : ''}
+                            </p>
+                          )}
+                          <span style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            padding: '0.55rem', borderRadius: 10, marginTop: 4,
+                            background: 'linear-gradient(135deg,#b8860b,#f5c842)',
+                            color: '#0a1628', fontSize: '0.8rem', fontWeight: 700,
+                          }}>
+                            Ver detalles →
+                          </span>
+                        </div>
+                      </div>
                     </Link>
                   );
                 })()}
@@ -507,8 +535,8 @@ export default function Navbar() {
                   <span style={{
                     width: 30, height: 30, borderRadius: 8, flexShrink: 0,
                     background: active ? 'rgba(212,160,23,0.2)' : 'rgba(255,255,255,0.08)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem',
-                  }}>{s.icon}</span>
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}><ServiceIcon icon={s.icon} size={15} /></span>
                   <span style={{ lineHeight: 1.3 }}>{s.title}</span>
                 </Link>
               );
