@@ -1,4 +1,5 @@
 'use client';
+import { motion } from 'framer-motion';
 import HeroSection         from '@/components/sections/HeroSection';
 import StatsSection        from '@/components/sections/StatsSection';
 import ServicesSection     from '@/components/sections/ServicesSection';
@@ -10,13 +11,18 @@ import BrandsSection       from '@/components/sections/BrandsSection';
 import ContactSection      from '@/components/sections/ContactSection';
 import type { HomeData }   from '@/lib/homeData';
 
-// Wrapper con animación de entrada al scroll
+// Wrapper con animación de entrada al scroll (spring físico vía Framer Motion)
 function Section({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   return (
-    <div className={`reveal ${className}`}
-         style={{ transitionDelay: `${delay}s` }}>
+    <motion.div
+      className={className}
+      initial={{ opacity: 0, y: 36 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15, margin: '0px 0px -80px 0px' }}
+      transition={{ type: 'spring', stiffness: 60, damping: 16, delay }}
+    >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
