@@ -116,10 +116,13 @@ export function cxVideoThumb(url: string): string {
   if (!url) return '';
   if (!isCloudinary(url)) return url;
   const t = 'q_auto:best,f_jpg,w_1400,c_limit';
-  const clean = stripTransforms(url)
-    .replace('/video/upload/', '/upload/')
-    .replace(/\.(mp4|webm|mov|ogv|avi)(\?|$)/i, '.jpg$2');
-  return clean.replace('/upload/', `/upload/${t}/`);
+  // Debe mantenerse en el namespace /video/upload/ (no moverlo a /upload/ a secas):
+  // Cloudinary solo genera el frame-thumbnail .jpg de un video ahí. Cambiar de
+  // namespace + perder la versión (como hacía antes) resultaba en 404 silencioso,
+  // que el <img> de la tarjeta mostraba como el texto `alt` roto.
+  return url
+    .replace(/\.(mp4|webm|mov|ogv|avi)(\?|$)/i, '.jpg$2')
+    .replace('/video/upload/', `/video/upload/${t}/`);
 }
 
 /**
