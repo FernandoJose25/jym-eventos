@@ -17,7 +17,8 @@ function useCarouselDims() {
       if (w < 480) setDims({ cardW:220, cardH:280, offsetMul:150, containerH:320, range:1 });
       else if (w < 640) setDims({ cardW:260, cardH:320, offsetMul:185, containerH:370, range:2 });
       else if (w < 900) setDims({ cardW:290, cardH:360, offsetMul:200, containerH:400, range:2 });
-      else setDims({ cardW:340, cardH:400, offsetMul:220, containerH:440, range:3 });
+      else if (w < 1600) setDims({ cardW:340, cardH:400, offsetMul:220, containerH:440, range:3 });
+      else setDims({ cardW:420, cardH:490, offsetMul:270, containerH:540, range:3 });
     };
     update();
     window.addEventListener('resize', update, { passive: true });
@@ -177,7 +178,7 @@ export default function GallerySection({ items }: { items: GalleryItem[] }) {
                        backdropFilter:'blur(12px)', display:'flex', alignItems:'center', justifyContent:'center',
                        padding:'1rem', cursor:'zoom-out' }}>
           <div onClick={e=>e.stopPropagation()}
-               style={{ maxWidth:900, width:'100%', borderRadius:16, overflow:'hidden',
+               style={{ maxWidth:'clamp(900px, 60vw, 1400px)', width:'100%', borderRadius:16, overflow:'hidden',
                          boxShadow:'0 40px 100px rgba(0,0,0,0.6)', cursor:'default',
                          animation:'lbIn .3s cubic-bezier(0.34,1.56,0.64,1)' }}>
             <img src={items[activeIdx].url} alt={items[activeIdx].alt}

@@ -326,7 +326,7 @@ export default function TestimonialsSection({ items: propItems }: { items?: Test
 
       {/* ── DESKTOP: carrusel con flip (original) ── */}
       <div className="testi-desktop">
-        <div style={{ overflow:'hidden', padding:'2rem 0', position:'relative' }}>
+        <div className="testi-carousel-wrap" style={{ overflow:'hidden', padding:'2rem 0', position:'relative' }}>
           <div className="testi-fade-left" style={{ position:'absolute', left:0, top:0, bottom:0, width:80, zIndex:10,
                          background:'linear-gradient(to right,#0a1628,transparent)', pointerEvents:'none' }}/>
           <div className="testi-fade-right" style={{ position:'absolute', right:0, top:0, bottom:0, width:80, zIndex:10,
@@ -399,6 +399,13 @@ export default function TestimonialsSection({ items: propItems }: { items?: Test
           .testi-desktop { display: none !important; }
           .testi-mobile  { display: block !important; }
           .testi-hint-desktop { display: none !important; }
+        }
+
+        /* Smart TV: las tarjetas de flip son de tamaño fijo (240x320);
+           se escalan como bloque para no verse pequeñas en pantallas anchas. */
+        @media(min-width:1600px){
+          .testi-carousel-wrap { padding: 4.5rem 0 !important; }
+          .books-track { transform: scale(1.2); transform-origin: center top; }
         }
 
         @keyframes rotation_481 {

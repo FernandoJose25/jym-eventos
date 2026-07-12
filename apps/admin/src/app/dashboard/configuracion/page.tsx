@@ -1524,7 +1524,7 @@ export default function ConfiguracionPage() {
                   </div>
 
                   {/* Sub-tabs */}
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {(['privacidad', 'terminos', 'cookies'] as const).map(tab => (
                       <button key={tab} onClick={() => setLegalTab(tab)}
                         style={{
@@ -1532,7 +1532,7 @@ export default function ConfiguracionPage() {
                           cursor: 'pointer', fontFamily: 'var(--font-jakarta)', fontSize: '0.82rem',
                           fontWeight: legalTab === tab ? 700 : 400,
                           background: legalTab === tab ? '#1e3a5f' : '#f8fafc',
-                          color: legalTab === tab ? '#fff' : '#64748b'
+                          color: legalTab === tab ? '#fff' : '#64748b', whiteSpace: 'nowrap',
                         }}>
                         {tab === 'privacidad' ? '🔒 Privacidad' : tab === 'terminos' ? '📋 Términos' : '🍪 Cookies'}
                       </button>

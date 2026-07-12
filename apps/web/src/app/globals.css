@@ -165,3 +165,17 @@ h1 em, h2 em {
   html { scroll-padding-top: 64px; }
   button, a { -webkit-tap-highlight-color: rgba(0,0,0,0); }
 }
+
+/* ── SMART TV / PANTALLAS GRANDES ───────────────────────────
+   A partir de 1600px el .container fijo de 1280px deja el
+   contenido como una franja angosta centrada en mucho fondo
+   vacío, y el texto base se ve pequeño visto desde el sillón.
+   Se ensancha el contenedor y se escala tipografía base. */
+@media(min-width:1600px) {
+  .container { max-width: 1500px; }
+  h2 { font-size: clamp(2.2rem, 2.6vw, 3.2rem); }
+}
+
+@media(min-width:2200px) {
+  .container { max-width: 1800px; }
+}

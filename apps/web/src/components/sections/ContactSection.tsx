@@ -181,7 +181,7 @@ export default function ContactSection({ data }: Props) {
         </div>
 
         {/* Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.55fr', gap: '3rem', alignItems: 'start' }}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.55fr', gap: '3rem', alignItems: 'start', maxWidth: 1200, margin: '0 auto' }}
           className="cs-grid">
 
           {/* ─── Left panel ─── */}
