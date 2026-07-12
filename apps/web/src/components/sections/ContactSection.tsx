@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { z } from 'zod';
+import confetti from 'canvas-confetti';
 
 const schema = z.object({
   nombre: z.string().min(2, 'El nombre es requerido'),
@@ -69,6 +70,12 @@ export default function ContactSection({ data }: Props) {
         body: JSON.stringify({ ...result.data, fechaLegible: now.toLocaleString('es-PE', { timeZone: 'America/Lima' }) }),
       }).catch(() => { });
       setStatus('success');
+      confetti({
+        particleCount: 120,
+        spread: 75,
+        origin: { y: 0.6 },
+        colors: ['#d4a017', '#f5c842', '#b8860b'],
+      });
     } catch {
       setStatus('error');
       setErrMsg('No se pudo enviar. Escríbenos al WhatsApp: +51 945 203 708');

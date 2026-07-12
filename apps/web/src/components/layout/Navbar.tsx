@@ -267,15 +267,20 @@ export default function Navbar() {
                 position: 'absolute', top: 'calc(100% + 10px)', left: '50%',
                 background: 'rgba(8,17,32,0.97)', backdropFilter: 'blur(24px) saturate(160%)',
                 WebkitBackdropFilter: 'blur(24px) saturate(160%)',
-                border: '1px solid rgba(212,160,23,0.2)', borderRadius: 18,
-                padding: '0.625rem', minWidth: 260,
-                boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03)',
+                border: '1px solid rgba(212,160,23,0.22)', borderRadius: 20,
+                padding: '1.25rem',
+                width: services.length > 1 ? 560 : 300,
+                maxWidth: '92vw',
+                boxShadow: '0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03)',
                 pointerEvents: servOpen ? 'auto' : 'none',
                 opacity: servOpen ? 1 : 0,
                 transform: servOpen
                   ? 'translateX(-50%) translateY(0)'
                   : 'translateX(-50%) translateY(-6px)',
                 transition: 'opacity 0.2s ease, transform 0.2s ease',
+                display: 'grid',
+                gridTemplateColumns: services.length > 1 ? '1.15fr 1fr' : '1fr',
+                gap: '1.25rem',
               }}>
                 {/* Arrow */}
                 <div style={{
@@ -284,67 +289,138 @@ export default function Navbar() {
                 }}>
                   <div style={{
                     width: 12, height: 12, background: 'rgba(8,17,32,0.97)',
-                    border: '1px solid rgba(212,160,23,0.2)', transform: 'rotate(45deg)',
+                    border: '1px solid rgba(212,160,23,0.22)', transform: 'rotate(45deg)',
                     marginTop: 3,
                   }} />
                 </div>
 
-                {services.length === 0 && (
-                  <div style={{ padding: '0.75rem 1rem', color: 'rgba(255,255,255,0.3)', fontSize: '0.82rem' }}>
-                    Cargando…
+                {/* Column: grid of services */}
+                <div>
+                  <p style={{
+                    fontSize: '0.64rem', textTransform: 'uppercase', letterSpacing: '.14em',
+                    color: 'rgba(212,160,23,0.65)', fontWeight: 700, margin: '0 0 0.7rem 0.15rem',
+                  }}>
+                    Elige tu servicio
+                  </p>
+
+                  {services.length === 0 && (
+                    <div style={{ padding: '0.75rem 1rem', color: 'rgba(255,255,255,0.3)', fontSize: '0.82rem' }}>
+                      Cargando…
+                    </div>
+                  )}
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: services.length > 1 ? '1fr 1fr' : '1fr',
+                    gap: '0.35rem',
+                  }}>
+                    {(services.length > 1 ? services.slice(1) : services).map(s => {
+                      const href = toSlugUrl(s.link);
+                      const active = pathname === href;
+                      return (
+                        <Link key={s.id} href={href} style={{
+                          display: 'flex', alignItems: 'center', gap: 9,
+                          padding: '0.5rem 0.6rem', borderRadius: 12,
+                          textDecoration: 'none', transition: 'background 0.13s, border-color 0.13s',
+                          border: '1px solid transparent',
+                          background: active ? 'rgba(212,160,23,0.12)' : 'transparent',
+                          borderColor: active ? 'rgba(212,160,23,0.25)' : 'transparent',
+                        }}
+                          onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'; } }}
+                          onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.borderColor = 'transparent'; } }}
+                        >
+                          <div style={{
+                            width: 30, height: 30, borderRadius: 9, flexShrink: 0,
+                            background: active ? 'rgba(212,160,23,0.22)' : 'rgba(255,255,255,0.06)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '0.92rem', transition: 'background 0.13s',
+                          }}>
+                            {s.icon}
+                          </div>
+                          <span style={{
+                            fontSize: '0.8rem', fontWeight: active ? 600 : 500,
+                            color: active ? '#f5c842' : 'rgba(255,255,255,0.85)',
+                            lineHeight: 1.25,
+                          }}>
+                            {s.title}
+                          </span>
+                        </Link>
+                      );
+                    })}
                   </div>
-                )}
-                {services.map(s => {
-                  const href = toSlugUrl(s.link);
-                  const active = pathname === href;
-                  return (
-                    <Link key={s.id} href={href} style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '0.625rem 0.875rem', borderRadius: 12,
-                      textDecoration: 'none', transition: 'background 0.13s',
-                      background: active ? 'rgba(212,160,23,0.12)' : 'transparent',
-                    }}
-                      onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; }}
-                      onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+
+                  <div style={{ marginTop: '0.85rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)' }}>
+                      ¿No sabes por dónde empezar?
+                    </span>
+                    <a href="https://wa.me/51945203708?text=Hola%2C%20quiero%20cotizar%20un%20evento"
+                      target="_blank" rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0,
+                        padding: '0.45rem 0.8rem', borderRadius: 9999,
+                        background: 'linear-gradient(135deg,rgba(184,134,11,0.25),rgba(245,200,66,0.15))',
+                        border: '1px solid rgba(212,160,23,0.25)',
+                        color: '#f5c842', fontSize: '0.74rem', fontWeight: 700, textDecoration: 'none',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg,rgba(184,134,11,0.4),rgba(245,200,66,0.25))'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg,rgba(184,134,11,0.25),rgba(245,200,66,0.15))'}
                     >
+                      Cotizar →
+                    </a>
+                  </div>
+                </div>
+
+                {/* Featured column: first service as highlighted card */}
+                {services.length > 1 && (() => {
+                  const featured = services[0];
+                  const href = toSlugUrl(featured.link);
+                  return (
+                    <Link href={href} style={{
+                      position: 'relative', overflow: 'hidden', textDecoration: 'none',
+                      borderRadius: 16, padding: '1.1rem',
+                      background: 'linear-gradient(160deg, rgba(30,58,95,0.55), rgba(10,22,40,0.4))',
+                      border: '1px solid rgba(212,160,23,0.2)',
+                      display: 'flex', flexDirection: 'column', gap: '0.6rem',
+                    }}>
                       <div style={{
-                        width: 34, height: 34, borderRadius: 9, flexShrink: 0,
-                        background: active ? 'rgba(212,160,23,0.2)' : 'rgba(255,255,255,0.07)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '1rem', transition: 'background 0.13s',
-                      }}>
-                        {s.icon}
-                      </div>
+                        position: 'absolute', inset: 0, pointerEvents: 'none',
+                        background: 'radial-gradient(circle at 85% 0%, rgba(245,200,66,0.14), transparent 55%)',
+                      }} />
                       <span style={{
-                        fontSize: '0.85rem', fontWeight: active ? 600 : 500,
-                        color: active ? '#f5c842' : 'rgba(255,255,255,0.82)',
+                        alignSelf: 'flex-start', fontSize: '0.6rem', fontWeight: 700,
+                        letterSpacing: '.06em', textTransform: 'uppercase',
+                        color: '#0a1628', background: 'linear-gradient(135deg,#b8860b,#f5c842)',
+                        padding: '0.25rem 0.55rem', borderRadius: 9999,
                       }}>
-                        {s.title}
+                        Destacado
                       </span>
-                      {active && (
-                        <span style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#f5c842', flexShrink: 0 }} />
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{
+                          width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                          background: 'rgba(212,160,23,0.2)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.15rem',
+                        }}>
+                          {featured.icon}
+                        </div>
+                        <p style={{ fontFamily: 'var(--font-playfair)', color: '#fff', fontSize: '1.02rem', fontWeight: 700, margin: 0 }}>
+                          {featured.title}
+                        </p>
+                      </div>
+                      <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)', lineHeight: 1.55, margin: 0 }}>
+                        Descubre cómo lo hacemos posible para tu evento.
+                      </p>
+                      <span style={{
+                        marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        padding: '0.55rem', borderRadius: 10,
+                        background: 'linear-gradient(135deg,#b8860b,#f5c842)',
+                        color: '#0a1628', fontSize: '0.8rem', fontWeight: 700,
+                      }}>
+                        Ver detalles →
+                      </span>
                     </Link>
                   );
-                })}
-
-                <div style={{ margin: '0.5rem 0.875rem 0.25rem', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.5rem' }}>
-                  <a href="https://wa.me/51945203708?text=Hola%2C%20quiero%20cotizar%20un%20evento"
-                    target="_blank" rel="noopener noreferrer"
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      padding: '0.55rem', borderRadius: 10,
-                      background: 'linear-gradient(135deg,rgba(184,134,11,0.25),rgba(245,200,66,0.15))',
-                      border: '1px solid rgba(212,160,23,0.25)',
-                      color: '#f5c842', fontSize: '0.8rem', fontWeight: 600, textDecoration: 'none',
-                      transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg,rgba(184,134,11,0.4),rgba(245,200,66,0.25))'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'linear-gradient(135deg,rgba(184,134,11,0.25),rgba(245,200,66,0.15))'}
-                  >
-                    Cotizar un evento →
-                  </a>
-                </div>
+                })()}
               </div>
             </div>
           </nav>
