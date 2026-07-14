@@ -463,6 +463,11 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
   const mediaSrc = (firestoreMedia && !mediaError) ? firestoreMedia : (sd.img || '');
   const isVideo = firestoreMedia && !mediaError && firestoreType === 'video';
 
+  // includesMediaSrc — fondo independiente de la sección "¿Qué incluye?"; si no hay, usa el hero
+  const includesMediaSrc = servicio?.includesMediaSrc || mediaSrc;
+  const includesMediaType = servicio?.includesMediaSrc ? (servicio?.includesMediaType || 'image') : firestoreType;
+  const isIncludesVideo = includesMediaSrc && includesMediaType === 'video';
+
   // Rich content — Firestore detail map first, then static fallback
   const h2content = dt.longDescH2 || sd.h2 || '';
   // longDesc is the full paragraph; split it roughly into p1/p2 using '. '
@@ -890,14 +895,19 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
       ═══════════════════════════════════════════ */}
       {incluyeList.length > 0 && (
         <section style={{ position: 'relative', overflow: 'hidden', padding: 'clamp(4rem,8vw,6rem) 0' }}>
-          {/* Foto real de fondo — mismo fallback de media que el hero */}
-          {mediaSrc && (
-            <img src={cxHero(mediaSrc)} alt="" aria-hidden="true"
+          {/* Fondo real — imagen o video, independiente del hero (includesMediaSrc) */}
+          {isIncludesVideo ? (
+            <video autoPlay muted loop playsInline aria-hidden="true"
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}>
+              <source src={cxVideo(includesMediaSrc)} type="video/mp4" />
+            </video>
+          ) : includesMediaSrc ? (
+            <img src={cxHero(includesMediaSrc)} alt="" aria-hidden="true"
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-          )}
+          ) : null}
           <div style={{
             position: 'absolute', inset: 0,
-            background: mediaSrc
+            background: includesMediaSrc
               ? 'linear-gradient(145deg,rgba(5,13,26,0.94) 0%,rgba(10,22,40,0.82) 45%,rgba(12,30,48,0.55) 100%)'
               : 'linear-gradient(145deg,#050d1a 0%,#0a1628 55%,#0f2040 100%)',
           }} />

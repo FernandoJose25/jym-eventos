@@ -294,6 +294,19 @@ export default function ServiceContentPage() {
             onComplete={(url,fp,type)=>{ set('heroMediaSrc',url); set('heroFocalX',fp.x); set('heroFocalY',fp.y); set('heroMediaType',type||'image'); }}/>
         </fieldset>
 
+        {/* Media — fondo sección "¿Qué incluye?" */}
+        <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:14, padding:'1.25rem 1.5rem' }}>
+          <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 8px' }}>Imagen / Video — Fondo "¿Qué incluye?"</legend>
+          <p style={{ fontSize:'0.78rem', color:'#64748b', margin:'0 0 12px' }}>
+            Fondo de la sección con la tarjeta de elementos incluidos. Si está vacío, usa la imagen del hero.
+          </p>
+          <ImageUploader label="Fondo sección incluye" folder={`servicios/${id}/includes`}
+            value={srvData.includesMediaSrc} focal={{ x:srvData.includesFocalX??0.5, y:srvData.includesFocalY??0.4 }}
+            acceptVideo={true} soundEnabled={false}
+            previewAspect={16/9} previewLabel="Fondo de sección (panorámico)"
+            onComplete={(url,fp,type)=>{ set('includesMediaSrc',url); set('includesFocalX',fp.x); set('includesFocalY',fp.y); set('includesMediaType',type||'image'); }}/>
+        </fieldset>
+
       </div>
 
       {/* Modal includes */}
