@@ -795,40 +795,10 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                   </p>
                 )}
                 {p2content && (
-                  <p style={{ color: '#5f7080', fontSize: '0.975rem', lineHeight: 1.85, marginBottom: '2.5rem', fontFamily: 'var(--font-jakarta)' }}>
+                  <p style={{ color: '#5f7080', fontSize: '0.975rem', lineHeight: 1.85, marginBottom: 0, fontFamily: 'var(--font-jakarta)' }}>
                     {p2content}
                   </p>
                 )}
-                <div style={{ display: 'flex', gap: '0.875rem', flexWrap: 'wrap' }}>
-                  <a href="/contacto" style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 8,
-                    padding: '0.85rem 2rem', borderRadius: 999,
-                    background: `linear-gradient(135deg,#b8860b,${accentColor === '#d4a017' ? '#f5c842' : accentColor})`,
-                    color: '#fff', fontWeight: 700, fontSize: '0.875rem',
-                    textDecoration: 'none', fontFamily: 'var(--font-jakarta)',
-                    boxShadow: `0 4px 20px ${accentColor}40`,
-                    transition: 'all .3s cubic-bezier(.34,1.4,.64,1)',
-                  }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-3px)'; el.style.boxShadow = `0 10px 28px ${accentColor}55`; }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = `0 4px 20px ${accentColor}40`; }}>
-                    Cotizar Ahora
-                  </a>
-                  <a href={`https://wa.me/51945203708?text=${encodeURIComponent(waText)}`}
-                    target="_blank" rel="noopener noreferrer"
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 8,
-                      padding: '0.85rem 2rem', borderRadius: 999,
-                      background: '#25d366', color: '#fff',
-                      fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none',
-                      fontFamily: 'var(--font-jakarta)',
-                      boxShadow: '0 4px 20px rgba(37,211,102,0.3)',
-                      transition: 'all .3s cubic-bezier(.34,1.4,.64,1)',
-                    }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-3px)'; el.style.boxShadow = '0 10px 28px rgba(37,211,102,0.45)'; }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 4px 20px rgba(37,211,102,0.3)'; }}>
-                    💬 WhatsApp
-                  </a>
-                </div>
               </div>
 
               {/* Right: features */}
@@ -873,62 +843,68 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           ¿QUÉ INCLUYE? — card grid with hover glow
       ═══════════════════════════════════════════ */}
       {incluyeList.length > 0 && (
-        <section style={{ padding: 'clamp(5rem,9vw,8rem) 0', background: '#f7f7f4', position: 'relative', overflow: 'hidden' }}>
-          {/* Background accent blob */}
-          <div style={{ position: 'absolute', top: '-30%', right: '-10%', width: 600, height: 600, borderRadius: '50%', background: `radial-gradient(circle,${accentColor}08 0%,transparent 65%)`, pointerEvents: 'none' }} />
+        <section style={{ position: 'relative', overflow: 'hidden', padding: 'clamp(4rem,8vw,6rem) 0' }}>
+          {/* Foto real de fondo — mismo fallback de media que el hero */}
+          {mediaSrc && (
+            <img src={cxHero(mediaSrc)} alt="" aria-hidden="true"
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+          )}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: mediaSrc
+              ? 'linear-gradient(145deg,rgba(5,13,26,0.94) 0%,rgba(10,22,40,0.82) 45%,rgba(12,30,48,0.55) 100%)'
+              : 'linear-gradient(145deg,#050d1a 0%,#0a1628 55%,#0f2040 100%)',
+          }} />
 
-          <div className="container" style={{ position: 'relative' }}>
-            <div data-reveal="inc-header" style={{ textAlign: 'center', marginBottom: 'clamp(2.5rem,5vw,4rem)', opacity: isVisible('inc-header') ? 1 : 0, transform: isVisible('inc-header') ? 'none' : 'translateY(24px)', transition: 'all .7s ease' }}>
-              <p style={{ color: accentColor, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Incluido en el servicio</p>
-              <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#0c1e30', margin: 0, letterSpacing: '-.03em' }}>
-                Todo lo que Necesitas en un Solo Paquete
-              </h2>
-            </div>
+          <div className="container srv-includes-wrap" style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+            <div data-reveal="inc-card" className="srv-includes-card" style={{
+              width: '100%', maxWidth: 880,
+              background: 'rgba(12,30,48,0.55)',
+              backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)',
+              border: `1px solid ${accentColor}40`,
+              borderRadius: 24,
+              padding: 'clamp(2rem,4vw,3.25rem)',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.35)',
+              opacity: isVisible('inc-card') ? 1 : 0,
+              transform: isVisible('inc-card') ? 'none' : 'translateY(28px)',
+              transition: 'all .7s ease',
+            }}>
+              <div style={{ textAlign: 'center', marginBottom: 'clamp(2rem,4vw,2.75rem)' }}>
+                <p style={{ color: '#f5c842', fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Incluido en el servicio</p>
+                <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.6rem,2.4vw,2.3rem)', color: '#fff', margin: 0, letterSpacing: '-.03em' }}>
+                  Todo lo que Necesitas en un Solo Paquete
+                </h2>
+              </div>
 
-            <div className="srv-includes" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem' }}>
-              {incluyeList.map((item: any, i: number) => {
-                const rid = `inc-${i}`;
-                return (
-                  <div key={i} data-reveal={rid}
-                    style={{
-                      background: '#fff', borderRadius: 18,
-                      border: '1.5px solid #ece9e2',
-                      padding: '1.6rem',
-                      opacity: isVisible(rid) ? 1 : 0,
-                      transform: isVisible(rid) ? 'none' : 'translateY(28px)',
-                      transition: `all .6s ${i * 0.08}s ease`,
-                      cursor: 'default', position: 'relative', overflow: 'hidden',
-                    }}
-                    onMouseEnter={e => {
-                      const el = e.currentTarget as HTMLElement;
-                      el.style.borderColor = accentColor + '70';
-                      el.style.transform = 'translateY(-6px)';
-                      el.style.boxShadow = `0 16px 40px rgba(12,30,48,0.1), 0 0 0 1px ${accentColor}30`;
-                    }}
-                    onMouseLeave={e => {
-                      const el = e.currentTarget as HTMLElement;
-                      el.style.borderColor = '#ece9e2';
-                      el.style.transform = '';
-                      el.style.boxShadow = '';
-                    }}>
-                    {/* Hover gradient top */}
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${accentColor},${accentColor}60,transparent)`, opacity: 0, transition: 'opacity .3s' }} className="srv-card-top" />
-                    <div style={{
-                      width: 50, height: 50, borderRadius: 14,
-                      background: `linear-gradient(135deg,${accentColor}18,${accentColor}08)`,
-                      border: `1px solid ${accentColor}25`,
+              <div className="srv-includes" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '0.5rem 1.25rem' }}>
+                {incluyeList.map((item: any, i: number) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '0.85rem',
+                    padding: '0.9rem 0',
+                    borderBottom: `1px solid ${accentColor}20`,
+                  }}>
+                    <span style={{
+                      width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                      background: `${accentColor}20`, border: `1px solid ${accentColor}40`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '1.5rem', marginBottom: '1.1rem',
+                      fontSize: '1.05rem',
                     }}>
                       {item.icon}
+                    </span>
+                    <div>
+                      <h3 style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 700, fontFamily: 'var(--font-playfair)', margin: '0 0 3px' }}>{item.title}</h3>
+                      <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', lineHeight: 1.55, margin: 0, fontFamily: 'var(--font-jakarta)' }}>{item.desc}</p>
                     </div>
-                    <h3 style={{ color: '#0c1e30', fontSize: '0.88rem', fontWeight: 700, fontFamily: 'var(--font-playfair)', margin: '0 0 7px' }}>{item.title}</h3>
-                    <p style={{ color: '#7a8a9a', fontSize: '0.8rem', lineHeight: 1.65, margin: 0, fontFamily: 'var(--font-jakarta)' }}>{item.desc}</p>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
           </div>
+
+          <style>{`
+            @media (max-width: 860px) { .srv-includes { grid-template-columns: repeat(2,1fr) !important; } }
+            @media (max-width: 560px) { .srv-includes { grid-template-columns: 1fr !important; } .srv-includes-card { border-radius: 18px !important; } }
+          `}</style>
         </section>
       )}
 
@@ -1265,6 +1241,52 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           `}</style>
         </section>
       )}
+
+      {/* ═══════════════════════════════════════════
+          PREGUNTAS FRECUENTES
+      ═══════════════════════════════════════════ */}
+      {(() => {
+        const faqList = (dt.faq && dt.faq.length > 0) ? dt.faq : [
+          { pregunta: '¿Con cuánta anticipación debo reservar?', respuesta: 'Recomendamos al menos 15 días antes. En temporada alta (julio-diciembre) conviene reservar con 1-2 meses de anticipación para asegurar fecha y disponibilidad.' },
+          { pregunta: '¿Puedo personalizar el paquete según mi presupuesto?', respuesta: 'Sí, armamos una propuesta a medida: puedes agregar o quitar elementos del paquete base según lo que necesites.' },
+          { pregunta: '¿El precio incluye montaje y desmontaje?', respuesta: 'Sí, todo servicio incluye instalación previa y desmontaje al finalizar el evento, sin costo adicional.' },
+          { pregunta: '¿Tienen cobertura fuera de Sechura?', respuesta: 'Sí, atendemos eventos en toda la región Piura. Consulta disponibilidad y costo de movilización según la zona.' },
+        ];
+        return (
+          <section style={{ padding: 'clamp(4rem,8vw,6rem) 0', background: '#0c1e30' }}>
+            <div className="container" style={{ maxWidth: 760 }}>
+              <div data-reveal="faq-header" style={{ textAlign: 'center', marginBottom: 'clamp(2rem,4vw,3rem)', opacity: isVisible('faq-header') ? 1 : 0, transform: isVisible('faq-header') ? 'none' : 'translateY(24px)', transition: 'all .7s ease' }}>
+                <p style={{ color: accentColor, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Antes de cotizar</p>
+                <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#fff', margin: 0, letterSpacing: '-.03em' }}>Preguntas Frecuentes</h2>
+              </div>
+
+              <div>
+                {faqList.map((f: any, i: number) => (
+                  <details key={i} className="srv-faq-item" open={i === 0}
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '1.1rem 0' }}>
+                    <summary style={{
+                      cursor: 'pointer', listStyle: 'none',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem',
+                      color: '#fff', fontFamily: 'var(--font-playfair)', fontSize: '1.02rem',
+                    }}>
+                      {f.pregunta}
+                      <span className="srv-faq-plus" style={{ color: '#f5c842', fontSize: '1.3rem', flexShrink: 0, transition: 'transform .2s ease' }}>+</span>
+                    </summary>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.88rem', lineHeight: 1.7, margin: '0.85rem 0 0', fontFamily: 'var(--font-jakarta)' }}>
+                      {f.respuesta}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            </div>
+
+            <style>{`
+              .srv-faq-item summary::-webkit-details-marker { display: none; }
+              .srv-faq-item[open] .srv-faq-plus { transform: rotate(45deg); }
+            `}</style>
+          </section>
+        );
+      })()}
 
       {/* ═══════════════════════════════════════════
           CTA FINAL — immersive dark section
