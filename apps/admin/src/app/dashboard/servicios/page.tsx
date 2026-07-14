@@ -125,23 +125,23 @@ export default function ServiciosPage() {
                 {editingId === s.id ? (
                   /* ── Modo edición ── */
                   <div>
-                    <div className="grid-edit-service" style={{ marginBottom: 12 }}>
+                    <div className="grid-edit-service" style={{ marginBottom: 16 }}>
                       <div style={{ gridColumn: '1 / -1' }}>
-                        <label style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', display: 'block', marginBottom: 4 }}>Ícono</label>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Ícono</label>
                         <IconPicker value={editData.icon} onChange={v => setEditData((p: any) => ({ ...p, icon: v }))} />
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', display: 'block', marginBottom: 4 }}>Nombre *</label>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Nombre *</label>
                         <input type="text" value={editData.title}
                           onChange={e => setEditData((p: any) => ({ ...p, title: e.target.value }))}
-                          className="admin-input" />
+                          className="admin-input" style={{ fontSize: '0.95rem', padding: '0.7rem 0.9rem' }} />
                       </div>
                       <div style={{ gridColumn: '1 / -1' }}>
-                        <label style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', display: 'block', marginBottom: 4 }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>
                           URL pública del servicio
                         </label>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 0, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}>
-                          <span style={{ padding: '0.5rem 0.75rem', background: '#f1f5f9', color: '#94a3b8', fontSize: '0.75rem', borderRight: '1px solid #e2e8f0', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          <span style={{ padding: '0.7rem 0.9rem', background: '#f1f5f9', color: '#64748b', fontSize: '0.88rem', borderRight: '1px solid #e2e8f0', whiteSpace: 'nowrap', flexShrink: 0 }}>
                             /servicios/
                           </span>
                           <input
@@ -149,31 +149,31 @@ export default function ServiciosPage() {
                             value={editData.slug || ''}
                             onChange={e => setEditData((p: any) => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-') }))}
                             className="admin-input"
-                            style={{ border: 'none', borderRadius: 0, background: 'transparent', flex: 1 }}
+                            style={{ border: 'none', borderRadius: 0, background: 'transparent', flex: 1, fontSize: '0.95rem', padding: '0.7rem 0.9rem' }}
                             placeholder="bm-vogue"
                           />
                         </div>
-                        <p style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: 3 }}>
-                          URL final: <strong>/servicios/{editData.slug || '…'}</strong>
+                        <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: 6 }}>
+                          URL final: <strong style={{ color:'#475569' }}>/servicios/{editData.slug || '…'}</strong>
                         </p>
                       </div>
                       <div className="col-desc">
-                        <label style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', display: 'block', marginBottom: 4 }}>Descripción</label>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Descripción</label>
                         <textarea rows={2} value={editData.desc}
                           onChange={e => setEditData((p: any) => ({ ...p, desc: e.target.value }))}
-                          className="admin-input" style={{ resize: 'vertical' }} placeholder="Breve descripción…" />
+                          className="admin-input" style={{ resize: 'vertical', fontSize: '0.95rem', padding: '0.7rem 0.9rem', lineHeight: 1.5 }} placeholder="Breve descripción…" />
                       </div>
                       <div className="col-order">
-                        <label style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', display: 'block', marginBottom: 4 }}>Orden</label>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Orden</label>
                         <input type="number" value={editData.order}
                           onChange={e => setEditData((p: any) => ({ ...p, order: +e.target.value }))}
-                          className="admin-input" style={{ padding: '0.4rem' }} />
+                          className="admin-input" style={{ padding: '0.7rem 0.9rem', fontSize: '0.95rem' }} />
                       </div>
                     </div>
 
                     {/* Subir nueva media */}
-                    <div style={{ marginBottom: 12 }}>
-                      <label style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', display: 'block', marginBottom: 6 }}>
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: 8 }}>
                         Imagen / Video de portada (opcional — máx 200MB)
                       </label>
                       <ImageUploader folder={`servicios/${s.id}`} acceptVideo={true}
