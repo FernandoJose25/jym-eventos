@@ -19,8 +19,9 @@ export default function IconPicker({ value, onChange }: Props) {
   return (
     <div>
       <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 6,
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(44px, 1fr))', gap: 6,
         background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 8,
+        maxHeight: 216, overflowY: 'auto',
       }}>
         {SERVICE_ICON_KEYS.map(key => {
           const Icon = SERVICE_ICONS[key];
@@ -30,7 +31,7 @@ export default function IconPicker({ value, onChange }: Props) {
               onClick={() => onChange(key)}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                aspectRatio: '1', borderRadius: 8, cursor: 'pointer',
+                width: '100%', maxWidth: 48, aspectRatio: '1', borderRadius: 8, cursor: 'pointer',
                 background: active ? 'linear-gradient(135deg,#b8860b,#f5c842)' : '#fff',
                 border: active ? '1px solid #d4a017' : '1px solid #e2e8f0',
                 color: active ? '#0a1628' : '#475569',
@@ -42,6 +43,9 @@ export default function IconPicker({ value, onChange }: Props) {
           );
         })}
       </div>
+      <p style={{ fontSize: '0.65rem', color: '#94a3b8', margin: '6px 0 0' }}>
+        {SERVICE_ICON_KEYS.length} íconos disponibles — pasa el cursor sobre uno para ver su nombre.
+      </p>
 
       {usesLegacyEmoji && (
         <div style={{ marginTop: 8 }}>
