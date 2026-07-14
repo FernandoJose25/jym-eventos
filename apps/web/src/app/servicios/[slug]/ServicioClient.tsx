@@ -507,6 +507,18 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
   const accentColor = sd.color || '#d4a017';
   const ctaLabel = dt.btn1Text || (rawSlug === 'decoracion-tematica' ? 'Cotizar Decoración' : rawSlug === 'shows-infantiles' ? 'Cotizar Show' : 'Cotizar Ahora');
 
+  // Badge de categoría (línea superior tipo "CELEBRACIONES · BODAS")
+  const categoryLabel = dt.categoryLabel || (sd.badge ? sd.badge.replace(/^\S+\s*/, '') : '');
+  // Palabra del título a resaltar en cursiva dorada
+  const titleAccentWord = dt.titleAccentWord || '';
+  // Testimonio flotante sobre la media del hero
+  const testimonialName = dt.testimonialName || '';
+  const testimonialLocation = dt.testimonialLocation || '';
+  const testimonialRating = dt.testimonialRating || '';
+  const hasTestimonial = !!(testimonialName && testimonialRating);
+  // Stats en fila configurables por servicio, con fallback a los genéricos animados
+  const customStats: Array<{ value: string; label: string }> = (dt.stats || []).filter((s: any) => s?.value && s?.label);
+
   if (!h2content && !servicio) return (
     <div style={{ minHeight: '100vh', paddingTop: '8rem', textAlign: 'center', fontFamily: 'var(--font-jakarta)' }}>
       <p style={{ fontSize: '3rem' }}>🎭</p>
@@ -563,8 +575,8 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
             ))}
           </nav>
 
-          {/* Badge */}
-          {sd.badge && (
+          {/* Badge — categoryLabel (Firestore) sobreescribe el badge estático si está configurado */}
+          {(categoryLabel || sd.badge) && (
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6, width: 'fit-content',
               padding: '0.35rem 1rem', borderRadius: 999, marginBottom: '1.5rem',
@@ -574,7 +586,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
               animation: 'fadeSlideUp .5s .08s ease both', position: 'relative', zIndex: 2,
             }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f5c842', boxShadow: '0 0 8px #f5c842', animation: 'pulse 2s infinite', display: 'inline-block' }} />
-              {sd.badge}
+              {categoryLabel || sd.badge}
             </div>
           )}
 
@@ -588,7 +600,13 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
             position: 'relative', zIndex: 2,
             textShadow: '0 2px 20px rgba(0,0,0,0.4)',
           }}>
-            {title}
+            {titleAccentWord && title.includes(titleAccentWord) ? (
+              <>
+                {title.slice(0, title.indexOf(titleAccentWord))}
+                <em style={{ color: '#f5c842', fontStyle: 'italic' }}>{titleAccentWord}</em>
+                {title.slice(title.indexOf(titleAccentWord) + titleAccentWord.length)}
+              </>
+            ) : title}
           </h1>
 
           {/* Accent bar */}
@@ -649,7 +667,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
         <div style={{ position: 'relative', overflow: 'hidden', background: '#0c1e30', minHeight: 500 }}>
           {/* Media — with fallback on error */}
           {isVideo ? (
-            <video ref={videoRef} autoPlay muted loop playsInline
+            <video key={mediaSrc} ref={videoRef} autoPlay muted loop playsInline
               onError={() => setMediaError(true)}
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}>
               <source src={cxVideo(mediaSrc)} type="video/mp4" />
@@ -679,26 +697,53 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
             background: 'linear-gradient(to top,rgba(12,30,48,0.75) 0%,rgba(12,30,48,0.2) 60%,transparent 100%)',
           }} />
 
-          {/* Floating glass card */}
-          <div style={{
-            position: 'absolute', bottom: 32, left: 32, zIndex: 10,
-            background: 'rgba(12,30,48,0.65)',
-            backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.14)',
-            borderRadius: 16, padding: '0.9rem 1.25rem',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.3)',
-            animation: 'fadeSlideUp .6s .5s ease both',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e', animation: 'pulse 2s infinite' }} />
-              <p style={{ color: '#f5c842', fontWeight: 800, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '.16em', margin: 0, fontFamily: 'var(--font-jakarta)' }}>
-                {sd.badge}
+          {/* Floating glass card — testimonio real si está configurado, si no la tarjeta genérica */}
+          {hasTestimonial ? (
+            <div style={{
+              position: 'absolute', bottom: 32, left: 32, zIndex: 10,
+              background: 'rgba(12,30,48,0.7)',
+              backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255,255,255,0.14)',
+              borderRadius: 16, padding: '1rem 1.35rem',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.35)',
+              animation: 'fadeSlideUp .6s .5s ease both',
+              maxWidth: 260,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 4 }}>
+                <p style={{ color: '#fff', fontWeight: 700, fontSize: '0.85rem', margin: 0, fontFamily: 'var(--font-playfair)' }}>
+                  {testimonialName}
+                </p>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#f5c842', fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                  ★★★★★ {testimonialRating}
+                </span>
+              </div>
+              {testimonialLocation && (
+                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.75rem', margin: 0, fontFamily: 'var(--font-jakarta)' }}>
+                  {testimonialLocation}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div style={{
+              position: 'absolute', bottom: 32, left: 32, zIndex: 10,
+              background: 'rgba(12,30,48,0.65)',
+              backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255,255,255,0.14)',
+              borderRadius: 16, padding: '0.9rem 1.25rem',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.3)',
+              animation: 'fadeSlideUp .6s .5s ease both',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e', animation: 'pulse 2s infinite' }} />
+                <p style={{ color: '#f5c842', fontWeight: 800, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '.16em', margin: 0, fontFamily: 'var(--font-jakarta)' }}>
+                  {sd.badge}
+                </p>
+              </div>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', margin: 0, fontFamily: 'var(--font-jakarta)' }}>
+                J&amp;M Decoraciones y Eventos · Sechura, Piura
               </p>
             </div>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', margin: 0, fontFamily: 'var(--font-jakarta)' }}>
-              J&amp;M Decoraciones y Eventos · Sechura, Piura
-            </p>
-          </div>
+          )}
 
           {/* Decorative corner accent */}
           <div style={{
@@ -724,17 +769,17 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${accentColor}60,transparent)` }} />
 
           <div className="container">
-            <div className="srv-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)' }}>
-              {[
-                { val: `+${c1}`, label: 'Eventos Realizados', suffix: '' },
-                { val: `+${c2}`, label: 'Años de Experiencia', suffix: '' },
-                { val: `${c3}%`, label: 'Clientes Satisfechos', suffix: '' },
-                { val: 'Piura', label: 'Cobertura Regional', suffix: '', static: true },
-              ].map((s, i) => (
+            <div className="srv-stats" style={{ display: 'grid', gridTemplateColumns: `repeat(${customStats.length || 4},1fr)` }}>
+              {(customStats.length > 0 ? customStats : [
+                { value: `+${c1}`, label: 'Eventos Realizados' },
+                { value: `+${c2}`, label: 'Años de Experiencia' },
+                { value: `${c3}%`, label: 'Clientes Satisfechos' },
+                { value: 'Piura', label: 'Cobertura Regional' },
+              ]).map((s, i, arr) => (
                 <div key={i}
                   style={{
                     padding: '2.25rem 1.5rem', textAlign: 'center',
-                    borderRight: i < 3 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                    borderRight: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
                     position: 'relative', transition: 'background .4s',
                   }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${accentColor}0a`}
@@ -744,7 +789,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                     fontSize: 'clamp(1.7rem,2.5vw,2.4rem)',
                     color: '#f5c842', fontWeight: 700, margin: '0 0 5px', lineHeight: 1,
                   }}>
-                    {s.static ? s.val : s.val}
+                    {s.value}
                   </p>
                   <p style={{
                     color: 'rgba(255,255,255,0.32)', fontSize: '0.66rem',
@@ -897,7 +942,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
         <section style={{ position: 'relative', overflow: 'hidden', padding: 'clamp(4rem,8vw,6rem) 0' }}>
           {/* Fondo real — imagen o video, independiente del hero (includesMediaSrc) */}
           {isIncludesVideo ? (
-            <video autoPlay muted loop playsInline aria-hidden="true"
+            <video key={includesMediaSrc} autoPlay muted loop playsInline aria-hidden="true"
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}>
               <source src={cxVideo(includesMediaSrc)} type="video/mp4" />
             </video>
@@ -1221,7 +1266,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
 
                       {/* Background media */}
                       {r.video ? (
-                        <video className="rel-img" src={cxVideo(r.video)} poster={relImg ? cxCard(relImg) : undefined}
+                        <video key={r.video} className="rel-img" src={cxVideo(r.video)} poster={relImg ? cxCard(relImg) : undefined}
                           autoPlay muted loop playsInline preload="metadata"
                           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .6s cubic-bezier(.25,.46,.45,.94)' }} />
                       ) : relImg ? (

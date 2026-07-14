@@ -54,7 +54,7 @@ export default function AlbumDetailClient({ fotos }: { fotos: AlbumFoto[] }) {
               }}
             >
               {vid ? (
-                <video src={cxVideo(item.url)} muted playsInline preload="metadata"
+                <video key={item.url} src={cxVideo(item.url)} muted playsInline preload="metadata"
                   style={{ width: '100%', display: 'block', objectFit: 'cover', objectPosition: fp }} />
               ) : (
                 <img src={cxCard(item.url)} alt={item.alt || `Foto del álbum ${i + 1}`}

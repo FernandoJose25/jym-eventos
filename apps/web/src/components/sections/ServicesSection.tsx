@@ -117,7 +117,7 @@ function AtvCard({ s, idx }: { s: Service; idx: number }) {
             {s.mediaSrc ? (
               isVideo ? (
                 <>
-                  <video ref={vidRef} autoPlay muted loop playsInline
+                  <video key={s.mediaSrc} ref={vidRef} autoPlay muted loop playsInline
                          style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}>
                     <source src={s.mediaSrc} type="video/mp4"/>
                   </video>

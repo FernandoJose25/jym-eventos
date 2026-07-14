@@ -522,7 +522,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                       }}>
 
                       {vid ? (
-                        <video src={cxVideo(item.url)} muted playsInline preload="metadata"
+                        <video key={item.url} src={cxVideo(item.url)} muted playsInline preload="metadata"
                           style={{ width: '100%', display: 'block', objectFit: 'cover', objectPosition: fp }} />
                       ) : (
                         <img src={cxCard(item.url)} alt={item.alt || `Evento J&M ${i + 1}`}

@@ -141,7 +141,7 @@ export default function AboutSection({ data }: AboutProps) {
                 {img1 ? (
                   img1Type === 'video'
                     ? <>
-                        <video ref={vid1Ref} autoPlay muted loop playsInline src={img1}
+                        <video key={img1} ref={vid1Ref} autoPlay muted loop playsInline src={img1}
                                style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
                         {img1Sound && <VideoSoundControl videoRef={vid1Ref} position="bottom-left"/>}
                       </>
@@ -200,7 +200,7 @@ export default function AboutSection({ data }: AboutProps) {
                 >
                   {img2Type === 'video'
                     ? <>
-                        <video ref={vid2Ref} autoPlay muted loop playsInline src={img2}
+                        <video key={img2} ref={vid2Ref} autoPlay muted loop playsInline src={img2}
                                style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
                         {img2Sound && <VideoSoundControl videoRef={vid2Ref} position="bottom-right"/>}
                       </>

@@ -19,7 +19,7 @@ const lbl = (text: string) => (
 
 /* ── ItemCard ── */
 function ItemCard({ item, onEdit, onToggle, onDelete }: {
-  item: any; onEdit: () => void; onToggle: () => void; onDelete: () => void;
+  item: any; onEdit: () => void; onToggle?: () => void; onDelete: () => void;
 }) {
   const hidden = item.visible === false;
   return (
@@ -32,7 +32,7 @@ function ItemCard({ item, onEdit, onToggle, onDelete }: {
       {hidden && <span style={{ fontSize:'0.65rem', background:'#f1f5f9', color:'#94a3b8', borderRadius:4, padding:'2px 6px', flexShrink:0 }}>Oculto</span>}
       <div style={{ display:'flex', gap:6, flexShrink:0 }}>
         <button onClick={onEdit} title="Editar" style={{ background:'none', border:'1px solid #bfdbfe', borderRadius:8, padding:'6px', cursor:'pointer', color:'#2563eb', display:'flex', alignItems:'center' }}><Edit2 size={14}/></button>
-        <button onClick={onToggle} title={hidden?'Mostrar':'Ocultar'} style={{ background:'none', border:'1px solid #e2e8f0', borderRadius:8, padding:'6px', cursor:'pointer', color:'#64748b', display:'flex', alignItems:'center' }}>{hidden?<Eye size={14}/>:<EyeOff size={14}/>}</button>
+        {onToggle && <button onClick={onToggle} title={hidden?'Mostrar':'Ocultar'} style={{ background:'none', border:'1px solid #e2e8f0', borderRadius:8, padding:'6px', cursor:'pointer', color:'#64748b', display:'flex', alignItems:'center' }}>{hidden?<Eye size={14}/>:<EyeOff size={14}/>}</button>}
         <button onClick={onDelete} title="Eliminar" style={{ background:'none', border:'1px solid #fecaca', borderRadius:8, padding:'6px', cursor:'pointer', color:'#ef4444', display:'flex', alignItems:'center' }}><Trash2 size={14}/></button>
       </div>
     </div>
@@ -67,6 +67,8 @@ export default function ServiceContentPage() {
 
   /* Includes modal */
   const [inclModal, setInclModal] = useState<{ index:number|null; form:any } | null>(null);
+  /* Stats modal */
+  const [statModal, setStatModal] = useState<{ index:number|null; form:any } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -153,6 +155,30 @@ export default function ServiceContentPage() {
   const setInclField = (k: string, v: any) =>
     setInclModal(p => p ? { ...p, form: { ...p.form, [k]: v } } : null);
 
+  /* ── Stats helpers (fila de estadísticas del hero) ── */
+  const stats: any[] = srvData.detail?.stats || [];
+
+  const openStatEdit = (index: number) => setStatModal({ index, form: { ...stats[index] } });
+  const openStatAdd  = () => setStatModal({ index:null, form:{ value:'', label:'' } });
+
+  const saveStat = () => {
+    if (!statModal) return;
+    const { index, form } = statModal;
+    const next = [...stats];
+    if (index === null) next.push(form); else next[index] = form;
+    setDetail('stats', next);
+    setStatModal(null);
+  };
+
+  const deleteStat = (i: number) => open({
+    type:'delete', title:'Eliminar estadística',
+    description:'Esta acción no se puede deshacer.',
+    onConfirm: async () => setDetail('stats', stats.filter((_: any, j: number) => j !== i)),
+  });
+
+  const setStatField = (k: string, v: any) =>
+    setStatModal(p => p ? { ...p, form: { ...p.form, [k]: v } } : null);
+
   if (loading) return (
     <div style={{ display:'flex', flexDirection:'column', gap:16, maxWidth:900, margin:'0 auto' }}>
       {[...Array(5)].map((_,i) => <div key={i} className="skeleton" style={{ height:64, borderRadius:12 }}/>)}
@@ -228,6 +254,58 @@ export default function ServiceContentPage() {
             <F label="Características (una por línea)" field="longDesc2"
                value={srvData.detail?.longDesc2||''} onChange={(k,v)=>setDetail(k,v)} type="textarea" rows={5}
                placeholder={"Personajes temáticos: Superhéroes, princesas...\nMúsica en vivo / DJ\nLluvia de serpentinas"}/>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+              <F label="Categoría (badge superior)" field="categoryLabel"
+                 value={srvData.detail?.categoryLabel||''} onChange={(k,v)=>setDetail(k,v)}
+                 placeholder="Celebraciones · Bodas"/>
+              <F label="Palabra a resaltar en el título" field="titleAccentWord"
+                 value={srvData.detail?.titleAccentWord||''} onChange={(k,v)=>setDetail(k,v)}
+                 placeholder="solo cabo suelto"/>
+            </div>
+          </div>
+        </fieldset>
+
+        {/* Testimonio flotante sobre el hero */}
+        <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:14, padding:'1.25rem 1.5rem' }}>
+          <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 8px' }}>Testimonio flotante (hero)</legend>
+          <p style={{ fontSize:'0.78rem', color:'#64748b', margin:'0 0 12px' }}>
+            Si se completa, reemplaza la tarjeta genérica sobre la imagen/video del hero por una tarjeta de testimonio con rating.
+          </p>
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+              <F label="Nombre / lugar del cliente" field="testimonialName"
+                 value={srvData.detail?.testimonialName||''} onChange={(k,v)=>setDetail(k,v)}
+                 placeholder="Salón Los Almendros"/>
+              <F label="Calificación" field="testimonialRating"
+                 value={srvData.detail?.testimonialRating||''} onChange={(k,v)=>setDetail(k,v)}
+                 placeholder="4.9"/>
+            </div>
+            <F label="Ubicación" field="testimonialLocation"
+               value={srvData.detail?.testimonialLocation||''} onChange={(k,v)=>setDetail(k,v)}
+               placeholder="Sechura, Piura"/>
+          </div>
+        </fieldset>
+
+        {/* Stats en fila del hero */}
+        <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:14, padding:'1.25rem 1.5rem' }}>
+          <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 8px' }}>Estadísticas del hero</legend>
+          <p style={{ fontSize:'0.78rem', color:'#64748b', margin:'0 0 12px' }}>
+            Si agregas estadísticas aquí, reemplazan los contadores genéricos (+200 Eventos, +5 Años…) por estas, específicas del servicio.
+          </p>
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            <div style={{ display:'flex', justifyContent:'flex-end' }}>
+              <button onClick={openStatAdd} className="btn-outline" style={{ fontSize:'0.78rem', padding:'0.35rem 0.875rem' }}>+ Agregar estadística</button>
+            </div>
+            {stats.length === 0 && (
+              <p style={{ color:'#94a3b8', fontSize:'0.82rem', textAlign:'center', padding:'1.5rem', background:'#f8fafc', borderRadius:10, border:'1px dashed #e2e8f0' }}>
+                Sin estadísticas propias. Se muestran las genéricas.
+              </p>
+            )}
+            {stats.map((s: any, i: number) => (
+              <ItemCard key={i} item={{ title: s.value, desc: s.label }}
+                onEdit={() => openStatEdit(i)}
+                onDelete={() => deleteStat(i)}/>
+            ))}
           </div>
         </fieldset>
 
@@ -343,6 +421,29 @@ export default function ServiceContentPage() {
                 <div style={{ width:20, height:20, borderRadius:10, background:'#fff', position:'absolute', top:2,
                                left: inclModal.form.visible !== false ? 22 : 2, transition:'left .2s' }}/>
               </button>
+            </div>
+          </div>
+        )}
+      </EditModal>
+
+      {/* Modal stats */}
+      <EditModal
+        open={!!statModal}
+        title={statModal?.index === null ? 'Agregar estadística' : 'Editar estadística'}
+        onSave={saveStat}
+        onCancel={() => setStatModal(null)}
+      >
+        {statModal && (
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div>
+              {lbl('Valor')}
+              <input type="text" value={statModal.form.value||''} onChange={e=>setStatField('value',e.target.value)}
+                     className="admin-input" placeholder="+80"/>
+            </div>
+            <div>
+              {lbl('Etiqueta')}
+              <input type="text" value={statModal.form.label||''} onChange={e=>setStatField('label',e.target.value)}
+                     className="admin-input" placeholder="Bodas decoradas"/>
             </div>
           </div>
         )}
