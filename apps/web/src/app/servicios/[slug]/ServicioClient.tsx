@@ -761,8 +761,11 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           DESCRIPCIÓN + FEATURES — two column
       ═══════════════════════════════════════════ */}
       {h2content && (
-        <section style={{ padding: 'clamp(5rem,9vw,8rem) 0', background: '#fff' }}>
-          <div className="container">
+        <section style={{ padding: 'clamp(5rem,9vw,8rem) 0', background: '#f7f9fb', position: 'relative', overflow: 'hidden' }}>
+          {/* Textura de fondo sutil */}
+          <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(${accentColor}10 1px,transparent 1px)`, backgroundSize: '32px 32px', pointerEvents: 'none', opacity: 0.6 }} />
+
+          <div className="container" style={{ position: 'relative' }}>
             {/* Header */}
             <div style={{ textAlign: 'center', marginBottom: 'clamp(3rem,6vw,5rem)' }}
               data-reveal="desc-header">
@@ -770,10 +773,17 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                 opacity: isVisible('desc-header') ? 1 : 0,
                 transform: isVisible('desc-header') ? 'none' : 'translateY(24px)',
                 transition: 'all .7s ease',
-              }} data-reveal="desc-header">
-                <p style={{ color: accentColor, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>
-                  {title}
-                </p>
+              }}>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: '1rem',
+                  padding: '0.4rem 1.1rem', borderRadius: 999,
+                  background: `${accentColor}12`, border: `1px solid ${accentColor}35`,
+                }}>
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: accentColor, boxShadow: `0 0 8px ${accentColor}`, animation: 'pulse 2s infinite', display: 'inline-block' }} />
+                  <p style={{ color: accentColor, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', margin: 0 }}>
+                    {title}
+                  </p>
+                </div>
                 <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.9rem,3vw,3rem)', color: '#0c1e30', margin: 0, letterSpacing: '-.03em', lineHeight: 1.1, maxWidth: 640, marginLeft: 'auto', marginRight: 'auto' }}>
                   {h2content}
                 </h2>
@@ -781,54 +791,90 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
             </div>
 
             {/* Two columns */}
-            <div className="srv-detail" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(3rem,6vw,7rem)', alignItems: 'start' }}>
-              {/* Left */}
-              <div data-reveal="desc-left" style={{ opacity: isVisible('desc-left') ? 1 : 0, transform: isVisible('desc-left') ? 'none' : 'translateX(-30px)', transition: 'all .75s .1s ease' }}>
-                {p1content && (
-                  <p style={{
-                    color: '#1a2e42', fontSize: '1.08rem', lineHeight: 1.85,
-                    borderLeft: `3px solid ${accentColor}`,
-                    paddingLeft: '1.5rem', marginBottom: '1.5rem',
-                    fontFamily: 'var(--font-jakarta)',
-                  }}>
-                    {p1content}
-                  </p>
-                )}
-                {p2content && (
-                  <p style={{ color: '#5f7080', fontSize: '0.975rem', lineHeight: 1.85, marginBottom: 0, fontFamily: 'var(--font-jakarta)' }}>
-                    {p2content}
-                  </p>
-                )}
+            <div className="srv-detail" style={{ display: 'grid', gridTemplateColumns: '0.85fr 1.15fr', gap: 'clamp(2.5rem,5vw,5rem)', alignItems: 'stretch' }}>
+              {/* Left: panel oscuro con texto + número decorativo */}
+              <div data-reveal="desc-left" style={{
+                opacity: isVisible('desc-left') ? 1 : 0,
+                transform: isVisible('desc-left') ? 'none' : 'translateX(-30px)',
+                transition: 'all .75s .1s ease',
+                position: 'relative',
+                background: 'linear-gradient(160deg,#0a1628 0%,#0f2040 100%)',
+                borderRadius: 24,
+                padding: 'clamp(2rem,4vw,3rem)',
+                overflow: 'hidden',
+                display: 'flex', flexDirection: 'column', justifyContent: 'center',
+              }}>
+                {/* Glow decorativo */}
+                <div style={{ position: 'absolute', width: 260, height: 260, borderRadius: '50%', background: `radial-gradient(circle,${accentColor}22 0%,transparent 70%)`, top: -80, right: -80, pointerEvents: 'none' }} />
+                {/* Número gigante decorativo */}
+                <div style={{
+                  position: 'absolute', bottom: -30, right: 8,
+                  fontFamily: 'var(--font-playfair)', fontWeight: 900,
+                  fontSize: 'clamp(6rem,12vw,9rem)', lineHeight: 1,
+                  color: 'rgba(255,255,255,0.04)', userSelect: 'none', pointerEvents: 'none',
+                }}>
+                  {sd.badge?.split(' ')[0] || '✨'}
+                </div>
+
+                <div style={{ position: 'relative', zIndex: 2 }}>
+                  <div style={{ display: 'flex', gap: 4, marginBottom: '1.5rem' }}>
+                    <div style={{ width: 34, height: 3, borderRadius: 2, background: `linear-gradient(90deg,${accentColor},#f5c842)` }} />
+                    <div style={{ width: 8, height: 3, borderRadius: 2, background: `${accentColor}50` }} />
+                  </div>
+                  {p1content && (
+                    <p style={{
+                      color: '#fff', fontSize: '1.08rem', lineHeight: 1.85,
+                      marginBottom: '1.25rem', fontFamily: 'var(--font-jakarta)', fontWeight: 500,
+                    }}>
+                      {p1content}
+                    </p>
+                  )}
+                  {p2content && (
+                    <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.95rem', lineHeight: 1.85, margin: 0, fontFamily: 'var(--font-jakarta)' }}>
+                      {p2content}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Right: features */}
+              {/* Right: features en tarjetas */}
               {featuresList.length > 0 && (
-                <div data-reveal="desc-right" style={{ opacity: isVisible('desc-right') ? 1 : 0, transform: isVisible('desc-right') ? 'none' : 'translateX(30px)', transition: 'all .75s .2s ease' }}>
+                <div data-reveal="desc-right" style={{
+                  opacity: isVisible('desc-right') ? 1 : 0,
+                  transform: isVisible('desc-right') ? 'none' : 'translateX(30px)',
+                  transition: 'all .75s .2s ease',
+                  display: 'grid', gap: '0.75rem',
+                }}>
                   {featuresList.map((f: any, i: number) => (
-                    <div key={i} className={`srv-feature-item`}
+                    <div key={i} className="srv-feature-card"
                       style={{
                         display: 'flex', alignItems: 'flex-start', gap: '1rem',
-                        padding: '0.875rem 0.75rem',
-                        borderBottom: i < featuresList.length - 1 ? '1px solid #f0f3f7' : 'none',
-                        borderRadius: 8,
-                        transition: 'all .22s ease',
+                        padding: '1.1rem 1.25rem',
+                        background: '#fff',
+                        border: '1px solid #eef1f5',
+                        borderRadius: 14,
+                        boxShadow: '0 2px 10px rgba(10,22,40,0.04)',
+                        transition: 'all .3s cubic-bezier(.34,1.4,.64,1)',
                         cursor: 'default',
+                        opacity: isVisible('desc-right') ? 1 : 0,
+                        transform: isVisible('desc-right') ? 'none' : 'translateY(16px)',
+                        transitionDelay: isVisible('desc-right') ? `${0.25 + i * 0.06}s` : '0s',
                       }}
-                      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = `${accentColor}08`; el.style.paddingLeft = '1.25rem'; el.style.borderBottom = i < featuresList.length - 1 ? `1px solid ${accentColor}20` : 'none'; }}
-                      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'transparent'; el.style.paddingLeft = '0.75rem'; el.style.borderBottom = i < featuresList.length - 1 ? '1px solid #f0f3f7' : 'none'; }}>
+                      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-3px)'; el.style.borderColor = `${accentColor}55`; el.style.boxShadow = `0 12px 28px ${accentColor}1f`; }}
+                      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = isVisible('desc-right') ? 'none' : 'translateY(16px)'; el.style.borderColor = '#eef1f5'; el.style.boxShadow = '0 2px 10px rgba(10,22,40,0.04)'; }}>
                       <span style={{
-                        minWidth: 28, height: 20, borderRadius: 999,
-                        background: `${accentColor}18`, border: `1px solid ${accentColor}35`,
+                        minWidth: 34, height: 34, borderRadius: 10,
+                        background: `${accentColor}14`, border: `1px solid ${accentColor}30`,
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        color: accentColor, fontSize: '0.58rem', fontWeight: 800,
-                        fontFamily: 'var(--font-jakarta)', letterSpacing: '.08em',
-                        flexShrink: 0, marginTop: 3,
+                        color: accentColor, fontSize: '0.68rem', fontWeight: 800,
+                        fontFamily: 'var(--font-jakarta)', letterSpacing: '.02em',
+                        flexShrink: 0,
                       }}>
                         {String(i + 1).padStart(2, '0')}
                       </span>
                       <div>
-                        <p style={{ color: '#1a2e42', fontWeight: 700, fontSize: '0.875rem', margin: '0 0 2px', fontFamily: 'var(--font-jakarta)' }}>{f.text}</p>
-                        {f.detail && <p style={{ color: '#8fa0b0', fontSize: '0.78rem', margin: 0, lineHeight: 1.5, fontFamily: 'var(--font-jakarta)' }}>{f.detail}</p>}
+                        <p style={{ color: '#0c1e30', fontWeight: 700, fontSize: '0.9rem', margin: '0 0 3px', fontFamily: 'var(--font-jakarta)' }}>{f.text}</p>
+                        {f.detail && <p style={{ color: '#8fa0b0', fontSize: '0.79rem', margin: 0, lineHeight: 1.55, fontFamily: 'var(--font-jakarta)' }}>{f.detail}</p>}
                       </div>
                     </div>
                   ))}
