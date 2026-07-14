@@ -80,6 +80,7 @@ export default function GaleriaPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<'idle' | 'add' | 'edit' | 'bulk'>('idle');
+  const [bulkInitialFiles, setBulkInitialFiles] = useState<File[]>([]);
   const [editId, setEditId] = useState<string | null>(null);
   const [filterCat, setFilterCat] = useState('Todas');
   const [soloVideos, setSoloVideos] = useState(false);
@@ -175,7 +176,25 @@ export default function GaleriaPage() {
     setMode('add');
   };
 
-  const openBulk = () => setMode('bulk');
+  const openBulk = () => { setBulkInitialFiles([]); setMode('bulk'); };
+
+  const addFileInputRef = useRef<HTMLInputElement>(null);
+  const openAddPicker = () => addFileInputRef.current?.click();
+
+  // El botón "Agregar" permite elegir varios archivos: si el usuario elige
+  // más de uno, se salta el formulario de un solo item y pasa directo a la
+  // cola de subida masiva (mismo componente que "Subir varias").
+  const onAddFilesPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    if (files.length === 0) return;
+    if (files.length === 1) {
+      openAdd();
+      return;
+    }
+    setBulkInitialFiles(files);
+    setMode('bulk');
+  };
 
   /** Guarda un archivo ya subido (por BulkGalleryUpload) como item
    *  independiente en Firestore — mismo payload que handleSave, pero sin
@@ -537,7 +556,15 @@ export default function GaleriaPage() {
               <button onClick={openBulk} className="btn-outline" style={{ whiteSpace: 'nowrap' }}>
                 <Images size={16} /> Subir varias
               </button>
-              <button onClick={openAdd} className="btn-primary" style={{ whiteSpace: 'nowrap' }}>
+              <input
+                ref={addFileInputRef}
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                onChange={onAddFilesPicked}
+                style={{ display: 'none' }}
+              />
+              <button onClick={openAddPicker} className="btn-primary" style={{ whiteSpace: 'nowrap' }}>
                 <Plus size={16} /> Agregar
               </button>
             </>
@@ -604,7 +631,8 @@ export default function GaleriaPage() {
           albumesDisponibles={albumesDisponibles}
           subcatsDeCategoria={subcatsDeCategoria}
           onUploaded={handleBulkItemUploaded}
-          onClose={() => setMode('idle')}
+          onClose={() => { setMode('idle'); setBulkInitialFiles([]); }}
+          initialFiles={bulkInitialFiles}
         />
       )}
 

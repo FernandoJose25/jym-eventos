@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { validateFile } from '@/lib/file-validation';
 import { uploadFile } from '@/lib/upload';
 import {
@@ -31,6 +31,8 @@ interface Props {
     url: string; tipo: 'imagen' | 'video'; categoria: string; subcategoria: string; albumId: string;
   }) => Promise<void>;
   onClose: () => void;
+  /** Archivos ya elegidos (ej. desde el botón "Agregar" al detectar selección múltiple) — se precargan en la cola al montar. */
+  initialFiles?: File[];
 }
 
 /**
@@ -40,7 +42,7 @@ interface Props {
  * pasar cada foto/video por el mismo editor de recorte/filtros/marca de
  * agua que el flujo de una sola imagen — o saltarlo para todas de una vez.
  */
-export default function BulkGalleryUpload({ cats, albumesDisponibles, subcatsDeCategoria, onUploaded, onClose }: Props) {
+export default function BulkGalleryUpload({ cats, albumesDisponibles, subcatsDeCategoria, onUploaded, onClose, initialFiles }: Props) {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [assignCategoria, setAssignCategoria] = useState('');
@@ -74,6 +76,14 @@ export default function BulkGalleryUpload({ cats, albumesDisponibles, subcatsDeC
     if (e.target.files?.length) addFiles(e.target.files);
     e.target.value = '';
   };
+
+  // Precarga los archivos pasados desde fuera (ej. selección múltiple en "Agregar") una sola vez al montar.
+  const initialFilesLoadedRef = useRef(false);
+  useEffect(() => {
+    if (initialFilesLoadedRef.current) return;
+    initialFilesLoadedRef.current = true;
+    if (initialFiles?.length) addFiles(initialFiles);
+  }, [initialFiles, addFiles]);
 
   const toggleSelected = (qid: string) => setSelected(prev => {
     const next = new Set(prev);
