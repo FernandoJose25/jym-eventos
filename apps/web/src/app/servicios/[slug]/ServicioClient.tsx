@@ -534,15 +534,13 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
       {/* ═══════════════════════════════════════════
           HERO — full-bleed cinematic split
       ═══════════════════════════════════════════ */}
-      <section style={{ position: 'relative', minHeight: '100vh', display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden', paddingTop: 72 }} className="srv-hero-grid">
+      <section style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', gap: '3rem', overflow: 'hidden', paddingTop: 'calc(72px + 3rem)', paddingBottom: '3rem', background: '#050d1a' }} className="srv-hero-grid">
 
         {/* ── LEFT: content panel — dark luxury ── */}
         <div style={{
           position: 'relative', zIndex: 3,
           display: 'flex', flexDirection: 'column', justifyContent: 'center',
-          padding: 'clamp(3rem,6vw,5rem) clamp(2rem,5vw,5rem) clamp(3rem,6vw,5rem) clamp(2rem,7vw,8rem)',
-          background: 'linear-gradient(145deg,#050d1a 0%,#0a1628 55%,#0f2040 100%)',
-          overflow: 'hidden',
+          padding: '0 clamp(1.5rem,4vw,3rem) 0 clamp(1.5rem,6vw,6rem)',
         }}>
           {/* Dot-grid subtle texture */}
           <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(rgba(212,160,23,0.07) 1px,transparent 1px)`, backgroundSize: '28px 28px', pointerEvents: 'none' }} />
@@ -663,8 +661,13 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           </div>
         </div>
 
-        {/* ── RIGHT: media panel ── */}
-        <div style={{ position: 'relative', overflow: 'hidden', background: '#0c1e30', minHeight: 500 }}>
+        {/* ── RIGHT: media panel — tarjeta contenida, no full-bleed ── */}
+        <div style={{
+          position: 'relative', overflow: 'hidden', background: '#0c1e30',
+          width: '100%', maxWidth: 520, aspectRatio: '2/3',
+          borderRadius: 24, boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
+          justifySelf: 'center',
+        }} className="srv-hero-media">
           {/* Media — with fallback on error */}
           {isVideo ? (
             <video key={mediaSrc} ref={videoRef} autoPlay muted loop playsInline
@@ -1515,8 +1518,8 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
 
         /* Responsive */
         @media (max-width: 960px) {
-          .srv-hero-grid { grid-template-columns: 1fr !important; }
-          .srv-hero-grid > div:last-child { min-height: 360px !important; order: -1; }
+          .srv-hero-grid { grid-template-columns: 1fr !important; padding-top: calc(72px + 2rem) !important; }
+          .srv-hero-media { order: -1; max-width: 100% !important; aspect-ratio: 4/3 !important; }
           .srv-detail { grid-template-columns: 1fr !important; gap: 2.5rem !important; }
           .srv-includes { grid-template-columns: repeat(2,1fr) !important; }
           .srv-stats { grid-template-columns: repeat(2,1fr) !important; }
