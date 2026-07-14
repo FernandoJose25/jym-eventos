@@ -130,7 +130,7 @@ export default function ServiciosPage() {
                         <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Ícono</label>
                         <IconPicker value={editData.icon} onChange={v => setEditData((p: any) => ({ ...p, icon: v }))} />
                       </div>
-                      <div>
+                      <div style={{ gridColumn: '1 / -1' }}>
                         <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'block', marginBottom: 6 }}>Nombre *</label>
                         <input type="text" value={editData.title}
                           onChange={e => setEditData((p: any) => ({ ...p, title: e.target.value }))}
