@@ -8,7 +8,8 @@ import { toast } from 'sonner';
 import { useModal } from '@/components/ui/Modal';
 import ImageUploader from '@/components/ui/ImageUploader';
 import WatermarkBatchModal from '@/components/ui/WatermarkBatchModal';
-import { Plus, Eye, EyeOff, Trash2, Filter, Search, X, Pencil, Sparkles, CheckSquare, Square, Layers, Droplet } from 'lucide-react';
+import BulkGalleryUpload from '@/components/ui/BulkGalleryUpload';
+import { Plus, Eye, EyeOff, Trash2, Filter, Search, X, Pencil, Sparkles, CheckSquare, Square, Layers, Droplet, Images } from 'lucide-react';
 import Link from 'next/link';
 import { SUBCATS } from '@/lib/galeriaTaxonomy';
 import { getToken } from '@/lib/get-token';
@@ -78,7 +79,7 @@ function smartSearch(items: any[], q: string) {
 export default function GaleriaPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mode, setMode] = useState<'idle' | 'add' | 'edit'>('idle');
+  const [mode, setMode] = useState<'idle' | 'add' | 'edit' | 'bulk'>('idle');
   const [editId, setEditId] = useState<string | null>(null);
   const [filterCat, setFilterCat] = useState('Todas');
   const [soloVideos, setSoloVideos] = useState(false);
@@ -172,6 +173,32 @@ export default function GaleriaPage() {
     setFormData(BLANK);
     setEditId(null);
     setMode('add');
+  };
+
+  const openBulk = () => setMode('bulk');
+
+  /** Guarda un archivo ya subido (por BulkGalleryUpload) como item
+   *  independiente en Firestore — mismo payload que handleSave, pero sin
+   *  pasar por el formulario de un solo archivo. */
+  const handleBulkItemUploaded = async (item: {
+    url: string; tipo: 'imagen' | 'video'; categoria: string; subcategoria: string; albumId: string;
+  }) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    await setDoc(doc(db, COL.GALERIA, id), {
+      url: item.url,
+      alt: item.subcategoria || item.categoria || 'Evento J&M',
+      categoria: item.categoria || 'General',
+      subcategoria: item.subcategoria || '',
+      focalX: 0.5, focalY: 0.5,
+      tipo: item.tipo,
+      visible: true,
+      albumId: item.albumId || '',
+      sonidoPermitido: false,
+      order: items.length + 1, row: 1,
+      createdAt: new Date().toISOString(),
+    });
+    const album = item.albumId ? albumesDisponibles.find(a => a.id === item.albumId) : null;
+    getToken().then(idToken => revalidarWeb(idToken, album?.slug ? [album.slug] : [])).catch(() => {});
   };
 
   const openEdit = (item: any) => {
@@ -507,6 +534,9 @@ export default function GaleriaPage() {
                 {selMode ? <CheckSquare size={15} /> : <Square size={15} />}
                 {selMode ? 'Cancelar' : 'Seleccionar'}
               </button>
+              <button onClick={openBulk} className="btn-outline" style={{ whiteSpace: 'nowrap' }}>
+                <Images size={16} /> Subir varias
+              </button>
               <button onClick={openAdd} className="btn-primary" style={{ whiteSpace: 'nowrap' }}>
                 <Plus size={16} /> Agregar
               </button>
@@ -567,8 +597,19 @@ export default function GaleriaPage() {
         </div>
       )}
 
+      {/* Subida masiva — pestaña Fotos */}
+      {view === 'fotos' && mode === 'bulk' && (
+        <BulkGalleryUpload
+          cats={cats}
+          albumesDisponibles={albumesDisponibles}
+          subcatsDeCategoria={subcatsDeCategoria}
+          onUploaded={handleBulkItemUploaded}
+          onClose={() => setMode('idle')}
+        />
+      )}
+
       {/* Formulario add / edit — pestaña Fotos */}
-      {view === 'fotos' && mode !== 'idle' && (
+      {view === 'fotos' && (mode === 'add' || mode === 'edit') && (
         <div className="admin-card" style={{ padding: '1.5rem', animation: 'slideUp .3s ease' }}>
           <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0a1628', margin: '0 0 16px' }}>
             {mode === 'edit' ? '✏️ Editar imagen / video' : 'Nueva imagen o video'}

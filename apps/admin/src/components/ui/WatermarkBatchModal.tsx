@@ -169,11 +169,11 @@ export default function WatermarkBatchModal({ items, onApplyOne, onClose }: Prop
   const skip = () => setIdx(i => i + 1);
 
   return (
-    <div style={{
+    <div className="editor-modal-overlay" style={{
       position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
     }}>
-      <div style={{
+      <div className="editor-modal-panel" style={{
         background: '#fff', borderRadius: 20, overflow: 'hidden', maxWidth: 720, width: '100%',
         boxShadow: '0 32px 64px rgba(0,0,0,0.55)', display: 'flex', flexDirection: 'column', maxHeight: '92vh',
       }}>
@@ -197,7 +197,7 @@ export default function WatermarkBatchModal({ items, onApplyOne, onClose }: Prop
           }}>✕</button>
         </div>
 
-        <div style={{
+        <div className="editor-modal-canvas" style={{
           flex: 1, overflowY: 'auto', padding: '1rem', background: '#0d1117',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
@@ -215,6 +215,7 @@ export default function WatermarkBatchModal({ items, onApplyOne, onClose }: Prop
               {currentIsVideo ? (
                 <video
                   ref={videoRef}
+                  className="editor-modal-media"
                   src={cxVideo(current.url)}
                   playsInline
                   crossOrigin="anonymous"
@@ -223,7 +224,7 @@ export default function WatermarkBatchModal({ items, onApplyOne, onClose }: Prop
                 />
               ) : (
                 /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={cxCard(current.url)} alt={current.alt || ''} style={{
+                <img className="editor-modal-media" src={cxCard(current.url)} alt={current.alt || ''} style={{
                   maxWidth: '100%', maxHeight: '68vh', display: 'block', borderRadius: 12,
                 }} />
               )}
@@ -285,7 +286,7 @@ export default function WatermarkBatchModal({ items, onApplyOne, onClose }: Prop
           </p>
         )}
 
-        <div style={{
+        <div className="editor-modal-footer" style={{
           padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10,
           alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0, flexWrap: 'wrap',
         }}>

@@ -7,14 +7,14 @@ import { storage } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import VideoEditorModal from '@/components/ui/VideoEditorModal';
 
-interface FP { x: number; y: number }
-interface CropBox { x: number; y: number; w: number; h: number }
-interface Filters { brightness: number; contrast: number; saturate: number }
-interface Watermark { enabled: boolean; x: number; y: number; scale: number }
+export interface FP { x: number; y: number }
+export interface CropBox { x: number; y: number; w: number; h: number }
+export interface Filters { brightness: number; contrast: number; saturate: number }
+export interface Watermark { enabled: boolean; x: number; y: number; scale: number }
 
 const DEFAULT_FILTERS: Filters = { brightness: 100, contrast: 100, saturate: 100 };
 const DEFAULT_WATERMARK: Watermark = { enabled: false, x: 0.92, y: 0.92, scale: 0.16 };
-const WATERMARK_LOGO_URL = '/logo-watermark.png';
+export const WATERMARK_LOGO_URL = '/logo-watermark.png';
 
 interface Props {
   value?: string;
@@ -54,7 +54,7 @@ const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
  * `createImageBitmap` con `imageOrientation: 'from-image'` aplica el EXIF
  * de forma explícita y determinista en un único punto.
  */
-async function normalizeExifOrientation(file: File): Promise<File> {
+export async function normalizeExifOrientation(file: File): Promise<File> {
   try {
     const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
     const canvas = document.createElement('canvas');
@@ -73,7 +73,7 @@ async function normalizeExifOrientation(file: File): Promise<File> {
   }
 }
 
-async function loadWatermarkImg(url: string): Promise<HTMLImageElement | null> {
+export async function loadWatermarkImg(url: string): Promise<HTMLImageElement | null> {
   if (!url) return null;
   return new Promise(res => {
     const wm = new Image();
@@ -84,7 +84,7 @@ async function loadWatermarkImg(url: string): Promise<HTMLImageElement | null> {
   });
 }
 
-async function applyCropToFile(
+export async function applyCropToFile(
   img: HTMLImageElement,
   box: CropBox,
   displayW: number,
@@ -165,7 +165,7 @@ type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'move' | null;
  *    FIX: ambos ejes se calculan y se ajusta el eje libre para respetar
  *    siempre la relación de aspecto.
  */
-function CropModal({
+export function CropModal({
   src,
   aspect,
   onApply,
@@ -486,12 +486,12 @@ function CropModal({
 
   /* ── render ─────────────────────────────────────────────────────────── */
   return (
-    <div style={{
+    <div className="editor-modal-overlay" style={{
       position: 'fixed', inset: 0, zIndex: 9999,
       background: 'rgba(0,0,0,0.85)', display: 'flex',
       alignItems: 'center', justifyContent: 'center', padding: '1rem',
     }}>
-      <div style={{
+      <div className="editor-modal-panel" style={{
         background: '#fff', borderRadius: 20, overflow: 'hidden',
         maxWidth: 720, width: '100%', boxShadow: '0 32px 64px rgba(0,0,0,0.55)',
         display: 'flex', flexDirection: 'column', maxHeight: '92vh',
@@ -517,7 +517,7 @@ function CropModal({
 
         {/* barra de ajustes rápidos */}
         {imgLoaded && (
-          <div style={{
+          <div className="editor-modal-quickbar" style={{
             padding: '0.5rem 1.5rem', display: 'flex', gap: 8,
             flexWrap: 'wrap', borderBottom: '1px solid #e2e8f0', flexShrink: 0
           }}>
@@ -555,8 +555,8 @@ function CropModal({
             {([
               ['brightness', 'Brillo'], ['contrast', 'Contraste'], ['saturate', 'Saturación'],
             ] as [keyof Filters, string][]).map(([field, lbl]) => (
-              <label key={field} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
-                <span style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>{lbl}</span>
+              <label key={field} className="editor-modal-row" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
+                <span className="editor-modal-row-label" style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>{lbl}</span>
                 <input
                   type="range" min={50} max={150} value={filters[field]}
                   onChange={e => setFilters(f => ({ ...f, [field]: Number(e.target.value) }))}
@@ -576,8 +576,8 @@ function CropModal({
 
             <div style={{ height: 1, background: '#e2e8f0', margin: '2px 0' }} />
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
-              <span style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>Calidad</span>
+            <label className="editor-modal-row" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
+              <span className="editor-modal-row-label" style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>Calidad</span>
               <input
                 type="range" min={0.6} max={1} step={0.01} value={quality}
                 onChange={e => setQuality(Number(e.target.value))}
@@ -586,8 +586,8 @@ function CropModal({
               <span style={{ width: 36, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{Math.round(quality * 100)}%</span>
             </label>
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
-              <span style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>Escala</span>
+            <label className="editor-modal-row" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
+              <span className="editor-modal-row-label" style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>Escala</span>
               <select value={upscale} onChange={e => setUpscale(Number(e.target.value))} style={{
                 borderRadius: 6, border: '1.5px solid #e2e8f0', padding: '3px 6px', fontSize: '0.72rem',
               }}>
@@ -610,8 +610,8 @@ function CropModal({
               💧 Añadir marca de agua (logo de la empresa)
             </label>
             {watermark.enabled && (
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
-                <span style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>Tamaño logo</span>
+              <label className="editor-modal-row" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
+                <span className="editor-modal-row-label" style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>Tamaño logo</span>
                 <input
                   type="range" min={0.06} max={0.4} step={0.01} value={watermark.scale}
                   onChange={e => setWatermark(w => ({ ...w, scale: Number(e.target.value) }))}
@@ -624,7 +624,7 @@ function CropModal({
         )}
 
         {/* canvas */}
-        <div style={{
+        <div className="editor-modal-canvas" style={{
           flex: 1, overflowY: 'auto', padding: '1rem',
           background: '#0d1117', display: 'flex',
           alignItems: 'center', justifyContent: 'center',
@@ -643,6 +643,7 @@ function CropModal({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               ref={imgRef}
+              className="editor-modal-media"
               src={displaySrc}
               alt="crop"
               crossOrigin="anonymous"
@@ -820,7 +821,7 @@ function CropModal({
         )}
 
         {/* footer */}
-        <div style={{
+        <div className="editor-modal-footer" style={{
           padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0',
           display: 'flex', gap: 10, alignItems: 'center',
           justifyContent: 'flex-end', flexShrink: 0, flexWrap: 'wrap'
@@ -871,8 +872,16 @@ function CropModal({
   );
 }
 
-const IMAGE_EXTS = /\.(jpe?g|png|webp|heic|heif|gif|bmp|tiff?)$/i;
-const VIDEO_EXTS = /\.(mp4|webm|mov|avi|mkv)$/i;
+export const IMAGE_EXTS = /\.(jpe?g|png|webp|heic|heif|gif|bmp|tiff?)$/i;
+export const VIDEO_EXTS = /\.(mp4|webm|mov|avi|mkv)$/i;
+
+export function resolveFileKind(file: File, acceptVideo = true): 'image' | 'video' | null {
+  if (file.type.startsWith('image/')) return 'image';
+  if (file.type.startsWith('video/')) return acceptVideo ? 'video' : null;
+  if (IMAGE_EXTS.test(file.name)) return 'image';
+  if (acceptVideo && VIDEO_EXTS.test(file.name)) return 'video';
+  return null;
+}
 
 /* ══════════════════════════════════════════ main component ══ */
 export default function ImageUploader({
