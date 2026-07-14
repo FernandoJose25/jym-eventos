@@ -4,7 +4,8 @@ import { verifyToken } from '@/lib/auth-server';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic',
                        'video/mp4', 'video/webm', 'video/quicktime'];
-const MAX_BYTES = 100 * 1024 * 1024; // 100 MB
+const MAX_BYTES = 100 * 1024 * 1024; // 100 MB (videos)
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024; // 20 MB (imágenes — límite de Cloudinary free es 10 MB, se comprime en cliente antes de subir)
 
 export async function POST(req: NextRequest) {
   // 1. Verificar que el usuario está autenticado
@@ -14,7 +15,9 @@ export async function POST(req: NextRequest) {
   const { fileSize, fileType, folder } = await req.json();
 
   // 2. Validar en el servidor
-  if (!fileSize || fileSize > MAX_BYTES) {
+  const isVideo = typeof fileType === 'string' && fileType.startsWith('video/');
+  const limit = isVideo ? MAX_BYTES : MAX_IMAGE_BYTES;
+  if (!fileSize || fileSize > limit) {
     return NextResponse.json({ error: 'Tamaño de archivo no válido' }, { status: 400 });
   }
   if (!ALLOWED_TYPES.includes(fileType)) {

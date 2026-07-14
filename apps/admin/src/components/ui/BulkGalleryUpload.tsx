@@ -4,7 +4,7 @@ import { validateFile } from '@/lib/file-validation';
 import { uploadFile } from '@/lib/upload';
 import {
   CropModal, normalizeExifOrientation, applyCropToFile, loadWatermarkImg,
-  resolveFileKind, WATERMARK_LOGO_URL,
+  resolveFileKind, compressImageIfNeeded, WATERMARK_LOGO_URL,
   type FP, type CropBox, type Filters, type Watermark,
 } from '@/components/ui/ImageUploader';
 import VideoEditorModal from '@/components/ui/VideoEditorModal';
@@ -101,7 +101,8 @@ export default function BulkGalleryUpload({ cats, albumesDisponibles, subcatsDeC
   const uploadOne = useCallback(async (item: QueueItem, fileOverride?: File) => {
     updateItem(item.qid, { status: 'uploading', progress: 0 });
     try {
-      const fileToUpload = fileOverride ?? item.file;
+      const raw = fileOverride ?? item.file;
+      const fileToUpload = item.kind === 'video' ? raw : await compressImageIfNeeded(raw);
       const url = await uploadFile(fileToUpload, 'galeria', pct => updateItem(item.qid, { progress: pct }));
       await onUploaded({
         url, tipo: item.kind === 'video' ? 'video' : 'imagen',

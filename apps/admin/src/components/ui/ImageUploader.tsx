@@ -73,6 +73,50 @@ export async function normalizeExifOrientation(file: File): Promise<File> {
   }
 }
 
+/**
+ * Cloudinary (plan free) rechaza imágenes de más de 10 MB con un error
+ * críptico ("Maximum is 10485760"). Los iPhone modernos capturan fotos
+ * HEIC de 15-25 MB con facilidad, así que cualquier imagen que supere el
+ * umbral se recomprime a WebP en el cliente — reduciendo calidad y, si
+ * hace falta, dimensiones — hasta quedar por debajo del límite real de
+ * Cloudinary, con margen de seguridad.
+ */
+const CLOUDINARY_IMAGE_LIMIT = 10 * 1024 * 1024;
+const COMPRESSION_TARGET = 8 * 1024 * 1024; // margen bajo el límite real de Cloudinary
+
+export async function compressImageIfNeeded(file: File): Promise<File> {
+  if (file.size <= CLOUDINARY_IMAGE_LIMIT) return file;
+
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    let { width, height } = bitmap;
+    let quality = 0.85;
+
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(bitmap, 0, 0, width, height);
+
+      const blob: Blob | null = await new Promise(res => canvas.toBlob(res, 'image/webp', quality));
+      if (blob && blob.size <= COMPRESSION_TARGET) {
+        bitmap.close();
+        return new File([blob], file.name.replace(/\.\w+$/, '.webp'), { type: 'image/webp' });
+      }
+
+      // sigue pesando de más: baja calidad primero, luego reduce dimensiones
+      if (quality > 0.5) quality -= 0.15;
+      else { width = Math.round(width * 0.8); height = Math.round(height * 0.8); }
+    }
+
+    bitmap.close();
+    return file; // no se logró bajar del umbral — se sube igual, Cloudinary decidirá
+  } catch {
+    return file; // navegador sin soporte o archivo no decodificable — se sigue con el original
+  }
+}
+
 export async function loadWatermarkImg(url: string): Promise<HTMLImageElement | null> {
   if (!url) return null;
   return new Promise(res => {
@@ -931,7 +975,7 @@ export default function ImageUploader({
     }
 
     try {
-      const fileToUpload = file;
+      const fileToUpload = isVideo ? file : await compressImageIfNeeded(file);
 
       let url: string;
 
@@ -940,7 +984,7 @@ export default function ImageUploader({
       const signRes = await fetch('/api/cloudinary-sign', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileSize: file.size, fileType: file.type, folder }),
+        body: JSON.stringify({ fileSize: fileToUpload.size, fileType: fileToUpload.type, folder }),
       });
 
       if (signRes.ok) {
