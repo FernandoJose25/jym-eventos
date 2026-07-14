@@ -111,75 +111,77 @@ export default function NuevoServicioPage() {
         </button>
       </div>
 
-      <div className="admin-card" style={{ padding:'1.5rem', display:'flex', flexDirection:'column', gap:20 }}>
+      <div className="admin-card" style={{ padding:'1.75rem', display:'flex', flexDirection:'column', gap:24 }}>
 
         {/* Nombre */}
         <div>
-          <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>
+          <label style={{ fontSize:'0.82rem', fontWeight:700, color:'#334155', display:'block', marginBottom:8 }}>
             Nombre del servicio *
           </label>
           <div style={{ display:'flex', gap:8 }}>
             <input type="text" value={form.title} onChange={e=>set('title',e.target.value)}
-                   placeholder="Ej: Shows Infantiles, Hora Loca, Catering…" className="admin-input" style={{ flex:1 }}/>
+                   placeholder="Ej: Shows Infantiles, Hora Loca, Catering…" className="admin-input" style={{ flex:1, fontSize:'0.95rem', padding:'0.7rem 0.9rem' }}/>
             <button type="button" onClick={handleGenerate} disabled={generating || !form.title.trim()}
                     title="Generar contenido completo con IA"
-                    style={{ display:'flex', alignItems:'center', gap:6, padding:'0 1rem', background: aiDetail ? 'linear-gradient(135deg,#059669,#10b981)' : 'linear-gradient(135deg,#7c3aed,#a855f7)', color:'#fff', border:'none', borderRadius:10, fontWeight:700, fontSize:'0.8rem', cursor:'pointer', whiteSpace:'nowrap', opacity:(generating || !form.title.trim()) ? 0.5 : 1, flexShrink:0 }}>
+                    style={{ display:'flex', alignItems:'center', gap:6, padding:'0 1rem', background: aiDetail ? 'linear-gradient(135deg,#059669,#10b981)' : 'linear-gradient(135deg,#7c3aed,#a855f7)', color:'#fff', border:'none', borderRadius:10, fontWeight:700, fontSize:'0.85rem', cursor:'pointer', whiteSpace:'nowrap', opacity:(generating || !form.title.trim()) ? 0.5 : 1, flexShrink:0 }}>
               <Sparkles size={14}/> {generating ? 'Generando…' : aiDetail ? '✓ Generado' : 'IA'}
             </button>
           </div>
-          <div style={{ marginTop:10 }}>
-            <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:4 }}>
-              URL pública <span style={{ color:'#94a3b8', fontWeight:400, textTransform:'none', letterSpacing:0 }}>(opcional — se genera del nombre si se deja vacío)</span>
-            </label>
-            <div style={{ display:'flex', alignItems:'center', background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:10, overflow:'hidden' }}>
-              <span style={{ padding:'0.5rem 0.75rem', background:'#f1f5f9', color:'#94a3b8', fontSize:'0.75rem', borderRight:'1px solid #e2e8f0', whiteSpace:'nowrap', flexShrink:0 }}>
-                /servicios/
-              </span>
-              <input
-                type="text"
-                value={form.slug}
-                onChange={e=>set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-'))}
-                className="admin-input"
-                style={{ border:'none', borderRadius:0, background:'transparent', flex:1 }}
-                placeholder={form.title ? slugify(form.title) : 'bm-vogue'}
-              />
-            </div>
-            <p style={{ fontSize:'0.68rem', color:'#94a3b8', marginTop:3 }}>
-              URL final: <strong>/servicios/{form.slug || (form.title ? slugify(form.title) : '…')}</strong>
-            </p>
-          </div>
           {aiDetail && (
-            <p style={{ fontSize:'0.78rem', color:'#059669', marginTop:4, display:'flex', alignItems:'center', gap:4 }}>
+            <p style={{ fontSize:'0.8rem', color:'#059669', marginTop:8, display:'flex', alignItems:'center', gap:4 }}>
               ✨ Contenido de IA listo — se guardará junto con el servicio
             </p>
           )}
         </div>
 
-        <div className="cfg-3col" style={{ gap:16 }}>
+        {/* URL pública */}
+        <div>
+          <label style={{ fontSize:'0.82rem', fontWeight:700, color:'#334155', display:'block', marginBottom:8 }}>
+            URL pública
+          </label>
+          <div style={{ display:'flex', alignItems:'center', background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:10, overflow:'hidden' }}>
+            <span style={{ padding:'0.7rem 0.9rem', background:'#f1f5f9', color:'#64748b', fontSize:'0.88rem', borderRight:'1px solid #e2e8f0', whiteSpace:'nowrap', flexShrink:0 }}>
+              /servicios/
+            </span>
+            <input
+              type="text"
+              value={form.slug}
+              onChange={e=>set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-'))}
+              className="admin-input"
+              style={{ border:'none', borderRadius:0, background:'transparent', flex:1, fontSize:'0.95rem', padding:'0.7rem 0.9rem' }}
+              placeholder={form.title ? slugify(form.title) : 'bm-vogue'}
+            />
+          </div>
+          <p style={{ fontSize:'0.78rem', color:'#94a3b8', marginTop:6 }}>
+            Se genera del nombre si se deja vacío · URL final: <strong style={{ color:'#475569' }}>/servicios/{form.slug || (form.title ? slugify(form.title) : '…')}</strong>
+          </p>
+        </div>
+
+        <div className="cfg-3col" style={{ gap:18 }}>
           {/* Ícono */}
           <div style={{ gridColumn: 'span 2' }}>
-            <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>
+            <label style={{ fontSize:'0.82rem', fontWeight:700, color:'#334155', display:'block', marginBottom:8 }}>
               Ícono
             </label>
             <IconPicker value={form.icon} onChange={v=>set('icon',v)} />
           </div>
           {/* Orden + Preview */}
-          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
             <div>
-              <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>
+              <label style={{ fontSize:'0.82rem', fontWeight:700, color:'#334155', display:'block', marginBottom:8 }}>
                 Orden en navbar
               </label>
-              <input type="number" value={form.order} onChange={e=>set('order',+e.target.value)} className="admin-input"/>
+              <input type="number" value={form.order} onChange={e=>set('order',+e.target.value)} className="admin-input" style={{ fontSize:'0.95rem', padding:'0.7rem 0.9rem' }}/>
             </div>
             <div>
-              <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>
+              <label style={{ fontSize:'0.82rem', fontWeight:700, color:'#334155', display:'block', marginBottom:8 }}>
                 Vista previa navbar
               </label>
-              <div style={{ background:'#0a1628', borderRadius:8, padding:'0.6rem 1rem', display:'flex', alignItems:'center', gap:8 }}>
+              <div style={{ background:'#0a1628', borderRadius:8, padding:'0.7rem 1rem', display:'flex', alignItems:'center', gap:8 }}>
                 {isIconKey(form.icon)
                   ? (() => { const Icon = SERVICE_ICONS[form.icon]; return <Icon size={18} color="#f5c842" />; })()
                   : <span style={{ fontSize:'1.2rem' }}>{form.icon||'🎉'}</span>}
-                <span style={{ color:'#f5c842', fontSize:'0.82rem', fontWeight:600 }}>{form.title||'Nombre'}</span>
+                <span style={{ color:'#f5c842', fontSize:'0.88rem', fontWeight:600 }}>{form.title||'Nombre'}</span>
               </div>
             </div>
           </div>
@@ -187,12 +189,12 @@ export default function NuevoServicioPage() {
 
         {/* Descripción */}
         <div>
-          <label style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#64748b', display:'block', marginBottom:6 }}>
+          <label style={{ fontSize:'0.82rem', fontWeight:700, color:'#334155', display:'block', marginBottom:8 }}>
             Descripción corta
           </label>
           <textarea rows={3} value={form.desc} onChange={e=>set('desc',e.target.value)}
                     placeholder="Breve descripción que aparece en la tarjeta de servicios…"
-                    className="admin-input" style={{ resize:'vertical' }}/>
+                    className="admin-input" style={{ resize:'vertical', fontSize:'0.95rem', padding:'0.7rem 0.9rem', lineHeight:1.5 }}/>
         </div>
 
         {/* Media */}
@@ -207,10 +209,8 @@ export default function NuevoServicioPage() {
         />
 
         <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:12, padding:'0.875rem 1rem' }}>
-          <p style={{ fontSize:'0.8rem', color:'#166534', margin:0 }}>
-            💡 <strong>¿Necesitas más detalle?</strong> Una vez creado el servicio, edita directamente los documentos en
-            Firebase Console para agregar secciones completas, galería, testimonios, etc.
-            El servicio ya aparecerá en el navbar de la web inmediatamente después de crearlo.
+          <p style={{ fontSize:'0.82rem', color:'#166534', margin:0, lineHeight:1.55 }}>
+            💡 El servicio aparece en el navbar de inmediato. Para secciones avanzadas (galería, testimonios) edítalas después desde "Contenido del servicio".
           </p>
         </div>
 
