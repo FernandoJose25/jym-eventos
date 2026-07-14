@@ -156,11 +156,11 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
   }, [dims, cssFilter, watermark, quality, processing, onApply]);
 
   return (
-    <div style={{
+    <div className="editor-modal-overlay" style={{
       position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
     }}>
-      <div style={{
+      <div className="editor-modal-panel" style={{
         background: '#fff', borderRadius: 20, overflow: 'hidden', maxWidth: 720, width: '100%',
         boxShadow: '0 32px 64px rgba(0,0,0,0.55)', display: 'flex', flexDirection: 'column', maxHeight: '92vh',
       }}>
@@ -189,8 +189,8 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
           {([
             ['brightness', 'Brillo'], ['contrast', 'Contraste'], ['saturate', 'Saturación'],
           ] as [keyof Filters, string][]).map(([field, lbl]) => (
-            <label key={field} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
-              <span style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>{lbl}</span>
+            <label key={field} className="editor-modal-row" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
+              <span className="editor-modal-row-label" style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>{lbl}</span>
               <input
                 type="range" min={50} max={150} value={filters[field]} disabled={processing}
                 onChange={e => setFilters(f => ({ ...f, [field]: Number(e.target.value) }))}
@@ -200,8 +200,8 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
             </label>
           ))}
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
-            <span style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>Calidad</span>
+          <label className="editor-modal-row" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
+            <span className="editor-modal-row-label" style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>Calidad</span>
             <input
               type="range" min={0.3} max={1} step={0.01} value={quality} disabled={processing}
               onChange={e => setQuality(Number(e.target.value))}
@@ -218,8 +218,8 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
             💧 Añadir marca de agua (logo de la empresa)
           </label>
           {watermark.enabled && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
-              <span style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>Tamaño logo</span>
+            <label className="editor-modal-row" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.72rem', color: '#475569' }}>
+              <span className="editor-modal-row-label" style={{ width: 80, flexShrink: 0, fontWeight: 600 }}>Tamaño logo</span>
               <input
                 type="range" min={0.06} max={0.4} step={0.01} value={watermark.scale} disabled={processing}
                 onChange={e => setWatermark(w => ({ ...w, scale: Number(e.target.value) }))}
@@ -230,7 +230,7 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
           )}
         </div>
 
-        <div style={{
+        <div className="editor-modal-canvas" style={{
           flex: 1, overflowY: 'auto', padding: '1rem', background: '#0d1117',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
@@ -239,6 +239,7 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
           }}>
             <video
               ref={videoRef}
+              className="editor-modal-media"
               src={src}
               onLoadedMetadata={onLoadedMetadata}
               muted={processing}
@@ -292,7 +293,7 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
           </p>
         )}
 
-        <div style={{
+        <div className="editor-modal-footer" style={{
           padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10,
           alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0, flexWrap: 'wrap',
         }}>

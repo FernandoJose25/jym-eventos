@@ -449,6 +449,60 @@ select.admin-input {
   }
 }
 
+/* ── Editores modales (recorte, video, marca de agua en lote) — mobile ──
+   Los 3 comparten la misma estructura: overlay fixed + panel maxWidth:720px
+   con controles en style inline. En pantallas angostas el panel debe usar
+   casi todo el ancho, y las filas de sliders (label fijo + input range +
+   valor) deben poder pasar a 2 líneas sin que la etiqueta tape el slider. */
+@media (max-width: 640px) {
+  .editor-modal-panel {
+    max-width: 100% !important;
+    border-radius: 14px !important;
+    max-height: 96vh !important;
+  }
+
+  .editor-modal-overlay {
+    padding: 0.5rem !important;
+  }
+
+  .editor-modal-row {
+    flex-wrap: wrap !important;
+  }
+
+  .editor-modal-row-label {
+    width: auto !important;
+    flex: 1 1 auto !important;
+  }
+
+  .editor-modal-row input[type="range"] {
+    flex: 1 1 100% !important;
+    order: 3;
+  }
+
+  .editor-modal-quickbar {
+    justify-content: center !important;
+  }
+
+  .editor-modal-quickbar button {
+    flex: 1 1 auto;
+  }
+
+  .editor-modal-footer {
+    justify-content: stretch !important;
+  }
+
+  .editor-modal-footer button {
+    flex: 1 1 auto;
+  }
+
+  /* Canvas/preview de recorte: menos alto reservado para dejar más espacio
+     a los controles cuando el viewport es angosto (evita que el slider
+     panel tape la vista previa al abrir "Filtros, calidad y marca de agua"). */
+  .editor-modal-canvas .editor-modal-media {
+    max-height: 42vh !important;
+  }
+}
+
 /* ── Mensajes page mobile layout ── */
 @media (max-width: 768px) {
   .msg-list {
