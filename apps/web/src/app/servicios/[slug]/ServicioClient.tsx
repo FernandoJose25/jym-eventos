@@ -359,14 +359,12 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           })
           .map(d => {
             const dt = d.data();
-            // Portada: imagen tal cual, o si es video sacamos un frame fijo
-            // con cxVideoThumb — antes se descartaba y la tarjeta quedaba vacía.
-            const img =
-              (dt.mediaType === 'image' && dt.mediaSrc) ? dt.mediaSrc :
-                (dt.mediaType === 'video' && dt.mediaSrc) ? cxVideoThumb(dt.mediaSrc) :
-                  (dt.heroMediaType === 'image' && dt.heroMediaSrc) ? dt.heroMediaSrc :
-                    (dt.heroMediaType === 'video' && dt.heroMediaSrc) ? cxVideoThumb(dt.heroMediaSrc) : '';
-            return { id: d.id, title: dt.title || '', icon: dt.icon || '🎉', link: dt.link || '', img };
+            // Portada: si es video, se reproduce en la tarjeta (con cxVideoThumb
+            // como poster mientras carga); si es imagen, se usa tal cual.
+            const isVid = dt.mediaType === 'video' ? !!dt.mediaSrc : dt.heroMediaType === 'video' ? !!dt.heroMediaSrc : false;
+            const src = dt.mediaSrc || dt.heroMediaSrc || '';
+            const img = isVid ? cxVideoThumb(src) : src;
+            return { id: d.id, title: dt.title || '', icon: dt.icon || '🎉', link: dt.link || '', img, video: isVid ? src : '' };
           })
           .filter((s: any) => s.title);
 
@@ -385,7 +383,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           .filter(([slug]) => slug !== rawSlug)
           .flatMap(([, data]: [string, any]) => data?.relacionados || [])
           .map((r: any) => ({
-            title: r.title, icon: r.icon, link: r.href?.replace(/^\//, '') || '', img: r.img || '',
+            title: r.title, icon: r.icon, link: r.href?.replace(/^\//, '') || '', img: r.img || '', video: r.video || '',
           }))
           .filter((r: any) => r.link && !seenLinks.has(r.link) && (seenLinks.add(r.link), true));
 
@@ -1189,8 +1187,12 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                         transition: 'transform .4s ease',
                       }} />
 
-                      {/* Background image */}
-                      {relImg ? (
+                      {/* Background media */}
+                      {r.video ? (
+                        <video className="rel-img" src={cxVideo(r.video)} poster={relImg ? cxCard(relImg) : undefined}
+                          autoPlay muted loop playsInline preload="metadata"
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .6s cubic-bezier(.25,.46,.45,.94)' }} />
+                      ) : relImg ? (
                         <img className="rel-img" src={cxCard(relImg)} alt={r.title} loading="lazy" decoding="async"
                           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .6s cubic-bezier(.25,.46,.45,.94)' }} />
                       ) : (
