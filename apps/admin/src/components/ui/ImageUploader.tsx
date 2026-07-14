@@ -1296,7 +1296,7 @@ export default function ImageUploader({
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ borderRadius: 12, overflow: 'hidden', background: '#0a1628', position: 'relative' }}>
-                <video controls style={{ width: '100%', maxHeight: 220, display: 'block' }}>
+                <video key={preview} controls style={{ width: '100%', maxHeight: 220, display: 'block' }}>
                   <source src={preview} />
                 </video>
                 <div style={{

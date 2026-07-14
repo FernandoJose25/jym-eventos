@@ -399,7 +399,7 @@ export default function Navbar() {
                       <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
                         {featured.mediaSrc ? (
                           isVideo ? (
-                            <video autoPlay muted loop playsInline
+                            <video key={featured.mediaSrc} autoPlay muted loop playsInline
                               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}>
                               <source src={featured.mediaSrc} type="video/mp4" />
                             </video>

@@ -82,6 +82,7 @@ export default function HeroSection({ data }: { data: HeroData }) {
           {isVideo ? (
             <>
               <video
+                key={data.bgImage}
                 ref={vidRef}
                 autoPlay
                 muted
