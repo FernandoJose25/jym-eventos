@@ -9,7 +9,7 @@ import { useModal } from '@/components/ui/Modal';
 import ImageUploader from '@/components/ui/ImageUploader';
 import WatermarkBatchModal from '@/components/ui/WatermarkBatchModal';
 import BulkGalleryUpload from '@/components/ui/BulkGalleryUpload';
-import { Plus, Eye, EyeOff, Trash2, Filter, Search, X, Pencil, Sparkles, CheckSquare, Square, Layers, Droplet, Images } from 'lucide-react';
+import { Plus, Eye, EyeOff, Trash2, Filter, Search, X, Pencil, Sparkles, CheckSquare, Square, Layers, Droplet } from 'lucide-react';
 import Link from 'next/link';
 import { SUBCATS } from '@/lib/galeriaTaxonomy';
 import { getToken } from '@/lib/get-token';
@@ -175,8 +175,6 @@ export default function GaleriaPage() {
     setEditId(null);
     setMode('add');
   };
-
-  const openBulk = () => { setBulkInitialFiles([]); setMode('bulk'); };
 
   const addFileInputRef = useRef<HTMLInputElement>(null);
   const openAddPicker = () => addFileInputRef.current?.click();
@@ -552,9 +550,6 @@ export default function GaleriaPage() {
                 }}>
                 {selMode ? <CheckSquare size={15} /> : <Square size={15} />}
                 {selMode ? 'Cancelar' : 'Seleccionar'}
-              </button>
-              <button onClick={openBulk} className="btn-outline" style={{ whiteSpace: 'nowrap' }}>
-                <Images size={16} /> Subir varias
               </button>
               <input
                 ref={addFileInputRef}
