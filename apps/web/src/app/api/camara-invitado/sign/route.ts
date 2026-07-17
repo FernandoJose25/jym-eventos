@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     timestamp, signature, apiKey, cloudName, folder,
     albumId: link.albumId,
+    albumTipoEvento: link.albumTipoEvento,
     resourceType: isVideo ? 'video' : 'image',
   });
 }
