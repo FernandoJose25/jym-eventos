@@ -17,9 +17,12 @@ export async function getCamaraLinkByToken(token: string): Promise<CamaraInvitad
     const data = doc.data();
 
     let albumSlug: string | undefined;
+    let albumTipoEvento: string | undefined;
     if (data.albumId) {
       const albumDoc = await adminDb.collection('albums').doc(data.albumId).get();
-      albumSlug = albumDoc.exists ? (albumDoc.data()?.slug || albumDoc.id) : undefined;
+      const albumData = albumDoc.data();
+      albumSlug = albumDoc.exists ? (albumData?.slug || albumDoc.id) : undefined;
+      albumTipoEvento = albumData?.tipoEvento || undefined;
     }
 
     return {
@@ -27,6 +30,7 @@ export async function getCamaraLinkByToken(token: string): Promise<CamaraInvitad
       albumId: data.albumId,
       albumTitulo: data.albumTitulo || undefined,
       albumSlug,
+      albumTipoEvento,
       token: data.token,
       activo: data.activo === true,
       plantillaUrl: data.plantillaUrl || null,

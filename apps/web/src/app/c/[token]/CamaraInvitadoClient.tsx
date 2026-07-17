@@ -107,7 +107,7 @@ export default function CamaraInvitadoClient({ link }: { link: CamaraInvitadoLin
         const { error: msg } = await signRes.json().catch(() => ({ error: '' }));
         throw new Error(msg || 'No se pudo autorizar la subida');
       }
-      const { timestamp, signature, apiKey, cloudName, folder, albumId, resourceType } = await signRes.json();
+      const { timestamp, signature, apiKey, cloudName, folder, albumId, albumTipoEvento, resourceType } = await signRes.json();
 
       const form = new FormData();
       form.append('file', fileToUpload, pendingIsVideo ? pendingFile.name : 'foto.jpg');
@@ -125,12 +125,19 @@ export default function CamaraInvitadoClient({ link }: { link: CamaraInvitadoLin
       await addDoc(collection(db, 'gallery_items'), {
         url,
         albumId,
+        categoria: albumTipoEvento || 'General',
         tipo: pendingIsVideo ? 'video' : 'imagen',
         origen: 'invitado',
-        visible: false,
+        visible: true,
         order: 0,
         createdAt: new Date().toISOString(),
       });
+
+      fetch('/api/camara-invitado/publicado', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: link.token }),
+      }).catch(() => {});
 
       setStep('listo');
     } catch (e: any) {

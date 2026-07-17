@@ -51,6 +51,7 @@ export interface CamaraInvitadoLink {
   albumId: string;
   albumTitulo?: string;
   albumSlug?: string;
+  albumTipoEvento?: string;
   token: string;
   activo: boolean;
   plantillaUrl?: string | null;
