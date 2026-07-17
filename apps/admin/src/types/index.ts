@@ -57,6 +57,23 @@ export interface Mensaje {
   origen?:      string;
 }
 
+// ── Cámara Invitado ─────────────────────────────────────────────
+// Un "link" de cámara invitado conecta un QR físico (impreso en las mesas)
+// con un álbum de `albums`. El token es lo único que aparece en la URL
+// pública (/c/{token}); el albumId nunca se expone al invitado.
+export interface CamaraInvitadoLink {
+  id?:               string;
+  albumId:           string;
+  albumTitulo?:      string;  // desnormalizado para no hacer join al listar
+  token:             string;
+  activo:            boolean;
+  plantillaUrl?:     string | null;
+  plantillaActiva:   boolean;
+  permiteVideo:      boolean;
+  videoMaxSegundos:  number;
+  createdAt:         string;
+}
+
 export type RolUsuario = 'admin' | 'editor' | 'lector';
 
 export interface Usuario {

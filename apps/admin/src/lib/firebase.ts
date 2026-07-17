@@ -29,4 +29,5 @@ export const COL = {
   MENSAJES: 'mensajes',
   USUARIOS: 'usuarios',
   CONFIGURACION: 'site_config',
+  CAMARA_INVITADO: 'camara_invitado_links',
 } as const;
