@@ -200,7 +200,12 @@ export default function CamaraInvitadoClient({ link }: { link: CamaraInvitadoLin
           <p style={{ fontSize: '2.5rem', margin: 0 }}>✅</p>
           <p style={{ color: '#fff', fontWeight: 700, fontSize: '1.05rem', textAlign: 'center' }}>¡Gracias por compartir!</p>
           <p style={{ color: 'rgba(255,255,255,.6)', fontSize: '0.85rem', textAlign: 'center' }}>Tu foto ya está en camino al álbum.</p>
-          <button onClick={reiniciar} style={{ ...btnPrimary, marginTop: 16 }}>Tomar otra</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 320, marginTop: 16 }}>
+            <button onClick={reiniciar} style={btnPrimaryFull}>Tomar otra</button>
+            {link.albumSlug && (
+              <a href={`/albumes/${link.albumSlug}`} style={btnSecondaryFullLink}>Mira el álbum completo</a>
+            )}
+          </div>
         </>
       )}
 
@@ -254,3 +259,5 @@ function Spinner() {
 const mediaStyle: React.CSSProperties = { width: '100%', maxWidth: 340, borderRadius: 16, maxHeight: '60vh', objectFit: 'contain' };
 const btnPrimary: React.CSSProperties = { flex: 1, padding: '0.9rem', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#b8860b,#f5c842)', color: '#0a1628', fontWeight: 700, cursor: 'pointer' };
 const btnSecondary: React.CSSProperties = { flex: 1, padding: '0.9rem', borderRadius: 12, border: '1.5px solid rgba(255,255,255,.25)', background: 'transparent', color: '#fff', fontWeight: 700, cursor: 'pointer' };
+const btnPrimaryFull: React.CSSProperties = { width: '100%', padding: '0.9rem', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg,#b8860b,#f5c842)', color: '#0a1628', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' };
+const btnSecondaryFullLink: React.CSSProperties = { width: '100%', boxSizing: 'border-box', padding: '0.9rem', borderRadius: 12, border: '1.5px solid rgba(255,255,255,.25)', background: 'transparent', color: '#fff', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', textAlign: 'center', textDecoration: 'none', display: 'block' };

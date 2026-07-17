@@ -429,7 +429,10 @@ export default function GaleriaPage() {
       toast.success('✅ Álbum creado');
     }
     setAlbumMode('idle'); setAlbumFormData(ALBUM_BLANK); setAlbumEditId(null);
-    getToken().then(idToken => revalidarWeb(idToken, slugAfectado)).catch(() => {});
+    getToken()
+      .then(idToken => revalidarWeb(idToken, slugAfectado))
+      .then(ok => { if (!ok) toast.error('El álbum se guardó, pero la web pública tardará hasta 1 hora en actualizarse (falló el aviso de revalidación).'); })
+      .catch(() => {});
   };
 
   const toggleAlbumVisible = (album: any) => open({
