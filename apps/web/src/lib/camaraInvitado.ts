@@ -15,10 +15,18 @@ export async function getCamaraLinkByToken(token: string): Promise<CamaraInvitad
     if (snap.empty) return null;
     const doc = snap.docs[0];
     const data = doc.data();
+
+    let albumSlug: string | undefined;
+    if (data.albumId) {
+      const albumDoc = await adminDb.collection('albums').doc(data.albumId).get();
+      albumSlug = albumDoc.exists ? (albumDoc.data()?.slug || albumDoc.id) : undefined;
+    }
+
     return {
       id: doc.id,
       albumId: data.albumId,
       albumTitulo: data.albumTitulo || undefined,
+      albumSlug,
       token: data.token,
       activo: data.activo === true,
       plantillaUrl: data.plantillaUrl || null,
