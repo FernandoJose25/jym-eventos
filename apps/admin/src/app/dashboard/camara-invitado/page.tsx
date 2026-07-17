@@ -1,15 +1,36 @@
 'use client';
 // RUTA: apps/admin/src/app/dashboard/camara-invitado/page.tsx
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
-  collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, getDocs,
+  collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs,
 } from 'firebase/firestore';
 import { db, COL } from '@/lib/firebase';
-import { getToken } from '@/lib/get-token';
 import { uploadFile } from '@/lib/upload';
+import { useModal } from '@/components/ui/Modal';
 import type { CamaraInvitadoLink } from '@/types';
-import { Camera, QrCode, ChevronDown, Image as ImageIcon, Video, Download, Power } from 'lucide-react';
+import { Camera, QrCode, ChevronDown, Image as ImageIcon, Video, Download, Power, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import QRCodeStyling from 'qr-code-styling';
+
+// QR estilizado: módulos redondeados en colores de marca con el logo J&M
+// incrustado al centro. errorCorrectionLevel 'H' (30% tolerancia) permite
+// tapar el centro con el logo sin perder legibilidad.
+function crearQrEstilizado(url: string, size = 280) {
+  return new QRCodeStyling({
+    width: size,
+    height: size,
+    type: 'svg',
+    data: url,
+    image: '/logo-watermark.png',
+    margin: 8,
+    qrOptions: { errorCorrectionLevel: 'H' },
+    imageOptions: { crossOrigin: 'anonymous', margin: 6, imageSize: 0.22 },
+    dotsOptions: { type: 'rounded', color: '#0a1628' },
+    cornersSquareOptions: { type: 'extra-rounded', color: '#b8860b' },
+    cornersDotOptions: { type: 'dot', color: '#b8860b' },
+    backgroundOptions: { color: '#ffffff' },
+  });
+}
 
 interface AlbumOpt { id: string; titulo: string; }
 
@@ -18,12 +39,15 @@ function randomToken(): string {
 }
 
 export default function CamaraInvitadoPage() {
+  const { open } = useModal();
   const [links, setLinks] = useState<CamaraInvitadoLink[]>([]);
   const [albums, setAlbums] = useState<AlbumOpt[]>([]);
   const [albumPickerOpen, setAlbumPickerOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [qrByLink, setQrByLink] = useState<Record<string, string>>({});
+  const [qrGenerado, setQrGenerado] = useState<Record<string, boolean>>({});
   const [uploadingPlantilla, setUploadingPlantilla] = useState<string | null>(null);
+  const qrContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const qrInstances = useRef<Record<string, QRCodeStyling>>({});
 
   useEffect(() => onSnapshot(
     query(collection(db, COL.CAMARA_INVITADO), orderBy('createdAt', 'desc')),
@@ -68,6 +92,16 @@ export default function CamaraInvitadoPage() {
     toast.success(!link.activo ? 'QR reactivado' : 'QR desactivado — ya no recibirá fotos');
   };
 
+  const handleDelete = (link: CamaraInvitadoLink) => open({
+    type: 'delete',
+    title: 'Eliminar cámara de invitado',
+    description: `Se elimina la cámara del álbum "${link.albumTitulo || link.albumId}". El QR impreso dejará de funcionar.`,
+    onConfirm: async () => {
+      await deleteDoc(doc(db, COL.CAMARA_INVITADO, link.id!));
+      toast.success('Cámara de invitado eliminada');
+    },
+  });
+
   const togglePlantilla = async (link: CamaraInvitadoLink) => {
     if (!link.plantillaUrl) { toast.error('Primero sube una plantilla/marco'); return; }
     await updateDoc(doc(db, COL.CAMARA_INVITADO, link.id!), { plantillaActiva: !link.plantillaActiva });
@@ -88,30 +122,27 @@ export default function CamaraInvitadoPage() {
 
   const generarQr = useCallback(async (link: CamaraInvitadoLink) => {
     try {
-      const token = await getToken();
-      const res = await fetch('/api/camara-invitado/qr', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: link.token }),
-      });
-      if (!res.ok) throw new Error();
-      const { svg } = await res.json();
-      setQrByLink(prev => ({ ...prev, [link.id!]: svg }));
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://jmdecoracionesyeventos.com';
+      const targetUrl = `${siteUrl.replace(/\/$/, '')}/c/${link.token}`;
+      const qr = crearQrEstilizado(targetUrl, 82);
+      qrInstances.current[link.id!] = qr;
+      const container = qrContainerRefs.current[link.id!];
+      if (container) {
+        container.innerHTML = '';
+        qr.append(container);
+      }
+      setQrGenerado(prev => ({ ...prev, [link.id!]: true }));
     } catch {
       toast.error('No se pudo generar el QR');
     }
   }, []);
 
   const descargarQr = (link: CamaraInvitadoLink) => {
-    const svg = qrByLink[link.id!];
-    if (!svg) return;
-    const blob = new Blob([svg], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `qr-camara-${link.albumTitulo || link.token}.svg`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const qr = qrInstances.current[link.id!];
+    if (!qr) return;
+    qr.update({ width: 1000, height: 1000 });
+    qr.download({ name: `qr-camara-${link.albumTitulo || link.token}`, extension: 'png' });
+    qr.update({ width: 82, height: 82 });
   };
 
   return (
@@ -197,6 +228,15 @@ export default function CamaraInvitadoPage() {
                 }}>
                 <Power size={13} /> {link.activo ? 'Desactivar QR' : 'Reactivar QR'}
               </button>
+              <button
+                onClick={() => handleDelete(link)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, padding: '0.4rem 0.8rem', borderRadius: 8,
+                  border: '1.5px solid #fecaca', background: '#fff', cursor: 'pointer',
+                  fontSize: '0.75rem', fontWeight: 600, color: '#991b1b',
+                }}>
+                <Trash2 size={13} /> Eliminar
+              </button>
             </div>
 
             <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0 }}>
@@ -254,22 +294,24 @@ export default function CamaraInvitadoPage() {
                 }}>
                 <QrCode size={15} /> Generar QR
               </button>
-              {qrByLink[link.id!] && (
-                <>
-                  <div
-                    style={{ width: 90, height: 90, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: 4 }}
-                    dangerouslySetInnerHTML={{ __html: qrByLink[link.id!] }}
-                  />
-                  <button
-                    onClick={() => descargarQr(link)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 6, padding: '0.5rem 0.9rem', borderRadius: 10,
-                      border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer',
-                      fontSize: '0.78rem', fontWeight: 600, color: '#334155',
-                    }}>
-                    <Download size={14} /> Descargar SVG
-                  </button>
-                </>
+              <div
+                ref={el => { qrContainerRefs.current[link.id!] = el; }}
+                style={{
+                  width: 90, height: 90, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                  padding: 4, display: qrGenerado[link.id!] ? 'flex' : 'none',
+                  alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+                }}
+              />
+              {qrGenerado[link.id!] && (
+                <button
+                  onClick={() => descargarQr(link)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6, padding: '0.5rem 0.9rem', borderRadius: 10,
+                    border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer',
+                    fontSize: '0.78rem', fontWeight: 600, color: '#334155',
+                  }}>
+                  <Download size={14} /> Descargar PNG
+                </button>
               )}
             </div>
           </div>
