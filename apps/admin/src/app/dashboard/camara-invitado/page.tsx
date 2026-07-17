@@ -12,9 +12,11 @@ import { Camera, QrCode, ChevronDown, Image as ImageIcon, Video, Download, Power
 import { toast } from 'sonner';
 import QRCodeStyling from 'qr-code-styling';
 
-// QR estilizado: módulos redondeados en colores de marca con el logo J&M
-// incrustado al centro. errorCorrectionLevel 'H' (30% tolerancia) permite
-// tapar el centro con el logo sin perder legibilidad.
+// QR estilizado: módulos dorados con el logo J&M grande a modo de sello en
+// el centro (cada QR difiere en su patrón de puntos porque cada uno codifica
+// una URL/token distinto — el estilo visual es el mismo, el contenido no).
+// errorCorrectionLevel 'H' (30% tolerancia) permite tapar buena parte del
+// centro con el logo sin perder legibilidad.
 function crearQrEstilizado(url: string, size = 280) {
   return new QRCodeStyling({
     width: size,
@@ -22,10 +24,10 @@ function crearQrEstilizado(url: string, size = 280) {
     type: 'svg',
     data: url,
     image: '/logo-watermark.png',
-    margin: 8,
+    margin: 10,
     qrOptions: { errorCorrectionLevel: 'H' },
-    imageOptions: { crossOrigin: 'anonymous', margin: 6, imageSize: 0.22 },
-    dotsOptions: { type: 'rounded', color: '#0a1628' },
+    imageOptions: { crossOrigin: 'anonymous', hideBackgroundDots: true, margin: 0, imageSize: 0.42 },
+    dotsOptions: { type: 'rounded', color: '#b8860b' },
     cornersSquareOptions: { type: 'extra-rounded', color: '#b8860b' },
     cornersDotOptions: { type: 'dot', color: '#b8860b' },
     backgroundOptions: { color: '#ffffff' },
@@ -124,7 +126,7 @@ export default function CamaraInvitadoPage() {
     try {
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://jmdecoracionesyeventos.com';
       const targetUrl = `${siteUrl.replace(/\/$/, '')}/c/${link.token}`;
-      const qr = crearQrEstilizado(targetUrl, 82);
+      const qr = crearQrEstilizado(targetUrl, 200);
       qrInstances.current[link.id!] = qr;
       const container = qrContainerRefs.current[link.id!];
       if (container) {
@@ -142,7 +144,7 @@ export default function CamaraInvitadoPage() {
     if (!qr) return;
     qr.update({ width: 1000, height: 1000 });
     qr.download({ name: `qr-camara-${link.albumTitulo || link.token}`, extension: 'png' });
-    qr.update({ width: 82, height: 82 });
+    qr.update({ width: 200, height: 200 });
   };
 
   return (
@@ -297,7 +299,7 @@ export default function CamaraInvitadoPage() {
               <div
                 ref={el => { qrContainerRefs.current[link.id!] = el; }}
                 style={{
-                  width: 90, height: 90, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                  width: 210, height: 210, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
                   padding: 4, display: qrGenerado[link.id!] ? 'flex' : 'none',
                   alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
                 }}
