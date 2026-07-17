@@ -41,3 +41,19 @@ export interface AlbumFoto {
   // fuerza muteados y el visitante no puede activar el sonido.
   sonidoPermitido?: boolean;
 }
+
+// ── Cámara Invitado ─────────────────────────────────────────────
+// Un "link" de cámara invitado conecta un QR físico con un álbum. El
+// token es lo único visible al invitado (/c/{token}); el albumId nunca
+// se expone directamente.
+export interface CamaraInvitadoLink {
+  id: string;
+  albumId: string;
+  albumTitulo?: string;
+  token: string;
+  activo: boolean;
+  plantillaUrl?: string | null;
+  plantillaActiva: boolean;
+  permiteVideo: boolean;
+  videoMaxSegundos: number;
+}

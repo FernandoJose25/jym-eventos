@@ -9,13 +9,14 @@ import { db, COL } from '@/lib/firebase';
 import {
   LayoutDashboard, Image, MessageSquare,
   Palette, Users, LogOut, Menu, X,
-  ChevronRight, Briefcase, Bell, ChevronDown, Layers, Globe, BarChart2,
+  ChevronRight, Briefcase, Bell, ChevronDown, Layers, Globe, BarChart2, Camera,
 } from 'lucide-react';
 
 const NAV = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', group: 'principal' },
   { href: '/dashboard/servicios', icon: Briefcase, label: 'Servicios', group: 'contenido' },
   { href: '/dashboard/galeria', icon: Image, label: 'Galería', group: 'contenido' },
+  { href: '/dashboard/camara-invitado', icon: Camera, label: 'Cámara Invitado', group: 'contenido' },
   { href: '/dashboard/analiticas', icon: BarChart2, label: 'Métricas', group: 'contenido' },
   { href: '/dashboard/mensajes', icon: MessageSquare, label: 'Mensajes', group: 'clientes', badge: true },
   { href: '/dashboard/diseno', icon: Palette, label: 'Diseño', group: 'sistema' },
