@@ -76,7 +76,9 @@ export async function generarQrArtistico(data: string, { size = 1000 }: Opts = {
   const logoH = Math.round(logoW / logoAspect);
   const logoResized = await sharp(LOGO_PATH)
     .extract(LOGO_BOX)
-    .resize(logoW, logoH, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .resize(logoW, logoH, { fit: 'fill' })
+    .ensureAlpha()
+    .png()
     .toBuffer();
 
   // Halo en forma de "píldora" (rectángulo con esquinas muy redondeadas):
@@ -88,10 +90,19 @@ export async function generarQrArtistico(data: string, { size = 1000 }: Opts = {
     Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${haloW}" height="${haloH}"><rect width="${haloW}" height="${haloH}" rx="${Math.round(haloH * 0.25)}" fill="#ffffff"/></svg>`)
   ).png().toBuffer();
 
+  // Posiciones explícitas (left/top) en vez de gravity:'center': con
+  // gravity, sharp centra cada capa por separado usando el tamaño del
+  // lienzo base — más frágil entre binarios sharp distintos (local vs.
+  // Lambda de Vercel) que anclar ambas capas al mismo punto calculado a mano.
+  const haloLeft = Math.round((size - haloW) / 2);
+  const haloTop = Math.round((size - haloH) / 2);
+  const logoLeft = Math.round((size - logoW) / 2);
+  const logoTop = Math.round((size - logoH) / 2);
+
   return sharp(qrPng)
     .composite([
-      { input: halo, gravity: 'center' },
-      { input: logoResized, gravity: 'center' },
+      { input: halo, left: haloLeft, top: haloTop },
+      { input: logoResized, left: logoLeft, top: logoTop },
     ])
     .png()
     .toBuffer();

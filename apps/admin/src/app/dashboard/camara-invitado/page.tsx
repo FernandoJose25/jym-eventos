@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 // La respuesta se cachea 1 año (immutable): "v=" cambia solo cuando el
 // diseño del QR cambia, para forzar que el navegador/CDN pida el PNG
 // nuevo en vez de servir uno viejo con la misma URL de datos.
-const QR_DESIGN_VERSION = 2;
+const QR_DESIGN_VERSION = 3;
 function urlQrArtistico(url: string, size: number): string {
   return `/api/qr-artistico?data=${encodeURIComponent(url)}&size=${size}&v=${QR_DESIGN_VERSION}`;
 }
