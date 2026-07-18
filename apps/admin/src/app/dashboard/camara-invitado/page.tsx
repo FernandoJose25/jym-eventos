@@ -10,28 +10,12 @@ import { useModal } from '@/components/ui/Modal';
 import type { CamaraInvitadoLink } from '@/types';
 import { Camera, QrCode, ChevronDown, Image as ImageIcon, Video, Download, Power, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import QRCodeStyling from 'qr-code-styling';
 
-// QR estilizado: módulos dorados con el logo J&M grande a modo de sello en
-// el centro (cada QR difiere en su patrón de puntos porque cada uno codifica
-// una URL/token distinto — el estilo visual es el mismo, el contenido no).
-// errorCorrectionLevel 'H' (30% tolerancia) permite tapar buena parte del
-// centro con el logo sin perder legibilidad.
-function crearQrEstilizado(url: string, size = 280) {
-  return new QRCodeStyling({
-    width: size,
-    height: size,
-    type: 'svg',
-    data: url,
-    image: '/logo-watermark.png',
-    margin: 10,
-    qrOptions: { errorCorrectionLevel: 'H' },
-    imageOptions: { crossOrigin: 'anonymous', hideBackgroundDots: true, margin: 0, imageSize: 0.42 },
-    dotsOptions: { type: 'rounded', color: '#b8860b' },
-    cornersSquareOptions: { type: 'extra-rounded', color: '#b8860b' },
-    cornersDotOptions: { type: 'dot', color: '#b8860b' },
-    backgroundOptions: { color: '#ffffff' },
-  });
+// El QR "sello dorado" se genera server-side (/api/qr-artistico): los puntos
+// dorados del propio código dibujan el círculo J&M en el centro, en vez de
+// pegarle encima una imagen plana con fondo blanco — ver src/lib/qrArtistico.ts.
+function urlQrArtistico(url: string, size: number): string {
+  return `/api/qr-artistico?data=${encodeURIComponent(url)}&size=${size}`;
 }
 
 interface AlbumOpt { id: string; titulo: string; }
@@ -48,8 +32,7 @@ export default function CamaraInvitadoPage() {
   const [creating, setCreating] = useState(false);
   const [qrGenerado, setQrGenerado] = useState<Record<string, boolean>>({});
   const [uploadingPlantilla, setUploadingPlantilla] = useState<string | null>(null);
-  const qrContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const qrInstances = useRef<Record<string, QRCodeStyling>>({});
+  const qrUrls = useRef<Record<string, string>>({});
 
   useEffect(() => onSnapshot(
     query(collection(db, COL.CAMARA_INVITADO), orderBy('createdAt', 'desc')),
@@ -122,29 +105,28 @@ export default function CamaraInvitadoPage() {
     }
   };
 
-  const generarQr = useCallback(async (link: CamaraInvitadoLink) => {
-    try {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://jmdecoracionesyeventos.com';
-      const targetUrl = `${siteUrl.replace(/\/$/, '')}/c/${link.token}`;
-      const qr = crearQrEstilizado(targetUrl, 200);
-      qrInstances.current[link.id!] = qr;
-      const container = qrContainerRefs.current[link.id!];
-      if (container) {
-        container.innerHTML = '';
-        qr.append(container);
-      }
-      setQrGenerado(prev => ({ ...prev, [link.id!]: true }));
-    } catch {
-      toast.error('No se pudo generar el QR');
-    }
+  const generarQr = useCallback((link: CamaraInvitadoLink) => {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://jmdecoracionesyeventos.com';
+    const targetUrl = `${siteUrl.replace(/\/$/, '')}/c/${link.token}`;
+    qrUrls.current[link.id!] = targetUrl;
+    setQrGenerado(prev => ({ ...prev, [link.id!]: true }));
   }, []);
 
-  const descargarQr = (link: CamaraInvitadoLink) => {
-    const qr = qrInstances.current[link.id!];
-    if (!qr) return;
-    qr.update({ width: 1000, height: 1000 });
-    qr.download({ name: `qr-camara-${link.albumTitulo || link.token}`, extension: 'png' });
-    qr.update({ width: 200, height: 200 });
+  const descargarQr = async (link: CamaraInvitadoLink) => {
+    const targetUrl = qrUrls.current[link.id!];
+    if (!targetUrl) return;
+    try {
+      const res = await fetch(urlQrArtistico(targetUrl, 1000));
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `qr-camara-${link.albumTitulo || link.token}.png`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch {
+      toast.error('No se pudo descargar el QR');
+    }
   };
 
   return (
@@ -296,14 +278,17 @@ export default function CamaraInvitadoPage() {
                 }}>
                 <QrCode size={15} /> Generar QR
               </button>
-              <div
-                ref={el => { qrContainerRefs.current[link.id!] = el; }}
-                style={{
-                  width: 210, height: 210, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
-                  padding: 4, display: qrGenerado[link.id!] ? 'flex' : 'none',
-                  alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-                }}
-              />
+              {qrGenerado[link.id!] && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={urlQrArtistico(qrUrls.current[link.id!], 400)}
+                  alt="QR de la cámara del invitado"
+                  style={{
+                    width: 210, height: 210, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                    padding: 4, objectFit: 'contain',
+                  }}
+                />
+              )}
               {qrGenerado[link.id!] && (
                 <button
                   onClick={() => descargarQr(link)}
