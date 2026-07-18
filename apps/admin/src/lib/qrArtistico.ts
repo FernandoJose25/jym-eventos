@@ -8,13 +8,17 @@ import sharp from 'sharp';
 import path from 'node:path';
 
 const DORADO = '#b8860b';
-// Los módulos de DATOS van en azul marino oscuro, no dorado: el dorado
-// (luminancia relativa ~0.53) resultó tener muy poco contraste sobre blanco
-// para que los lectores de QR reales lo detecten de forma confiable —
-// verificado escaneando con jsQR, un QR 100% dorado sin logo ya fallaba.
-// El azul marino (luminancia ~0.08, casi como negro puro) sí escanea bien.
-// El dorado se reserva para elementos puramente decorativos (el logo
-// central, que ya vive dentro del margen de corrección de errores).
+// ADVERTENCIA DE DISEÑO, NO BUG: por pedido explícito, este QR es 100%
+// dorado (incluidos los finder patterns de esquina) para acercarse a una
+// referencia visual. El dorado (luminancia relativa ~0.53, casi gris medio)
+// tiene mucho menos contraste que el negro sobre fondo blanco — verificado
+// escaneando con jsQR, un QR así falla en ese lector. Es posible que
+// algunos celulares SÍ lo lean igual (los lectores de cámara reales suelen
+// ser más tolerantes que una librería de testing), pero no está garantizado.
+// Probar escaneando con celular real antes de imprimir en cantidad para un
+// evento — si falla, subir CONTRASTE_SEGURO a true vuelve a los módulos de
+// datos a un color oscuro, manteniendo el logo dorado en el centro.
+const CONTRASTE_SEGURO = false;
 const OSCURO = '#0a1628';
 const LOGO_PATH = path.join(process.cwd(), 'public', 'logo-watermark.png');
 
@@ -40,50 +44,50 @@ export async function generarQrArtistico(data: string, { size = 1000 }: Opts = {
   const totalModules = count + quiet * 2;
   const cell = size / totalModules;
 
-  // El logo completo (diamante + círculo J&M + volutas + texto) no cabe
-  // legible en los ~20 módulos de resolución que caben en el centro del QR
-  // (el código típico de este proyecto son 37-41 módulos por lado) — a esa
-  // resolución el diamante y el texto se vuelven ruido irreconocible. Se
-  // recorta solo el círculo "J&M", el elemento más icónico y compacto,
-  // en vez del bounding box completo del logo.
-  const logoRecortado = await sharp(LOGO_PATH)
-    .extract({ left: 116, top: 150, width: 395 - 116, height: 364 - 150 })
-    .toBuffer();
+  // Bounding box real del logo dentro del lienzo 512x512 — recortado para
+  // no desperdiciar resolución en el margen transparente. Con
+  // CONTRASTE_SEGURO=true, solo el círculo J&M (compacto, cuadrado, dentro
+  // del margen de escaneo verificado). Con false, el logo completo (diamante
+  // + círculo + volutas + texto) es una franja ANCHA, no cuadrada — la zona
+  // del logo en el QR también debe ser rectangular para que no quede
+  // aplastado con márgenes vacíos arriba/abajo.
+  const logoBox = CONTRASTE_SEGURO
+    ? { left: 116, top: 150, width: 395 - 116, height: 364 - 150 } // círculo J&M
+    : { left: 17, top: 150, width: 499 - 17, height: 365 - 150 }; // logo completo
+  const logoRecortado = await sharp(LOGO_PATH).extract(logoBox).toBuffer();
 
-  // Máscara del logo, remuestreada a la resolución de la rejilla de módulos
-  // que cubre el centro del QR. Verificado empíricamente escaneando con jsQR:
-  // aunque el nivel de corrección 'H' tolera ~30% de daño en teoría, ese
-  // margen asume el daño disperso por toda la matriz — concentrado en un
-  // bloque central, el límite real es mucho menor. En un QR de 37 módulos,
-  // 12x12 (~10% del área) escanea de forma confiable; 14x14 (14.3%) ya
-  // falla. Se usa ~26% del lado total (≈12 módulos en un QR de 45 con quiet
-  // zone), con margen de seguridad frente a ese límite.
-  const logoModulos = Math.round(totalModules * 0.30);
+  // Máscara del logo, remuestreada a la resolución de la rejilla de módulos.
+  // Verificado empíricamente escaneando con jsQR: aunque el nivel de
+  // corrección 'H' tolera ~30% de daño en teoría, ese margen asume el daño
+  // disperso por toda la matriz — concentrado en un bloque, el límite real
+  // es mucho menor (12x12 de 37 escanea, 14x14 ya falla). En modo "parecido
+  // a la referencia" se prioriza el tamaño visual sobre ese margen de
+  // seguridad (advertencia arriba) — la franja ancha ocupa más columnas que
+  // filas, pero en total módulos es comparable al caso cuadrado verificado.
+  const logoAspect = logoBox.width / logoBox.height;
+  const logoAltoModulos = Math.round(totalModules * 0.30);
+  const logoAnchoModulos = CONTRASTE_SEGURO ? logoAltoModulos : Math.round(logoAltoModulos * logoAspect);
   const logoAlphaRaw = await sharp(logoRecortado)
-    .resize(logoModulos, logoModulos, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .resize(logoAnchoModulos, logoAltoModulos, { fit: 'fill' })
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
   const { data: logoPixels, info: logoInfo } = logoAlphaRaw;
-  const logoOffsetModules = Math.floor((totalModules - logoModulos) / 2);
+  const logoOffsetX = Math.floor((totalModules - logoAnchoModulos) / 2);
+  const logoOffsetY = Math.floor((totalModules - logoAltoModulos) / 2);
 
   const isLogoZone = (mx: number, my: number): boolean => {
-    const lx = mx - logoOffsetModules;
-    const ly = my - logoOffsetModules;
-    return lx >= 0 && ly >= 0 && lx < logoModulos && ly < logoModulos;
+    const lx = mx - logoOffsetX;
+    const ly = my - logoOffsetY;
+    return lx >= 0 && ly >= 0 && lx < logoAnchoModulos && ly < logoAltoModulos;
   };
   const logoAlphaAt = (mx: number, my: number): number => {
-    const lx = mx - logoOffsetModules;
-    const ly = my - logoOffsetModules;
+    const lx = mx - logoOffsetX;
+    const ly = my - logoOffsetY;
     const idx = (ly * logoInfo.width + lx) * logoInfo.channels + 3;
     return logoPixels[idx] / 255;
   };
 
-  // Los finder patterns (los 3 cuadrados de esquina) también deben quedarse
-  // en el color de máximo contraste: probado en dorado y el escaneo real
-  // falla igual que con los módulos de datos — el algoritmo de binarización
-  // del lector opera sobre la imagen completa, no solo localmente, así que
-  // el bajo contraste del dorado también los afecta a ellos.
   const rects: string[] = [];
 
   for (let row = 0; row < count; row++) {
@@ -106,7 +110,8 @@ export async function generarQrArtistico(data: string, { size = 1000 }: Opts = {
       }
 
       if (!isDark(col, row)) continue;
-      rects.push(`<rect x="${(cx - cell * 0.5).toFixed(2)}" y="${(cy - cell * 0.5).toFixed(2)}" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" fill="${OSCURO}"/>`);
+      const color = CONTRASTE_SEGURO ? OSCURO : DORADO;
+      rects.push(`<rect x="${(cx - cell * 0.5).toFixed(2)}" y="${(cy - cell * 0.5).toFixed(2)}" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" fill="${color}"/>`);
     }
   }
 
