@@ -1,12 +1,13 @@
 // RUTA: apps/admin/src/lib/qrArtistico.ts
 // Genera el QR "sello dorado J&M": matriz de módulos 100% dorada con el
-// círculo J&M superpuesto en el centro sobre un halo blanco, al estilo de
-// un QR con logo estándar. Verificado con jsQR: el logo "esculpido" en los
-// propios módulos (técnica anterior) obligaba a elegir entre un logo
-// legible que tapaba demasiados módulos y fallaba el escaneo, o un logo
-// tan chico que "J&M" se volvía irreconocible — el overlay sólido con
-// margen blanco da máxima legibilidad en ambos frentes a la vez, porque
-// la corrección de errores 'H' reconstruye los módulos que el halo tapa.
+// logo completo (diamante + J&M + volutas + "Decoraciones y Eventos")
+// superpuesto en el centro sobre un halo blanco, al estilo de un QR con
+// logo estándar. Verificado con jsQR: el logo "esculpido" en los propios
+// módulos (técnica anterior) obligaba a elegir entre un logo legible que
+// tapaba demasiados módulos y fallaba el escaneo, o uno tan chico que el
+// texto se volvía irreconocible — el overlay sólido con margen blanco da
+// máxima legibilidad en ambos frentes, porque la corrección de errores
+// 'H' reconstruye los módulos que el halo tapa.
 import QRCode from 'qrcode';
 import sharp from 'sharp';
 import path from 'node:path';
@@ -20,9 +21,9 @@ import path from 'node:path';
 // del lote de prueba.
 const DORADO = '#a3760a';
 const LOGO_PATH = path.join(process.cwd(), 'public', 'logo-watermark.png');
-// Círculo J&M compacto (sin el texto "DECORACIONES Y EVENTOS" ni las
-// volutas laterales) — recorte cuadrado dentro del lienzo 512x512 del PNG.
-const LOGO_BOX = { left: 190, top: 200, width: 320 - 190, height: 330 - 200 };
+// Logo completo (diamante + círculo J&M + volutas + texto) dentro del
+// lienzo 512x512 del PNG — franja ancha, no cuadrada.
+const LOGO_BOX = { left: 17, top: 150, width: 499 - 17, height: 365 - 150 };
 
 interface Opts {
   /** Tamaño final del PNG cuadrado, en px. */
@@ -30,7 +31,7 @@ interface Opts {
 }
 
 /**
- * Genera el PNG del QR sello dorado con el círculo J&M superpuesto.
+ * Genera el PNG del QR sello dorado con el logo J&M superpuesto.
  * data: contenido a codificar (la URL de la cámara del invitado).
  */
 export async function generarQrArtistico(data: string, { size = 1000 }: Opts = {}): Promise<Buffer> {
@@ -66,19 +67,25 @@ export async function generarQrArtistico(data: string, { size = 1000 }: Opts = {
   `;
   const qrPng = await sharp(Buffer.from(svg)).png().toBuffer();
 
-  // Logo sólido superpuesto (no "esculpido" en los módulos): 30% del
+  // Logo sólido superpuesto (no "esculpido" en los módulos): 35% del
   // ancho del QR, verificado con jsQR que sigue escaneando gracias a la
-  // corrección de errores 'H' — a partir de ~35% empieza a fallar en
-  // URLs largas que ya usan una versión de QR más densa.
-  const logoSize = Math.round(size * 0.28);
+  // corrección de errores 'H' — a partir de ~38% empieza a fallar en
+  // URLs cortas que generan una versión de QR menos densa.
+  const logoAspect = LOGO_BOX.width / LOGO_BOX.height;
+  const logoW = Math.round(size * 0.35);
+  const logoH = Math.round(logoW / logoAspect);
   const logoResized = await sharp(LOGO_PATH)
     .extract(LOGO_BOX)
-    .resize(logoSize, logoSize, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .resize(logoW, logoH, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .toBuffer();
 
-  const haloSize = Math.round(logoSize * 1.18);
+  // Halo en forma de "píldora" (rectángulo con esquinas muy redondeadas):
+  // el logo es una franja ancha, un halo circular dejaría las esquinas
+  // del texto pegadas al borde o el halo desperdiciaría espacio arriba/abajo.
+  const haloW = Math.round(logoW * 1.15);
+  const haloH = Math.round(logoH * 1.35);
   const halo = await sharp(
-    Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${haloSize}" height="${haloSize}"><circle cx="${haloSize / 2}" cy="${haloSize / 2}" r="${haloSize / 2}" fill="#ffffff"/></svg>`)
+    Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${haloW}" height="${haloH}"><rect width="${haloW}" height="${haloH}" rx="${Math.round(haloH * 0.25)}" fill="#ffffff"/></svg>`)
   ).png().toBuffer();
 
   return sharp(qrPng)
