@@ -11,11 +11,14 @@ import type { CamaraInvitadoLink } from '@/types';
 import { Camera, QrCode, ChevronDown, Image as ImageIcon, Video, Download, Power, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// El QR "sello dorado" se genera server-side (/api/qr-artistico): los puntos
-// dorados del propio código dibujan el círculo J&M en el centro, en vez de
-// pegarle encima una imagen plana con fondo blanco — ver src/lib/qrArtistico.ts.
+// El QR "sello dorado" se genera server-side (/api/qr-artistico) con el
+// logo J&M completo superpuesto en el centro — ver src/lib/qrArtistico.ts.
+// La respuesta se cachea 1 año (immutable): "v=" cambia solo cuando el
+// diseño del QR cambia, para forzar que el navegador/CDN pida el PNG
+// nuevo en vez de servir uno viejo con la misma URL de datos.
+const QR_DESIGN_VERSION = 2;
 function urlQrArtistico(url: string, size: number): string {
-  return `/api/qr-artistico?data=${encodeURIComponent(url)}&size=${size}`;
+  return `/api/qr-artistico?data=${encodeURIComponent(url)}&size=${size}&v=${QR_DESIGN_VERSION}`;
 }
 
 interface AlbumOpt { id: string; titulo: string; }
