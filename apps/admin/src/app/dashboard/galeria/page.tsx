@@ -17,7 +17,11 @@ import { revalidarWeb } from '@/lib/revalidateWeb';
 
 const BLANK = { categoria: 'General', subcategoria: '', tipo: 'imagen', visible: true, alt: '', albumId: '', sonidoPermitido: false };
 
-const TIPOS_EVENTO_ALBUM = ['Quinceañero', 'Cumpleaños', 'Boda', 'Baby Shower', 'Corporativo', 'Bautizo', 'Graduación', 'Otro'];
+// "Quinceañeros" (plural) para que coincida exactamente con el nombre de
+// categoría usado en la página de Galería y en /servicios/quinceanios
+// (ver ServicioClient.tsx) — de lo contrario el filtro por categoría no
+// encuentra las fotos de estos álbumes.
+const TIPOS_EVENTO_ALBUM = ['Quinceañeros', 'Cumpleaños', 'Boda', 'Baby Shower', 'Corporativo', 'Bautizo', 'Graduación', 'Otro'];
 
 const ALBUM_BLANK = {
   titulo: '', tipoEvento: '', cliente: '', fecha: new Date().toISOString().slice(0, 10),
