@@ -40,17 +40,19 @@ body {
   align-items: center;
   justify-content: center;
   padding: clamp(2rem, 6vw, 5rem) 1.25rem;
-  background:
-    radial-gradient(circle at 20% 15%, rgba(255, 214, 228, 0.55) 0%, transparent 45%),
-    radial-gradient(circle at 82% 85%, rgba(255, 226, 205, 0.55) 0%, transparent 45%),
-    linear-gradient(160deg, #fdeef2 0%, #fdf3ee 45%, #fbeadf 100%);
-  background-size: 200% 200%, 200% 200%, 100% 100%;
+  background-image:
+    radial-gradient(circle at 20% 15%, rgba(255, 214, 228, 0.35) 0%, transparent 45%),
+    radial-gradient(circle at 82% 85%, rgba(255, 226, 205, 0.35) 0%, transparent 45%),
+    url('/flores-fondo.png');
+  background-size: 200% 200%, 200% 200%, cover;
+  background-position: 0% 0%, 100% 100%, center;
+  background-repeat: no-repeat;
   animation: bg-drift 22s var(--ease-premium) infinite alternate;
 }
 
 @keyframes bg-drift {
-  0%   { background-position: 0% 0%, 100% 100%, 0 0; }
-  100% { background-position: 20% 15%, 80% 85%, 0 0; }
+  0%   { background-position: 0% 0%, 100% 100%, center; }
+  100% { background-position: 20% 15%, 80% 85%, center; }
 }
 
 .page-bg::after {
@@ -59,26 +61,6 @@ body {
   inset: 0;
   pointer-events: none;
   background: radial-gradient(ellipse at center, transparent 45%, rgba(90, 35, 55, 0.14) 100%);
-}
-
-.floral-corner {
-  position: absolute;
-  width: min(46vw, 460px);
-  height: min(46vw, 460px);
-  background-image: url('/flores-fondo.png');
-  background-size: 200% 200%;
-  filter: blur(0.5px) saturate(1.05);
-  opacity: 0.9;
-  pointer-events: none;
-}
-.floral-corner.tl { top: -6%; left: -8%; background-position: 0% 0%; }
-.floral-corner.br { bottom: -6%; right: -8%; background-position: 100% 100%; transform: rotate(180deg); }
-
-.floral-corner::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, transparent 40%, #fdf3ee 78%);
 }
 
 /* Floating light particles */
@@ -159,9 +141,11 @@ body {
   box-shadow:
     0 0 0 4px rgba(212, 175, 55, 0.1),
     0 14px 30px -10px rgba(212, 175, 55, 0.45);
-  animation: logo-float 6s ease-in-out infinite;
-  opacity: 0;
-  animation: fade-up 0.7s var(--ease-premium) 0.1s both, logo-float 6s ease-in-out 0.8s infinite;
+  animation: logo-in 0.7s var(--ease-premium) 0.1s both, logo-float 6s ease-in-out 0.8s infinite;
+}
+@keyframes logo-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes logo-float {
   0%, 100% { transform: translateY(0) rotate(0deg); }
