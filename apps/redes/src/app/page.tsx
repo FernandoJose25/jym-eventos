@@ -133,9 +133,6 @@ export default function RedesPage() {
 
   return (
     <main className="page-bg">
-      <div className="floral-corner tl" aria-hidden="true" />
-      <div className="floral-corner br" aria-hidden="true" />
-
       {PARTICLES.map((p, i) => (
         <span
           key={i}
