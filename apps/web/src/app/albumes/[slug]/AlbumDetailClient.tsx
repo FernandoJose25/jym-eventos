@@ -27,10 +27,17 @@ export default function AlbumDetailClient({ fotos }: { fotos: AlbumFoto[] }) {
 
   if (fotos.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '4rem' }}>
-        <p style={{ fontSize: '3rem', marginBottom: 12 }}>📷</p>
-        <p style={{ color: '#64748b', fontSize: '1rem' }}>
-          Este álbum todavía no tiene fotos publicadas.
+      <div style={{
+        textAlign: 'center', padding: '4.5rem 2rem', borderRadius: 20,
+        background: 'linear-gradient(135deg,#f8fafc,#eef2f7)',
+        border: '1px dashed #cbd5e1',
+      }}>
+        <p style={{ fontSize: '3rem', marginBottom: 14 }}>✨</p>
+        <p style={{ color: '#1e293b', fontSize: '1.15rem', fontWeight: 700, marginBottom: 8 }}>
+          Próximamente más fotos
+        </p>
+        <p style={{ color: '#64748b', fontSize: '0.95rem', maxWidth: 420, margin: '0 auto' }}>
+          Estamos preparando el material de este evento. Vuelve pronto para ver las fotos y videos.
         </p>
       </div>
     );
