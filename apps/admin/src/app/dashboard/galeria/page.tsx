@@ -17,11 +17,13 @@ import { revalidarWeb } from '@/lib/revalidateWeb';
 
 const BLANK = { categoria: 'General', subcategoria: '', tipo: 'imagen', visible: true, alt: '', albumId: '', sonidoPermitido: false };
 
-// "Quinceañeros" (plural) para que coincida exactamente con el nombre de
-// categoría usado en la página de Galería y en /servicios/quinceanios
-// (ver ServicioClient.tsx) — de lo contrario el filtro por categoría no
-// encuentra las fotos de estos álbumes.
-const TIPOS_EVENTO_ALBUM = ['Quinceañeros', 'Cumpleaños', 'Boda', 'Baby Shower', 'Corporativo', 'Bautizo', 'Graduación', 'Otro'];
+// Tipos de evento "de respaldo" — solo se usan si por algún motivo la
+// colección `services` aún no cargó. La lista real y editable vive en
+// Firestore (colección `services`, la misma que gestiona /dashboard/servicios
+// y alimenta el menú "Servicios" de la web pública), para que el tipo de
+// evento del álbum siempre use el mismo título exacto que las categorías
+// reales del negocio y el filtro por categoría de la Galería no se rompa.
+const TIPOS_EVENTO_FALLBACK = ['Bodas', 'Quinceañeros', 'Cumpleaños', 'Otro'];
 
 const ALBUM_BLANK = {
   titulo: '', tipoEvento: '', cliente: '', fecha: new Date().toISOString().slice(0, 10),
@@ -93,6 +95,9 @@ export default function GaleriaPage() {
   const [cats, setCats] = useState<string[]>(Object.keys(SUBCATS));
   const { open } = useModal();
   const searchRef = useRef<HTMLInputElement>(null);
+  // Álbumes cuyo grupo el usuario colapsó manualmente en la pestaña "Fotos y
+  // videos" — por defecto todos empiezan expandidos.
+  const [gruposColapsados, setGruposColapsados] = useState<Set<string>>(new Set());
 
   // Álbumes reales (colección `albums`) — para el select del formulario,
   // el badge en cada miniatura y la agrupación en lote desde el grid.
@@ -519,8 +524,186 @@ export default function GaleriaPage() {
     [tipoFiltered, searchQ]
   );
 
+  // Agrupa las fotos que pertenecen a un álbum bajo su propio bloque (con
+  // portada + contador), en vez de mezclarlas sueltas entre cientos de fotos
+  // — con muchos álbumes de invitados la grilla plana se vuelve imposible de
+  // leer. Las fotos sin albumId (subidas manuales, sueltas) quedan aparte.
+  // Todo — grupos y sueltas — ordenado por fecha de subida descendente.
+  const gruposDeAlbum = useMemo(() => {
+    const porAlbum = new Map<string, any[]>();
+    const sueltas: any[] = [];
+    for (const it of filtrados) {
+      if (it.albumId) {
+        if (!porAlbum.has(it.albumId)) porAlbum.set(it.albumId, []);
+        porAlbum.get(it.albumId)!.push(it);
+      } else {
+        sueltas.push(it);
+      }
+    }
+    const grupos = [...porAlbum.entries()].map(([albumId, fotos]) => {
+      const album = albumesDisponibles.find(a => a.id === albumId);
+      const fechaMasReciente = Math.max(...fotos.map(f => new Date(f.createdAt || 0).getTime()));
+      return { albumId, album, fotos, fechaMasReciente };
+    });
+    grupos.sort((a, b) => b.fechaMasReciente - a.fechaMasReciente);
+    sueltas.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    return { grupos, sueltas };
+  }, [filtrados, albumesDisponibles]);
+
+  const toggleGrupoColapsado = (albumId: string) => setGruposColapsados(prev => {
+    const next = new Set(prev);
+    if (next.has(albumId)) next.delete(albumId); else next.add(albumId);
+    return next;
+  });
+
   const activeCount = items.filter(i => i.visible).length;
   const hiddenCount = items.filter(i => !i.visible).length;
+
+  // Tarjeta individual de foto/video — usada tanto dentro de un grupo de
+  // álbum como en la sección "Sueltas", para no duplicar este JSX.
+  const renderTarjetaFoto = (item: any) => {
+    const isSel = selected.has(item.id);
+    const album = item.albumId ? albumesDisponibles.find(a => a.id === item.albumId) : null;
+    return (
+      <div key={item.id}
+        style={{
+          position: 'relative', borderRadius: 14, overflow: 'hidden', aspectRatio: '4/3',
+          border: isSel ? '2.5px solid #1e3a5f' : item.visible ? 'none' : '2px solid #fde68a',
+          opacity: item.visible ? 1 : .65,
+          background: '#e2e8f0',
+          boxShadow: isSel ? '0 0 0 3px rgba(30,58,95,0.2)' : '0 2px 8px rgba(10,22,40,0.08)',
+          transition: 'transform .2s, box-shadow .2s',
+          cursor: selMode ? 'pointer' : undefined,
+        }}
+        onClick={() => { if (selMode) toggleSelected(item.id); }}
+        onMouseEnter={e => { if (selMode) return; const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 20px rgba(10,22,40,0.15)'; const ov = el.querySelector('.adm-ov') as HTMLElement | null; if (ov) ov.style.opacity = '1'; }}
+        onMouseLeave={e => { if (selMode) return; const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 2px 8px rgba(10,22,40,0.08)'; const ov = el.querySelector('.adm-ov') as HTMLElement | null; if (ov) ov.style.opacity = '0'; }}>
+
+        {item.url && (
+          item.tipo === 'video' || item.url?.match(/\.(mp4|webm|mov)(\?|$)/i)
+            ? <video src={cxVideo(item.url)} muted preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <img src={cxThumb(item.url)} alt={item.alt || 'Evento'} loading="lazy" decoding="async"
+              style={{
+                width: '100%', height: '100%', objectFit: 'cover',
+                objectPosition: `${(item.focalX ?? 0.5) * 100}% ${(item.focalY ?? 0.5) * 100}%`
+              }} />
+        )}
+
+        {/* Checkbox de selección */}
+        {selMode && (
+          <div style={{
+            position: 'absolute', top: 8, left: 8, width: 24, height: 24, borderRadius: 7,
+            background: isSel ? '#1e3a5f' : 'rgba(255,255,255,0.92)', border: isSel ? 'none' : '1.5px solid #cbd5e1',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3,
+          }}>
+            {isSel && <CheckSquare size={14} color="#fff" />}
+          </div>
+        )}
+
+        {/* Overlay con acciones */}
+        {!selMode && (
+          <div className="adm-ov"
+            style={{
+              position: 'absolute', inset: 0, background: 'rgba(10,22,40,0.7)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 8, opacity: 0, transition: 'opacity .25s'
+            }}>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {/* Editar */}
+              <button onClick={() => openEdit(item)}
+                title="Editar"
+                style={{
+                  width: 34, height: 34, borderRadius: 8, cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(212,160,23,.5)',
+                  background: 'rgba(212,160,23,.2)', color: '#fde68a', transition: 'background .2s'
+                }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,.4)'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,.2)'}>
+                <Pencil size={13} />
+              </button>
+              {/* Visibilidad */}
+              <button onClick={() => toggleVisible(item)}
+                title={item.visible ? 'Ocultar' : 'Mostrar'}
+                style={{
+                  width: 34, height: 34, borderRadius: 8, cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,.3)',
+                  background: 'rgba(255,255,255,.1)', color: '#fff', transition: 'background .2s'
+                }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.25)'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.1)'}>
+                {item.visible ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+              {/* Eliminar */}
+              <button onClick={() => handleDelete(item)}
+                title="Eliminar"
+                style={{
+                  width: 34, height: 34, borderRadius: 8, cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239,68,68,.4)',
+                  background: 'rgba(239,68,68,.2)', color: '#fca5a5', transition: 'background .2s'
+                }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,.4)'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,.2)'}>
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Badge categoría */}
+        <div style={{ position: 'absolute', bottom: 6, left: 6, pointerEvents: 'none', display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start' }}>
+          <span style={{
+            display: 'block', background: 'rgba(10,22,40,.8)', color: '#fff',
+            fontSize: '0.58rem', padding: '1px 7px', borderRadius: 999
+          }}>
+            {item.categoria || 'General'}
+          </span>
+          {item.subcategoria && (
+            <span style={{
+              display: 'block', background: 'rgba(212,160,23,.8)', color: '#0a1628',
+              fontSize: '0.55rem', padding: '1px 6px', borderRadius: 999, fontWeight: 700
+            }}>
+              {item.subcategoria}
+            </span>
+          )}
+          {album && (
+            <span style={{
+              display: 'block', background: 'rgba(124,58,237,.88)', color: '#fff',
+              fontSize: '0.55rem', padding: '1px 6px', borderRadius: 999, fontWeight: 700, maxWidth: 140,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+            }}>
+              📁 {album.titulo}
+            </span>
+          )}
+        </div>
+
+        {/* Estado de publicación — siempre visible, no solo al pasar el mouse */}
+        {!item.visible ? (
+          <div style={{
+            position: 'absolute', top: 6, right: 6, background: '#f59e0b', color: '#0a1628',
+            fontSize: '0.6rem', fontWeight: 700, padding: '2px 7px', borderRadius: 999, pointerEvents: 'none'
+          }}>
+            OCULTO
+          </div>
+        ) : (
+          <div style={{
+            position: 'absolute', top: 6, right: 6, background: 'rgba(34,197,94,.9)', color: '#fff',
+            fontSize: '0.6rem', fontWeight: 700, padding: '2px 7px', borderRadius: 999, pointerEvents: 'none'
+          }}>
+            ✓ Publicado
+          </div>
+        )}
+
+        {(item.tipo === 'video' || item.url?.match(/\.(mp4|webm|mov)$/i)) && (
+          <div style={{
+            position: 'absolute', top: 6, left: selMode ? 38 : 6, background: 'rgba(10,22,40,.8)', color: '#fff',
+            fontSize: '0.65rem', padding: '2px 7px', borderRadius: 999, pointerEvents: 'none'
+          }}>
+            🎬
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -920,150 +1103,49 @@ export default function GaleriaPage() {
           )}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
-          {filtrados.map(item => {
-            const isSel = selected.has(item.id);
-            const album = item.albumId ? albumesDisponibles.find(a => a.id === item.albumId) : null;
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Fotos agrupadas por álbum — evita que cientos de fotos de invitados
+              se mezclen sueltas en la grilla. Ordenadas por fecha más reciente. */}
+          {gruposDeAlbum.grupos.map(({ albumId, album, fotos }) => {
+            const colapsado = gruposColapsados.has(albumId);
             return (
-              <div key={item.id}
-                style={{
-                  position: 'relative', borderRadius: 14, overflow: 'hidden', aspectRatio: '4/3',
-                  border: isSel ? '2.5px solid #1e3a5f' : item.visible ? 'none' : '2px solid #fde68a',
-                  opacity: item.visible ? 1 : .65,
-                  background: '#e2e8f0',
-                  boxShadow: isSel ? '0 0 0 3px rgba(30,58,95,0.2)' : '0 2px 8px rgba(10,22,40,0.08)',
-                  transition: 'transform .2s, box-shadow .2s',
-                  cursor: selMode ? 'pointer' : undefined,
-                }}
-                onClick={() => { if (selMode) toggleSelected(item.id); }}
-                onMouseEnter={e => { if (selMode) return; const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 8px 20px rgba(10,22,40,0.15)'; const ov = el.querySelector('.adm-ov') as HTMLElement | null; if (ov) ov.style.opacity = '1'; }}
-                onMouseLeave={e => { if (selMode) return; const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 2px 8px rgba(10,22,40,0.08)'; const ov = el.querySelector('.adm-ov') as HTMLElement | null; if (ov) ov.style.opacity = '0'; }}>
-
-                {item.url && (
-                  item.tipo === 'video' || item.url?.match(/\.(mp4|webm|mov)(\?|$)/i)
-                    ? <video src={cxVideo(item.url)} muted preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <img src={cxThumb(item.url)} alt={item.alt || 'Evento'} loading="lazy" decoding="async"
-                      style={{
-                        width: '100%', height: '100%', objectFit: 'cover',
-                        objectPosition: `${(item.focalX ?? 0.5) * 100}% ${(item.focalY ?? 0.5) * 100}%`
-                      }} />
-                )}
-
-                {/* Checkbox de selección */}
-                {selMode && (
-                  <div style={{
-                    position: 'absolute', top: 8, left: 8, width: 24, height: 24, borderRadius: 7,
-                    background: isSel ? '#1e3a5f' : 'rgba(255,255,255,0.92)', border: isSel ? 'none' : '1.5px solid #cbd5e1',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3,
-                  }}>
-                    {isSel && <CheckSquare size={14} color="#fff" />}
-                  </div>
-                )}
-
-                {/* Overlay con acciones */}
-                {!selMode && (
-                  <div className="adm-ov"
-                    style={{
-                      position: 'absolute', inset: 0, background: 'rgba(10,22,40,0.7)',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                      gap: 8, opacity: 0, transition: 'opacity .25s'
-                    }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {/* Editar */}
-                      <button onClick={() => openEdit(item)}
-                        title="Editar"
-                        style={{
-                          width: 34, height: 34, borderRadius: 8, cursor: 'pointer', display: 'flex',
-                          alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(212,160,23,.5)',
-                          background: 'rgba(212,160,23,.2)', color: '#fde68a', transition: 'background .2s'
-                        }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,.4)'}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,.2)'}>
-                        <Pencil size={13} />
-                      </button>
-                      {/* Visibilidad */}
-                      <button onClick={() => toggleVisible(item)}
-                        title={item.visible ? 'Ocultar' : 'Mostrar'}
-                        style={{
-                          width: 34, height: 34, borderRadius: 8, cursor: 'pointer', display: 'flex',
-                          alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,.3)',
-                          background: 'rgba(255,255,255,.1)', color: '#fff', transition: 'background .2s'
-                        }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.25)'}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,.1)'}>
-                        {item.visible ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
-                      {/* Eliminar */}
-                      <button onClick={() => handleDelete(item)}
-                        title="Eliminar"
-                        style={{
-                          width: 34, height: 34, borderRadius: 8, cursor: 'pointer', display: 'flex',
-                          alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(239,68,68,.4)',
-                          background: 'rgba(239,68,68,.2)', color: '#fca5a5', transition: 'background .2s'
-                        }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,.4)'}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,.2)'}>
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Badge categoría */}
-                <div style={{ position: 'absolute', bottom: 6, left: 6, pointerEvents: 'none', display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start' }}>
-                  <span style={{
-                    display: 'block', background: 'rgba(10,22,40,.8)', color: '#fff',
-                    fontSize: '0.58rem', padding: '1px 7px', borderRadius: 999
-                  }}>
-                    {item.categoria || 'General'}
+              <div key={albumId} style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                <button onClick={() => toggleGrupoColapsado(albumId)} style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '0.75rem 1rem',
+                  background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                }}>
+                  {album?.coverUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={cxThumb(album.coverUrl)} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+                  )}
+                  <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0a1628' }}>
+                    📁 {album?.titulo || 'Álbum eliminado'}
                   </span>
-                  {item.subcategoria && (
-                    <span style={{
-                      display: 'block', background: 'rgba(212,160,23,.8)', color: '#0a1628',
-                      fontSize: '0.55rem', padding: '1px 6px', borderRadius: 999, fontWeight: 700
-                    }}>
-                      {item.subcategoria}
-                    </span>
-                  )}
-                  {album && (
-                    <span style={{
-                      display: 'block', background: 'rgba(124,58,237,.88)', color: '#fff',
-                      fontSize: '0.55rem', padding: '1px 6px', borderRadius: 999, fontWeight: 700, maxWidth: 140,
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-                    }}>
-                      📁 {album.titulo}
-                    </span>
-                  )}
-                </div>
-
-                {/* Estado de publicación — siempre visible, no solo al pasar el mouse */}
-                {!item.visible ? (
-                  <div style={{
-                    position: 'absolute', top: 6, right: 6, background: '#f59e0b', color: '#0a1628',
-                    fontSize: '0.6rem', fontWeight: 700, padding: '2px 7px', borderRadius: 999, pointerEvents: 'none'
-                  }}>
-                    OCULTO
-                  </div>
-                ) : (
-                  <div style={{
-                    position: 'absolute', top: 6, right: 6, background: 'rgba(34,197,94,.9)', color: '#fff',
-                    fontSize: '0.6rem', fontWeight: 700, padding: '2px 7px', borderRadius: 999, pointerEvents: 'none'
-                  }}>
-                    ✓ Publicado
-                  </div>
-                )}
-
-                {(item.tipo === 'video' || item.url?.match(/\.(mp4|webm|mov)$/i)) && (
-                  <div style={{
-                    position: 'absolute', top: 6, left: selMode ? 38 : 6, background: 'rgba(10,22,40,.8)', color: '#fff',
-                    fontSize: '0.65rem', padding: '2px 7px', borderRadius: 999, pointerEvents: 'none'
-                  }}>
-                    🎬
+                  <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{fotos.length} foto{fotos.length === 1 ? '' : 's'}</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: '#94a3b8' }}>{colapsado ? 'Mostrar ▾' : 'Ocultar ▴'}</span>
+                </button>
+                {!colapsado && (
+                  <div style={{ padding: '0 1rem 1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
+                    {fotos.map(item => renderTarjetaFoto(item))}
                   </div>
                 )}
               </div>
             );
           })}
+
+          {/* Fotos sueltas (sin álbum) — subidas manuales individuales */}
+          {gruposDeAlbum.sueltas.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {gruposDeAlbum.grupos.length > 0 && (
+                <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em', margin: 0 }}>
+                  Sueltas (sin álbum)
+                </p>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
+                {gruposDeAlbum.sueltas.map(item => renderTarjetaFoto(item))}
+              </div>
+            </div>
+          )}
         </div>
       ))}
 
@@ -1118,7 +1200,8 @@ export default function GaleriaPage() {
                         onChange={e => setAlbumFormData((p: any) => ({ ...p, tipoEvento: e.target.value }))}
                         className="admin-input">
                         <option value="">— Sin especificar —</option>
-                        {TIPOS_EVENTO_ALBUM.map(t => <option key={t}>{t}</option>)}
+                        {(cats.filter(c => c !== 'General').length ? cats.filter(c => c !== 'General') : TIPOS_EVENTO_FALLBACK)
+                          .map(t => <option key={t}>{t}</option>)}
                       </select>
                     </div>
                     <div style={{ flex: 1 }}>
