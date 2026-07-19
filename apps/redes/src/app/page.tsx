@@ -153,7 +153,8 @@ export default function RedesPage() {
 
         <div className="card">
           <div className="logo-ring">
-            <span className="logo-text">J&amp;M</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-jym.png" alt="J&M Decoraciones y Eventos" className="logo-img" />
           </div>
 
           <div className="title-row">
