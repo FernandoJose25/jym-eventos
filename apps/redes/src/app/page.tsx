@@ -61,24 +61,57 @@ const WA_ICON = (
   </svg>
 );
 
-const MAIL_ICON = (
-  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <rect x="3" y="5" width="18" height="14" rx="3" />
-    <path d="M4 7l8 6 8-6" />
-  </svg>
-);
-
 const CHEVRON = (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 6l6 6-6 6" />
   </svg>
 );
 
+const VERIFIED_BADGE = (
+  <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor">
+    <path d="M12 1.5l2.4 1.6 2.85-.4 1.1 2.65 2.65 1.1-.4 2.85 1.6 2.4-1.6 2.4.4 2.85-2.65 1.1-1.1 2.65-2.85-.4L12 22.5l-2.4-1.6-2.85.4-1.1-2.65-2.65-1.1.4-2.85L1.8 12l1.6-2.4-.4-2.85 2.65-1.1 1.1-2.65 2.85.4L12 1.5z" />
+    <path d="M8.6 12.3l2.2 2.2 4.6-4.6" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 const LINKS = [
-  { key: 'instagram', label: 'Síguenos en Instagram', icon: IG_ICON, border: '#f2b6cf' },
-  { key: 'tiktok', label: 'Síguenos en TikTok', icon: TIKTOK_ICON, border: '#bfe6e6' },
-  { key: 'facebook', label: 'Síguenos en Facebook', icon: FB_ICON, border: '#b9d6f7' },
-  { key: 'whatsapp', label: 'Escríbenos por WhatsApp', icon: WA_ICON, border: '#bfe8c9' },
+  {
+    key: 'instagram',
+    label: 'Síguenos en Instagram',
+    icon: IG_ICON,
+    border: 'rgba(214, 41, 118, 0.35)',
+    glow: 'rgba(214, 41, 118, 0.4)',
+  },
+  {
+    key: 'tiktok',
+    label: 'Síguenos en TikTok',
+    icon: TIKTOK_ICON,
+    border: 'rgba(37, 211, 214, 0.35)',
+    glow: 'rgba(37, 211, 214, 0.4)',
+  },
+  {
+    key: 'facebook',
+    label: 'Síguenos en Facebook',
+    icon: FB_ICON,
+    border: 'rgba(24, 119, 242, 0.35)',
+    glow: 'rgba(24, 119, 242, 0.4)',
+  },
+  {
+    key: 'whatsapp',
+    label: 'Escríbenos por WhatsApp',
+    icon: WA_ICON,
+    border: 'rgba(37, 211, 102, 0.35)',
+    glow: 'rgba(37, 211, 102, 0.4)',
+  },
+];
+
+const PARTICLES = [
+  { top: '12%', left: '8%', size: 6, delay: '0s' },
+  { top: '22%', left: '88%', size: 4, delay: '2s' },
+  { top: '68%', left: '6%', size: 5, delay: '4s' },
+  { top: '80%', left: '92%', size: 7, delay: '1.4s' },
+  { top: '45%', left: '95%', size: 3, delay: '3.2s' },
+  { top: '55%', left: '3%', size: 4, delay: '5.6s' },
 ];
 
 export default function RedesPage() {
@@ -98,153 +131,98 @@ export default function RedesPage() {
     return value;
   };
 
-  const domain = (() => {
-    try {
-      return new URL(d.instagram || 'https://jmdecoracionesyeventos.com').hostname.includes('instagram')
-        ? 'jmdecoracionesyeventos.com'
-        : 'jmdecoracionesyeventos.com';
-    } catch {
-      return 'jmdecoracionesyeventos.com';
-    }
-  })();
-
   return (
-    <main
-      style={{
-        minHeight: '100dvh',
-        background:
-          'linear-gradient(160deg,#fbe4ec 0%,#fdf1ee 50%,#fbe9e0 100%)',
-        backgroundImage: 'url(/flores-fondo.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2.5rem 1.25rem',
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 420,
-          background: '#fffdfc',
-          borderRadius: 26,
-          boxShadow: '0 30px 70px -25px rgba(150,50,90,.35)',
-          padding: '2.25rem 1.75rem 2rem',
-          textAlign: 'center',
-          position: 'relative',
-        }}
-      >
-        <div
+    <main className="page-bg">
+      <div className="floral-corner tl" aria-hidden="true" />
+      <div className="floral-corner br" aria-hidden="true" />
+
+      {PARTICLES.map((p, i) => (
+        <span
+          key={i}
+          className="particle"
+          aria-hidden="true"
           style={{
-            width: 100,
-            height: 100,
-            margin: '0 auto 1.1rem',
-            borderRadius: '50%',
-            border: '2px solid #d9ac52',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: '#fffefb',
+            top: p.top,
+            left: p.left,
+            width: p.size,
+            height: p.size,
+            animationDelay: p.delay,
           }}
-        >
-          <span
-            style={{
-              fontFamily: 'var(--font-playfair)',
-              fontSize: '1.9rem',
-              fontStyle: 'italic',
-              fontWeight: 700,
-              color: '#c9932a',
-            }}
-          >
-            J&amp;M
-          </span>
+        />
+      ))}
+
+      <div className="card-wrap">
+        <div className="card-glow" aria-hidden="true" />
+
+        <div className="card">
+          <div className="logo-ring">
+            <span className="logo-text">J&amp;M</span>
+          </div>
+
+          <div className="title-row">
+            <h1 className="title">{d.titulo}</h1>
+            <span className="verified-badge" title="Cuenta verificada">
+              {VERIFIED_BADGE}
+            </span>
+          </div>
+
+          <p className="subtitle">
+            {d.subtitulo}
+            <br />
+            Decoración · Planificación · Experiencias
+          </p>
+
+          <div className="link-list">
+            {LINKS.map((l, i) => {
+              const href = hrefFor(l.key, (d as any)[l.key]);
+              if (!href) return null;
+              return (
+                <a
+                  key={l.key}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="link-btn"
+                  style={
+                    {
+                      '--btn-border': l.border,
+                      '--btn-glow': l.glow,
+                      '--stagger': `${0.4 + i * 0.1}s`,
+                      '--shimmer-delay': `${i * 1.1 + 2}s`,
+                    } as React.CSSProperties
+                  }
+                >
+                  <span className="link-icon">{l.icon}</span>
+                  <span className="link-label">{l.label}</span>
+                  <span className="link-arrow">{CHEVRON}</span>
+                </a>
+              );
+            })}
+          </div>
+
+          <div className="footer-icons">
+            {[
+              { href: hrefFor('instagram', d.instagram), icon: IG_ICON },
+              { href: hrefFor('tiktok', d.tiktok), icon: TIKTOK_ICON },
+              { href: hrefFor('facebook', d.facebook), icon: FB_ICON },
+              { href: hrefFor('whatsapp', d.whatsapp), icon: WA_ICON },
+            ]
+              .filter(x => x.href)
+              .map((x, i) => (
+                <a
+                  key={i}
+                  href={x.href!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="footer-icon"
+                >
+                  {x.icon}
+                </a>
+              ))}
+          </div>
+
+          <p className="footer-domain">jmdecoracionesyeventos.com</p>
         </div>
-
-        <h1
-          style={{
-            fontFamily: 'var(--font-playfair)',
-            fontSize: '1.4rem',
-            fontWeight: 700,
-            color: '#5a2338',
-            margin: '0 0 8px',
-          }}
-        >
-          {d.titulo}
-        </h1>
-        <p style={{ color: '#b98292', fontSize: '0.88rem', margin: '0 0 1.75rem', lineHeight: 1.5 }}>
-          {d.subtitulo}
-          <br />
-          Decoración · Planificación · Experiencias
-        </p>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {LINKS.map(l => {
-            const href = hrefFor(l.key, (d as any)[l.key]);
-            if (!href) return null;
-            return (
-              <a
-                key={l.key}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '0.85rem 1.1rem',
-                  borderRadius: 16,
-                  background: '#fff',
-                  border: `1.5px solid ${l.border}`,
-                  color: '#3d2530',
-                  textDecoration: 'none',
-                  fontWeight: 700,
-                  fontSize: '0.92rem',
-                  transition: 'transform .15s',
-                }}
-              >
-                <span style={{ flexShrink: 0, display: 'flex' }}>{l.icon}</span>
-                <span style={{ flex: 1, textAlign: 'left' }}>{l.label}</span>
-                <span style={{ color: '#c96a8b', flexShrink: 0, display: 'flex' }}>{CHEVRON}</span>
-              </a>
-            );
-          })}
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: '1.75rem' }}>
-          {[
-            { href: hrefFor('instagram', d.instagram), icon: IG_ICON },
-            { href: hrefFor('tiktok', d.tiktok), icon: TIKTOK_ICON },
-            { href: hrefFor('facebook', d.facebook), icon: FB_ICON },
-            { href: hrefFor('whatsapp', d.whatsapp), icon: WA_ICON },
-          ]
-            .filter(x => x.href)
-            .map((x, i) => (
-              <a
-                key={i}
-                href={x.href!}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: 0.55,
-                }}
-              >
-                {x.icon}
-              </a>
-            ))}
-        </div>
-
-        <p style={{ marginTop: '1.25rem', fontSize: '0.72rem', color: '#c9a3ad' }}>
-          {domain}
-        </p>
       </div>
     </main>
   );
