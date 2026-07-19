@@ -26,6 +26,8 @@ service cloud.firestore {
     // un álbum concreto (el endpoint /api/camara-invitado/sign ya validó que
     // el token existe y está activo antes de firmar el upload a Cloudinary;
     // esta regla solo valida la forma del documento que crea en Firestore).
+    // visible puede ser true o false: las fotos de invitado se publican
+    // automáticamente en el álbum sin aprobación manual.
     match /gallery_items/{id} {
       allow create: if
         request.resource.data.origen == 'invitado' &&
@@ -34,7 +36,7 @@ service cloud.firestore {
         request.resource.data.url is string &&
         request.resource.data.url.size() > 0 &&
         request.resource.data.tipo in ['imagen', 'video'] &&
-        request.resource.data.visible == false;
+        request.resource.data.visible is bool;
     }
   }
 }
