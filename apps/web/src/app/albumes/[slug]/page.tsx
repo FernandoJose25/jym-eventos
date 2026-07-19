@@ -92,14 +92,14 @@ export default async function Page(
             aria-hidden
             style={{
               position: 'absolute', inset: 0, width: '100%', height: '100%',
-              objectFit: 'cover', opacity: 0.22,
+              objectFit: 'cover', opacity: 0.55,
               objectPosition: `${(album.coverFocalX ?? 0.5) * 100}% ${(album.coverFocalY ?? 0.5) * 100}%`,
             }}
           />
         )}
         <div style={{
           position: 'absolute', inset: 0,
-          background: 'linear-gradient(135deg, rgba(5,13,26,0.75) 0%, rgba(10,22,40,0.85) 60%, rgba(30,58,95,0.9) 100%)',
+          background: 'linear-gradient(135deg, rgba(5,13,26,0.4) 0%, rgba(10,22,40,0.5) 60%, rgba(30,58,95,0.55) 100%)',
         }} />
         <div className="container" style={{ position: 'relative', zIndex: 10, textAlign: 'center' }}>
           <nav style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', marginBottom: 16 }}>
