@@ -137,9 +137,11 @@ export default async function Page(
       {/* Grid de fotos del álbum */}
       <section style={{ padding: '3rem 0 5rem', background: '#f8fafc', minHeight: '50vh' }}>
         <div className="container">
-          <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: '1.5rem', textAlign: 'right' }}>
-            {fotos.length} elemento{fotos.length !== 1 ? 's' : ''} en este álbum
-          </p>
+          {fotos.length > 0 && (
+            <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginBottom: '1.5rem', textAlign: 'right' }}>
+              {fotos.length} elemento{fotos.length !== 1 ? 's' : ''} en este álbum
+            </p>
+          )}
           <AlbumDetailClient fotos={fotos} />
         </div>
       </section>
