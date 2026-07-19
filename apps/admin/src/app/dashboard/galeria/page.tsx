@@ -95,9 +95,9 @@ export default function GaleriaPage() {
   const [cats, setCats] = useState<string[]>(Object.keys(SUBCATS));
   const { open } = useModal();
   const searchRef = useRef<HTMLInputElement>(null);
-  // Álbumes cuyo grupo el usuario colapsó manualmente en la pestaña "Fotos y
-  // videos" — por defecto todos empiezan expandidos.
-  const [gruposColapsados, setGruposColapsados] = useState<Set<string>>(new Set());
+  // Álbumes cuyo grupo el usuario expandió manualmente en la pestaña "Fotos y
+  // videos" — por defecto todos empiezan colapsados (comprimidos).
+  const [gruposExpandidos, setGruposExpandidos] = useState<Set<string>>(new Set());
 
   // Álbumes reales (colección `albums`) — para el select del formulario,
   // el badge en cada miniatura y la agrupación en lote desde el grid.
@@ -550,7 +550,7 @@ export default function GaleriaPage() {
     return { grupos, sueltas };
   }, [filtrados, albumesDisponibles]);
 
-  const toggleGrupoColapsado = (albumId: string) => setGruposColapsados(prev => {
+  const toggleGrupoColapsado = (albumId: string) => setGruposExpandidos(prev => {
     const next = new Set(prev);
     if (next.has(albumId)) next.delete(albumId); else next.add(albumId);
     return next;
@@ -1107,7 +1107,7 @@ export default function GaleriaPage() {
           {/* Fotos agrupadas por álbum — evita que cientos de fotos de invitados
               se mezclen sueltas en la grilla. Ordenadas por fecha más reciente. */}
           {gruposDeAlbum.grupos.map(({ albumId, album, fotos }) => {
-            const colapsado = gruposColapsados.has(albumId);
+            const colapsado = !gruposExpandidos.has(albumId);
             return (
               <div key={albumId} style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
                 <button onClick={() => toggleGrupoColapsado(albumId)} style={{
