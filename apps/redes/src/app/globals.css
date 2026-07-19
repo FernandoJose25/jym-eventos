@@ -328,12 +328,20 @@ body {
 }
 
 .footer-domain {
+  display: inline-block;
   margin-top: 1.4rem;
   font-size: 0.72rem;
   letter-spacing: 0.02em;
   color: var(--ink-soft);
+  text-decoration: none;
   opacity: 0;
   animation: fade-up 0.7s var(--ease-premium) 0.85s both;
+  transition: color 0.2s ease;
+}
+
+.footer-domain:hover {
+  color: var(--btn-accent, var(--ink-soft));
+  text-decoration: underline;
 }
 
 @media (prefers-reduced-motion: reduce) {

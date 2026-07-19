@@ -225,7 +225,14 @@ export default function RedesPage() {
               ))}
           </div>
 
-          <p className="footer-domain">jmdecoracionesyeventos.com</p>
+          <a
+            href="https://jmdecoracionesyeventos.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-domain"
+          >
+            jmdecoracionesyeventos.com
+          </a>
         </div>
       </div>
     </main>
