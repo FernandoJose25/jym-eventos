@@ -11,10 +11,10 @@ import { Share2, Instagram, Facebook, MessageCircle, Music2, QrCode, Download } 
 const DOC_ID = 'main';
 const REDES_URL = 'https://redes.jmdecoracionesyeventos.com';
 
-// Mismo generador "sello dorado" que usa la Cámara del Invitado — ver
-// src/lib/qrArtistico.ts. v=3 mantiene el mismo diseño ya validado.
+// Mismo generador que usa la Cámara del Invitado — ver src/lib/qrArtistico.ts.
+// v=4: QR en negro puro (máximo contraste) en vez del dorado anterior.
 function urlQrArtistico(url: string, size: number): string {
-  return `/api/qr-artistico?data=${encodeURIComponent(url)}&size=${size}&v=3`;
+  return `/api/qr-artistico?data=${encodeURIComponent(url)}&size=${size}&v=4`;
 }
 
 const DEFAULT_REDES = {
