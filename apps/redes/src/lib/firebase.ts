@@ -1,7 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import { getStorage } from 'firebase/storage';
 
 const cfg = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
@@ -16,19 +14,8 @@ const cfg = {
 const app = getApps().length ? getApp() : initializeApp(cfg);
 
 export const db = getFirestore(app);
-export const auth = getAuth(app);
-export const storage = getStorage(app);
-export default app;
 
-// Nombres REALES de colecciones en Firestore
+// Misma colección que edita el panel admin en Configuración > Redes Sociales.
 export const COL = {
-  SERVICIOS: 'services',
-  GALERIA: 'gallery_items',
-  ALBUMES: 'albums',
-  TESTIMONIOS: 'testimonials',
-  MENSAJES: 'mensajes',
-  USUARIOS: 'usuarios',
-  CONFIGURACION: 'site_config',
-  CAMARA_INVITADO: 'camara_invitado_links',
   REDES_SOCIALES: 'redes_sociales_config',
 } as const;
