@@ -12,13 +12,11 @@ import QRCode from 'qrcode';
 import sharp from 'sharp';
 import path from 'node:path';
 
-// Dorado oscurecido: #a3760a (usado antes) solo da un contraste WCAG de
-// ~4:1 sobre blanco, suficiente para pasar jsQR en laboratorio (imagen
-// PNG perfecta) pero insuficiente para muchas apps de cámara nativas en
-// condiciones reales (brillo de pantalla, reflejos, compresión, ángulo).
-// #6b4d07 sube el contraste a ~7.8:1 — mismo tono "dorado" a simple
-// vista (más bronce oscuro), pero con margen real de escaneo.
-const DORADO = '#6b4d07';
+// Negro puro: máximo contraste (21:1) y compatibilidad universal con
+// cualquier cámara/app de escaneo, incluso en poca luz o cámaras de
+// gama baja — el dorado (#6b4d07, ~7.8:1) seguía fallando en algunos
+// celulares aunque decodificara bien en laboratorio (jsQR).
+const DORADO = '#000000';
 const LOGO_PATH = path.join(process.cwd(), 'public', 'logo-watermark.png');
 // Logo completo (diamante + círculo J&M + volutas + texto) dentro del
 // lienzo 512x512 del PNG — franja ancha, no cuadrada.

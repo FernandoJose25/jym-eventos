@@ -1,6 +1,6 @@
 'use client';
 // RUTA: apps/admin/src/app/dashboard/camara-invitado/page.tsx
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, getDocs,
 } from 'firebase/firestore';
@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 // La respuesta se cachea 1 año (immutable): "v=" cambia solo cuando el
 // diseño del QR cambia, para forzar que el navegador/CDN pida el PNG
 // nuevo en vez de servir uno viejo con la misma URL de datos.
-const QR_DESIGN_VERSION = 3;
+const QR_DESIGN_VERSION = 4;
 function urlQrArtistico(url: string, size: number): string {
   return `/api/qr-artistico?data=${encodeURIComponent(url)}&size=${size}&v=${QR_DESIGN_VERSION}`;
 }
@@ -33,9 +33,7 @@ export default function CamaraInvitadoPage() {
   const [albums, setAlbums] = useState<AlbumOpt[]>([]);
   const [albumPickerOpen, setAlbumPickerOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [qrGenerado, setQrGenerado] = useState<Record<string, boolean>>({});
   const [uploadingPlantilla, setUploadingPlantilla] = useState<string | null>(null);
-  const qrUrls = useRef<Record<string, string>>({});
 
   useEffect(() => onSnapshot(
     query(collection(db, COL.CAMARA_INVITADO), orderBy('createdAt', 'desc')),
@@ -108,16 +106,13 @@ export default function CamaraInvitadoPage() {
     }
   };
 
-  const generarQr = useCallback((link: CamaraInvitadoLink) => {
+  const urlDestino = useCallback((link: CamaraInvitadoLink) => {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://jmdecoracionesyeventos.com';
-    const targetUrl = `${siteUrl.replace(/\/$/, '')}/c/${link.token}`;
-    qrUrls.current[link.id!] = targetUrl;
-    setQrGenerado(prev => ({ ...prev, [link.id!]: true }));
+    return `${siteUrl.replace(/\/$/, '')}/c/${link.token}`;
   }, []);
 
   const descargarQr = async (link: CamaraInvitadoLink) => {
-    const targetUrl = qrUrls.current[link.id!];
-    if (!targetUrl) return;
+    const targetUrl = urlDestino(link);
     try {
       const res = await fetch(urlQrArtistico(targetUrl, 1000));
       if (!res.ok) throw new Error();
@@ -270,39 +265,26 @@ export default function CamaraInvitadoPage() {
               <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{link.permiteVideo ? '(permitidos)' : '(deshabilitados)'}</span>
             </div>
 
-            {/* QR */}
+            {/* QR — fijo, derivado del token del álbum (no depende de un clic ni de estado de sesión) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 8, borderTop: '1px dashed #e2e8f0' }}>
-              <button
-                onClick={() => generarQr(link)}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={urlQrArtistico(urlDestino(link), 400)}
+                alt="QR de la cámara del invitado"
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 6, padding: '0.5rem 1rem', borderRadius: 10,
-                  border: 'none', background: 'linear-gradient(135deg,#1e3a5f,#2563eb)', color: '#fff',
-                  cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700,
+                  width: 210, height: 210, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
+                  padding: 4, objectFit: 'contain',
+                }}
+              />
+              <button
+                onClick={() => descargarQr(link)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, padding: '0.5rem 0.9rem', borderRadius: 10,
+                  border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer',
+                  fontSize: '0.78rem', fontWeight: 600, color: '#334155',
                 }}>
-                <QrCode size={15} /> Generar QR
+                <Download size={14} /> Descargar PNG
               </button>
-              {qrGenerado[link.id!] && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={urlQrArtistico(qrUrls.current[link.id!], 400)}
-                  alt="QR de la cámara del invitado"
-                  style={{
-                    width: 210, height: 210, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8,
-                    padding: 4, objectFit: 'contain',
-                  }}
-                />
-              )}
-              {qrGenerado[link.id!] && (
-                <button
-                  onClick={() => descargarQr(link)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6, padding: '0.5rem 0.9rem', borderRadius: 10,
-                    border: '1.5px solid #e2e8f0', background: '#fff', cursor: 'pointer',
-                    fontSize: '0.78rem', fontWeight: 600, color: '#334155',
-                  }}>
-                  <Download size={14} /> Descargar PNG
-                </button>
-              )}
             </div>
           </div>
         ))}
