@@ -81,6 +81,7 @@ const LINKS = [
     icon: IG_ICON,
     border: 'rgba(214, 41, 118, 0.35)',
     glow: 'rgba(214, 41, 118, 0.4)',
+    accent: '#d62976',
   },
   {
     key: 'tiktok',
@@ -88,6 +89,7 @@ const LINKS = [
     icon: TIKTOK_ICON,
     border: 'rgba(37, 211, 214, 0.35)',
     glow: 'rgba(37, 211, 214, 0.4)',
+    accent: '#00c9c9',
   },
   {
     key: 'facebook',
@@ -95,6 +97,7 @@ const LINKS = [
     icon: FB_ICON,
     border: 'rgba(24, 119, 242, 0.35)',
     glow: 'rgba(24, 119, 242, 0.4)',
+    accent: '#1877F2',
   },
   {
     key: 'whatsapp',
@@ -102,6 +105,7 @@ const LINKS = [
     icon: WA_ICON,
     border: 'rgba(37, 211, 102, 0.35)',
     glow: 'rgba(37, 211, 102, 0.4)',
+    accent: '#25D366',
   },
 ];
 
@@ -184,6 +188,8 @@ export default function RedesPage() {
                   style={
                     {
                       '--btn-border': l.border,
+                      '--btn-border-hover': l.accent,
+                      '--btn-accent': l.accent,
                       '--btn-glow': l.glow,
                       '--stagger': `${0.4 + i * 0.1}s`,
                       '--shimmer-delay': `${i * 1.1 + 2}s`,
