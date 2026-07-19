@@ -30,4 +30,5 @@ export const COL = {
   USUARIOS: 'usuarios',
   CONFIGURACION: 'site_config',
   CAMARA_INVITADO: 'camara_invitado_links',
+  REDES_SOCIALES: 'redes_sociales_config',
 } as const;
