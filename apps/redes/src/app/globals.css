@@ -265,7 +265,7 @@ body {
 .link-btn:focus-visible {
   transform: translateY(-4px) scale(1.02);
   background: rgba(255, 255, 255, 0.82);
-  border-color: var(--btn-border-hover, var(--gold));
+  border-color: var(--btn-border-hover, var(--btn-border, var(--gold)));
   box-shadow:
     0 16px 30px -12px rgba(90, 35, 55, 0.28),
     0 0 0 1px rgba(255, 255, 255, 0.5) inset,
@@ -294,7 +294,7 @@ body {
 }
 .link-btn:hover .link-arrow {
   transform: translateX(5px);
-  color: var(--gold);
+  color: var(--btn-accent, var(--gold));
 }
 
 /* ───────────────────────────────────────────
