@@ -131,14 +131,15 @@ body {
    Logo
 ─────────────────────────────────────────── */
 .logo-ring {
-  width: 104px;
-  height: 104px;
+  width: 116px;
+  height: 116px;
   margin: 0 auto 1.25rem;
   border-radius: 50%;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #fffefb, #fff7ea);
+  background: #fffefb;
   border: 1.5px solid var(--gold);
   box-shadow:
     0 0 0 4px rgba(212, 175, 55, 0.1),
@@ -155,10 +156,9 @@ body {
 }
 
 .logo-img {
-  width: 78%;
-  height: 78%;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 4px rgba(212, 175, 55, 0.35));
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* ───────────────────────────────────────────
