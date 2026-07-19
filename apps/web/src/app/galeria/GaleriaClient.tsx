@@ -33,7 +33,7 @@ export interface GItem {
 interface AlbumDoc {
   id: string; slug: string; titulo: string;
   coverUrl: string; coverFocalX?: number; coverFocalY?: number;
-  visible?: boolean;
+  visible?: boolean; tipoEvento?: string;
 }
 
 const CAT_ICONS: Record<string, string> = {
@@ -59,7 +59,9 @@ const isVideo = (item: GItem) =>
  * sí muestra todas las fotos del evento.
  *
  * Categoría/subcategoría de la tarjeta = las de la primera foto del álbum
- * (ordenando por `order`), para que aparezca en el filtro correcto.
+ * (ordenando por `order`); si el álbum aún no tiene fotos, se usa su campo
+ * `tipoEvento` (elegido en el admin) para que igual aparezca al filtrar por
+ * categoría, con un badge de "Próximamente" en vez del contador de fotos.
  *
  * Las fotos con `albumId` que no apunta a ningún álbum visible (borrado,
  * oculto, o el álbum aún no cargó) se muestran sueltas como respaldo.
@@ -80,17 +82,19 @@ function buildDisplayItems(items: GItem[], albums: AlbumDoc[]): GItem[] {
   }
 
   const albumCards: GItem[] = [];
-  for (const [albumId, fotos] of groups) {
-    const alb = albumMap.get(albumId)!;
-    const primera = [...fotos].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
+  for (const alb of albums) {
+    const fotos = groups.get(alb.id) ?? [];
+    const primera = fotos.length
+      ? [...fotos].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0]
+      : undefined;
     albumCards.push({
-      id: `album:${albumId}`,
-      url: alb.coverUrl || primera.url,
+      id: `album:${alb.id}`,
+      url: alb.coverUrl || primera?.url || '',
       alt: alb.titulo,
-      categoria: primera.categoria,
-      subcategoria: primera.subcategoria,
+      categoria: primera?.categoria || alb.tipoEvento,
+      subcategoria: primera?.subcategoria,
       visible: true,
-      order: Math.min(...fotos.map(f => f.order ?? 0)),
+      order: fotos.length ? Math.min(...fotos.map(f => f.order ?? 0)) : Infinity,
       focalX: alb.coverFocalX ?? 0.5,
       focalY: alb.coverFocalY ?? 0.5,
       tipo: 'imagen',
@@ -521,7 +525,18 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                         el.querySelector('.gal-overlay')?.classList.remove('visible');
                       }}>
 
-                      {vid ? (
+                      {item.isAlbum && item.albumCount === 0 && !item.url ? (
+                        <div style={{
+                          width: '100%', minHeight: 220, display: 'flex', flexDirection: 'column',
+                          alignItems: 'center', justifyContent: 'center', gap: 8, padding: '2rem 1rem',
+                          background: 'linear-gradient(135deg,#1e3a5f,#0a1628)', textAlign: 'center'
+                        }}>
+                          <span style={{ fontSize: '2rem' }}>✨</span>
+                          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem' }}>
+                            Próximamente más imágenes
+                          </span>
+                        </div>
+                      ) : vid ? (
                         <video key={item.url} src={cxVideo(item.url)} muted playsInline preload="metadata"
                           style={{ width: '100%', display: 'block', objectFit: 'cover', objectPosition: fp }} />
                       ) : (
@@ -545,15 +560,16 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                         </div>
                       )}
 
-                      {/* Badge de álbum: cuántas fotos agrupa */}
+                      {/* Badge de álbum: cuántas fotos agrupa (o "Próximamente" si aún no tiene) */}
                       {item.isAlbum && (
                         <div style={{
-                          position: 'absolute', top: 10, left: 10, background: 'rgba(212,160,23,0.92)',
+                          position: 'absolute', top: 10, left: 10,
+                          background: item.albumCount ? 'rgba(212,160,23,0.92)' : 'rgba(148,163,184,0.92)',
                           color: '#0a1628', fontSize: '0.7rem', fontWeight: 700,
                           padding: '3px 9px', borderRadius: 999, pointerEvents: 'none',
                           display: 'flex', alignItems: 'center', gap: 4,
                         }}>
-                          🖼️ {item.albumCount} fotos
+                          {item.albumCount ? `🖼️ ${item.albumCount} fotos` : '✨ Próximamente'}
                         </div>
                       )}
 
@@ -581,7 +597,9 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                             </p>
                           )}
                           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', margin: '2px 0 0' }}>
-                            {item.isAlbum ? '📁 Ver álbum completo' : vid ? '▶ Reproducir' : '🔍 Ver en grande'}
+                            {item.isAlbum
+                              ? (item.albumCount ? '📁 Ver álbum completo' : '✨ Próximamente más fotos')
+                              : vid ? '▶ Reproducir' : '🔍 Ver en grande'}
                           </p>
                         </div>
                       </div>
