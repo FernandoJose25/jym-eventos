@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 const DEFAULT_ITEMS = [
   { icon:'🏆', title:'Experiencia Comprobada',  desc:'Más de 10 años organizando eventos exitosos en Sechura y toda la región Piura.' },
@@ -13,15 +13,33 @@ const DEFAULT_ITEMS = [
 /* ── Tarjeta desktop (sin cambios) ── */
 function WhyCard({ item, i }: { item: typeof DEFAULT_ITEMS[0]; i: number }) {
   const [hovered, setHovered] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const ACCENT = '#d4a017';
   const BG     = '#0a1628';
   const active = hovered;
 
+  /* Tilt 3D: la card se inclina siguiendo el cursor */
+  const onTiltMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = cardRef.current; if (!el) return;
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width  - 0.5;
+    const y = (e.clientY - r.top)  / r.height - 0.5;
+    el.style.transition = 'transform .1s ease-out, border-radius .5s ease-in-out, box-shadow .5s ease-in-out';
+    el.style.transform  = `perspective(900px) rotateX(${-y * 9}deg) rotateY(${x * 11}deg) scale(1.06)`;
+  };
+  const onTiltLeave = () => {
+    const el = cardRef.current; if (!el) return;
+    el.style.transition = 'transform .5s cubic-bezier(.16,1,.3,1), border-radius .5s ease-in-out, box-shadow .5s ease-in-out';
+    el.style.transform  = '';
+  };
+
   return (
     <div
+      ref={cardRef}
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseMove={onTiltMove}
+      onMouseLeave={() => { setHovered(false); onTiltLeave(); }}
       onClick={() => setHovered(h => !h)}
       className="why-card"
       style={{
@@ -31,8 +49,9 @@ function WhyCard({ item, i }: { item: typeof DEFAULT_ITEMS[0]; i: number }) {
         display: 'grid', placeContent: 'center',
         borderRadius: active ? 0 : 10,
         overflow: 'hidden',
-        transform: active ? 'scale(1.07)' : 'scale(1)',
-        transition: 'all 0.5s ease-in-out',
+        transformStyle: 'preserve-3d',
+        willChange: 'transform',
+        transition: 'border-radius .5s ease-in-out, box-shadow .5s ease-in-out',
         cursor: 'pointer',
         zIndex: active ? 10 : 1,
         boxShadow: active
