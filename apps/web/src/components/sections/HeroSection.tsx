@@ -39,7 +39,7 @@ export default function HeroSection({ data }: { data: HeroData }) {
 
   const h1 =
     data.h1 ||
-    'Hacemos que cada celebración sea <em style="color:#f5c842;font-style:italic;">Mágica</em>';
+    'Hacemos que cada celebración sea <em style="background:linear-gradient(135deg,#b8860b 0%,#f5c842 40%,#b8860b 80%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:heroShimmer 4s linear infinite;font-style:italic;">Mágica</em>';
 
   const eyebrow =
     data.eyebrow || 'J&M Decoraciones y Eventos';
@@ -214,6 +214,8 @@ export default function HeroSection({ data }: { data: HeroData }) {
         {/* TITLE */}
         <h1
           style={{
+            fontFamily: 'var(--font-playfair)',
+
             color: '#fff',
 
             fontSize: 'clamp(2.4rem, 9vw, 7rem)',
@@ -387,6 +389,7 @@ export default function HeroSection({ data }: { data: HeroData }) {
         </div>
       </div>
       <style>{`
+        @keyframes heroShimmer { from { background-position: 0% center; } to { background-position: 200% center; } }
         @media (max-width: 640px) {
           .hero-content { padding-top: 5.5rem !important; padding-bottom: 3rem !important; }
           .hero-btns { gap: 0.75rem !important; flex-direction: column !important; align-items: stretch !important; padding: 0 0.5rem; }
