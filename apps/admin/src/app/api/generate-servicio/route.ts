@@ -9,10 +9,10 @@ const CAMPOS = {
   hero_desc:          'Descripción héroe / subtítulo de la página de detalle (2 oraciones)',
   categoryLabel:      'Badge de categoría sobre el título, ej. "Celebraciones · Bodas"',
   titleAccentWord:    'Palabra del título que se resalta en cursiva/color',
-  longDescH2:         'Título H2 de la sección de detalle',
-  longDesc:           'Párrafo principal de la sección de detalle (2-3 oraciones)',
-  longDesc2:          'Características, una por línea (texto plano, un ítem por renglón)',
-  includes:           'Array de hasta 6 tarjetas "¿Qué incluye?": [{icon, title, desc, visible}]',
+  longDescH2:         'Título H2 de la sección "¿Por qué elegirnos?" (razones de confianza, NO título de un listado de servicios)',
+  longDesc:           'Párrafo principal de la sección "¿Por qué elegirnos?" (2-3 oraciones sobre trato, experiencia, compromiso)',
+  longDesc2:          'Lista de RAZONES/BENEFICIOS para confiar en la empresa en este servicio, una por línea. Ej: experiencia, atención personalizada, puntualidad, calidad de materiales, respaldo, flexibilidad. NUNCA repitas aquí los rubros del paquete (decoración, catering, fotografía, etc.) — esos van en "includes".',
+  includes:           'Array de hasta 6 tarjetas "¿Qué incluye?": el desglose CONCRETO de lo que trae el paquete (decoración, fotografía, catering, vestuario, entretenimiento, coordinación, etc.): [{icon, title, desc, visible}]',
   stats:              'Array de estadísticas del hero: [{value, label}], ej. {"value":"+80","label":"Bodas decoradas"}',
   testimonialName:    'Nombre o lugar del cliente en el testimonio flotante del hero',
   testimonialRating:  'Calificación del testimonio, ej. "4.9"',
@@ -40,6 +40,11 @@ Tu tarea es decidir, según la instrucción, EXACTAMENTE qué campos crear o mod
 
 Campos disponibles y su significado (usa EXACTAMENTE estos nombres de clave):
 ${CAMPOS_KEYS.map(k => `- "${k}": ${CAMPOS[k]}`).join('\n')}
+
+Regla crítica anti-duplicado: "longDesc2" (sección "¿Por qué elegirnos?") e "includes" (sección "¿Qué incluye?") deben decir cosas DISTINTAS y nunca solaparse:
+- "longDesc2" son razones para confiar en la empresa: experiencia, trato humano, compromiso, puntualidad, calidad, respaldo, flexibilidad, atención al detalle — no menciones rubros del paquete aquí.
+- "includes" es el desglose concreto del paquete: decoración, fotografía/video, catering, vestuario, entretenimiento, coordinación, etc.
+Si al generar/editar uno de los dos notas que el otro ya existe y se solapa en contenido, prioriza corregir el que estás editando para que no repita al otro.
 
 Reglas de formato:
 - "includes" y "stats", si los incluyes, deben ser el array COMPLETO ya combinado (si agregas un ítem nuevo a partir de una instrucción puntual, incluye también los ítems existentes que deban conservarse).
