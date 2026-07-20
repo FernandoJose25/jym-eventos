@@ -240,14 +240,3 @@ h1 em, h2 em {
 .float-y-slow   { animation: floatSlow 8s ease-in-out infinite; }
 .float-delay-2  { animation-delay: 2s; }
 .breathe-subtle { animation: breatheSubtle 6s ease-in-out infinite; }
-
-/* ── ACCESIBILIDAD: sin animaciones si el usuario lo pide ───── */
-@media (prefers-reduced-motion: reduce) {
-  .reveal, .reveal-left, .reveal-right, .reveal-scale {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-  .float-y-tiny, .float-y-slow, .breathe-subtle { animation: none; }
-  h1 em, h2 em { animation: none; }
-}

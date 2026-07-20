@@ -18,12 +18,12 @@ export default function BrandsSection({ data }: { data: any }) {
   if (!brands.length) return null;
 
   return (
-    <section style={{ padding:'4rem 0', background:'#f8fafc',
-                       borderTop:'1px solid #e2e8f0', borderBottom:'1px solid #e2e8f0',
+    <section style={{ padding:'3.5rem 0', background:'linear-gradient(180deg,#0a1628 0%,#050d1a 100%)',
+                       borderTop:'1px solid rgba(212,160,23,0.12)', borderBottom:'1px solid rgba(212,160,23,0.12)',
                        position:'relative', overflow:'hidden' }}>
       <div className="container">
-        <div className="reveal" style={{ textAlign:'center', marginBottom:'2.5rem' }}>
-          <p style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.14em', color:'#94a3b8' }}>
+        <div style={{ textAlign:'center', marginBottom:'2.25rem' }}>
+          <p style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.22em', color:'rgba(255,255,255,0.45)' }}>
             {h2}
           </p>
         </div>
@@ -77,9 +77,6 @@ export default function BrandsSection({ data }: { data: any }) {
         @keyframes brandsMarquee {
           from { transform: translateX(0); }
           to   { transform: translateX(-50%); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .brands-track { animation: none; flex-wrap: wrap; width: auto !important; justify-content: center; }
         }
       `}</style>
     </section>
