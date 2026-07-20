@@ -37,14 +37,14 @@ export default function HomeClient({ data }: { data: HomeData }) {
         <StatsSection data={{ ...data.stats, s4num: String(data.services.length) }} />
       </Section>
 
+      {/* Marcas — carrusel justo después de las stats, como en el diseño */}
+      <Section>
+        <BrandsSection data={data.brands} />
+      </Section>
+
       {/* Por qué elegirnos */}
       <Section>
         <WhyUsSection data={data.whyUs} />
-      </Section>
-
-      {/* Marcas */}
-      <Section>
-        <BrandsSection data={data.brands} />
       </Section>
 
       {/* About / Quiénes somos */}
