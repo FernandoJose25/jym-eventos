@@ -4,6 +4,13 @@ import { SITE_URL } from '@/lib/site';
 import JsonLd from '@/components/ui/JsonLd';
 import ServicioClient, { SERVICIOS_DATA } from './ServicioClient';
 
+const FAQ_DEFAULT = [
+  { pregunta: '¿Con cuánta anticipación debo reservar?', respuesta: 'Recomendamos al menos 15 días antes. En temporada alta (julio-diciembre) conviene reservar con 1-2 meses de anticipación para asegurar fecha y disponibilidad.' },
+  { pregunta: '¿Puedo personalizar el paquete según mi presupuesto?', respuesta: 'Sí, armamos una propuesta a medida: puedes agregar o quitar elementos del paquete base según lo que necesites.' },
+  { pregunta: '¿El precio incluye montaje y desmontaje?', respuesta: 'Sí, todo servicio incluye instalación previa y desmontaje al finalizar el evento, sin costo adicional.' },
+  { pregunta: '¿Tienen cobertura fuera de Sechura?', respuesta: 'Sí, atendemos eventos en toda la región Piura. Consulta disponibilidad y costo de movilización según la zona.' },
+];
+
 async function findServicio(slug: string) {
   const snap = await adminDb.collection('services').where('visible', '==', true).get();
   const match = snap.docs.find(d => {
@@ -116,9 +123,34 @@ export default async function Page(
     },
   } : null;
 
+  const faqList = (initialData?.detail?.faq && initialData.detail.faq.length > 0)
+    ? initialData.detail.faq
+    : FAQ_DEFAULT;
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqList.map((f: any) => ({
+      '@type': 'Question',
+      name: f.pregunta,
+      acceptedAnswer: { '@type': 'Answer', text: f.respuesta },
+    })),
+  };
+
+  const breadcrumbSchema = initialData ? {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Inicio', item: SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'Servicios', item: `${SITE_URL}/servicios` },
+      { '@type': 'ListItem', position: 3, name: initialData.title, item: canonical },
+    ],
+  } : null;
+
   return (
     <>
       {serviceSchema && <JsonLd data={serviceSchema} />}
+      {breadcrumbSchema && <JsonLd data={breadcrumbSchema} />}
+      <JsonLd data={faqSchema} />
       <ServicioClient initialData={initialData} />
     </>
   );

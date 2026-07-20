@@ -153,10 +153,10 @@ function ValorCard({ v, i }: { v: typeof VALORES_DEFAULT[0]; i: number }) {
   );
 }
 
-export default function SobreNosotrosClient() {
-  const [cfg, setCfg] = useState<Record<string,any>>({});
+export default function SobreNosotrosClient({ initialCfg }: { initialCfg?: Record<string,any> }) {
+  const [cfg, setCfg] = useState<Record<string,any>>(initialCfg || {});
 
-  /* Load from Firebase */
+  /* Refresca en el cliente por si el admin editó después del último SSR */
   useEffect(() => {
     getDoc(doc(db, 'site_config', 'nosotros')).then(snap => {
       if (snap.exists()) setCfg(snap.data());

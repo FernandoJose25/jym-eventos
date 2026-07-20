@@ -15,6 +15,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/albumes`, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${SITE_URL}/contacto`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${SITE_URL}/anuncia-con-nosotros`, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${SITE_URL}/terminos`, changeFrequency: 'yearly', priority: 0.2 },
+    { url: `${SITE_URL}/privacidad`, changeFrequency: 'yearly', priority: 0.2 },
+    { url: `${SITE_URL}/cookies`, changeFrequency: 'yearly', priority: 0.2 },
   ];
 
   let serviceRoutes: MetadataRoute.Sitemap = [];

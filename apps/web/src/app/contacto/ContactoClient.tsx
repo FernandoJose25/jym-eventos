@@ -24,8 +24,8 @@ const WA_SVG = (
   </svg>
 );
 
-export default function ContactoClient() {
-  const [contacto, setContacto] = useState<any>({});
+export default function ContactoClient({ initialContacto }: { initialContacto?: Record<string, any> }) {
+  const [contacto, setContacto] = useState<any>(initialContacto || {});
   const [form, setForm] = useState({
     nombre: '', telefono: '', correo: '', distrito: '',
     tipoEvento: '', fechaEvento: '', invitados: '', presupuesto: '', mensaje: ''
@@ -33,6 +33,7 @@ export default function ContactoClient() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState('');
 
+  /* Refresca en el cliente por si el admin editó después del último SSR */
   useEffect(() => {
     getDoc(doc(db, 'site_config', 'contacto')).then(s => { if (s.exists()) setContacto(toPlain(s.data())); });
   }, []);
