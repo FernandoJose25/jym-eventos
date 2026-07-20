@@ -1022,7 +1022,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
               <p style={{ color: accentColor, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Estilos disponibles</p>
               <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#0c1e30', margin: 0, letterSpacing: '-.03em' }}>Temáticas Más Populares</h2>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(250px,1fr))', gap: '1rem' }}>
+            <div className="srv-tematicas" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem' }}>
               {sd.tematicas.map((t: any, i: number) => {
                 const palettes = [
                   { bg: '#fef9ee', border: '#f5c842', text: '#92660a' },
@@ -1053,6 +1053,10 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
               })}
             </div>
           </div>
+          <style>{`
+            @media (max-width: 900px) { .srv-tematicas { grid-template-columns: repeat(2,1fr) !important; } }
+            @media (max-width: 560px) { .srv-tematicas { grid-template-columns: 1fr !important; } }
+          `}</style>
         </section>
       )}
 
