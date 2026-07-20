@@ -50,7 +50,7 @@ function fmtTime(s: number) {
  * visitante no puede activar el sonido bajo ninguna circunstancia (para
  * videos con conversaciones/audio que no se quiere hacer público).
  */
-function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false }: { src: string; sonidoPermitido?: boolean; fullBleed?: boolean }) {
+function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, onZoomChange }: { src: string; sonidoPermitido?: boolean; fullBleed?: boolean; onZoomChange?: (zoomed: boolean) => void }) {
   const videoRef  = useRef<HTMLVideoElement>(null);
   const wrapRef   = useRef<HTMLDivElement>(null);
   const mediaBoxRef = useRef<HTMLDivElement>(null);
@@ -83,6 +83,21 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false }: 
   // Gestos táctiles (solo mobile): pinch-zoom persistente + doble-tap lateral
   const isTouch = useIsTouchDevice();
   const { scale, x: panX, y: panY, isZoomed, handlers: zoomHandlers } = useZoomPan(mediaBoxRef);
+  // El pinch-zoom solo debe activarse una vez que conocemos el aspect ratio
+  // real (fullBleed) o al menos ya cargó metadata — si el usuario pellizca
+  // antes de eso, useZoomPan mide con getBoundingClientRect() una caja que
+  // aún no tiene su tamaño/aspect-ratio final, y calcula límites de pan
+  // incorrectos (se queda "pegado" en un zoom que ya no se puede deshacer).
+  const gestosListos = fullBleed ? videoAspect !== null : dur > 0;
+  // El padre (lightbox de galería) usa esto para bloquear su swipe de
+  // navegación mientras el video está en zoom — sin esto, el swipe entre
+  // fotos/videos no sabe que hay un zoom de VIDEO activo (solo conoce el
+  // zoom de imágenes, que vive en un useZoomPan distinto) y puede cambiar
+  // de slide en medio de un gesto de pan sobre el video ampliado.
+  useEffect(() => {
+    onZoomChange?.(isZoomed);
+    return () => onZoomChange?.(false);
+  }, [isZoomed, onZoomChange]);
   const [skipFeedback, setSkipFeedback] = useState<{ side: 'left' | 'right'; key: number } | null>(null);
   const lastVideoTapRef = useRef<{ time: number; x: number } | null>(null);
   const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -334,10 +349,12 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false }: 
           sobre espacio vacío. */}
       <motion.div
         ref={mediaBoxRef}
-        {...(isTouch ? {
+        {...(isTouch && gestosListos ? {
           onTouchStart: (e: React.TouchEvent) => { sp(e); zoomHandlers.onTouchStart(e); },
           onTouchMove: (e: React.TouchEvent) => { sp(e); zoomHandlers.onTouchMove(e); },
           onTouchEnd: (e: React.TouchEvent) => { sp(e); zoomHandlers.onTouchEnd(e); handleVideoTouchEnd(e); },
+        } : isTouch ? {
+          onTouchEnd: (e: React.TouchEvent) => { sp(e); handleVideoTouchEnd(e); },
         } : {})}
         style={fullBleed ? {
           position: 'relative',
@@ -346,11 +363,11 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false }: 
           maxWidth: '100%',
           aspectRatio: videoAspect ?? undefined,
           scale, x: panX, y: panY,
-          touchAction: isTouch ? 'none' : 'auto',
+          touchAction: isTouch && gestosListos ? 'none' : 'auto',
         } : {
           position: 'relative', width: '100%',
           scale, x: panX, y: panY,
-          touchAction: isTouch ? 'none' : 'auto',
+          touchAction: isTouch && gestosListos ? 'none' : 'auto',
         }}
       >
         <video
@@ -365,8 +382,16 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false }: 
             if (ctrlVisible) togglePlay(); else bump();
           }}
           style={fullBleed ? {
+            // Sin objectFit aquí: el contenedor (mediaBoxRef) ya calza EXACTO
+            // con el aspect ratio real vía `aspectRatio: videoAspect` — un
+            // segundo `contain` en el <video> es redundante y, si videoAspect
+            // difiere aunque sea levemente del render real (redondeo,
+            // metadata de rotación en video vertical), añade una SEGUNDA capa
+            // de letterboxing dentro de la primera: de ahí las barras negras
+            // y el "se ve más grande de lo que debería" pese a scale=1.
             width: '100%', height: '100%', display: 'block',
-            background: '#000', cursor: 'pointer', objectFit: 'contain',
+            background: '#000', cursor: 'pointer',
+            objectFit: videoAspect ? undefined : 'contain',
           } : {
             width: '100%', maxHeight: isFull ? '100dvh' : '72vh',
             display: 'block', background: '#000', cursor: 'pointer',

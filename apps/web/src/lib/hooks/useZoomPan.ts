@@ -52,8 +52,13 @@ export function useZoomPan(containerRef: React.RefObject<HTMLElement | null>) {
     const currentScale = scale.get() || 1;
     const baseWidth = rect.width / currentScale;
     const baseHeight = rect.height / currentScale;
-    const maxX = (baseWidth * (s - 1)) / 2;
-    const maxY = (baseHeight * (s - 1)) / 2;
+    // Math.max(0, ...): si `s` <= 1 la fórmula da un límite NEGATIVO, y
+    // Math.min(Math.max(nx, -maxX), maxX) con maxX negativo invierte el
+    // clamp — el resultado queda pegado en -maxX sin importar `nx`, dando
+    // un salto lateral fijo en vez de ir hacia 0. Forzar el piso en 0 evita
+    // ese salto: por debajo de escala 1 no hay pan posible, como debe ser.
+    const maxX = Math.max(0, (baseWidth * (s - 1)) / 2);
+    const maxY = Math.max(0, (baseHeight * (s - 1)) / 2);
     return {
       x: Math.min(Math.max(nx, -maxX), maxX),
       y: Math.min(Math.max(ny, -maxY), maxY),
@@ -122,8 +127,12 @@ export function useZoomPan(containerRef: React.RefObject<HTMLElement | null>) {
         const centerY = rect.top + rect.height / 2;
         const cx = (center.x - centerX) / (pinchStartScale.current || 1);
         const cy = (center.y - centerY) / (pinchStartScale.current || 1);
-        const maxX = (baseWidth * (targetScale - 1)) / 2;
-        const maxY = (baseHeight * (targetScale - 1)) / 2;
+        // Mismo fix que en clampPan: sin el piso en 0, targetScale < 1
+        // (pellizcando para achicar) produce un límite negativo que invierte
+        // el clamp de abajo y traba x/y en un valor fijo — de ahí la
+        // sensación de que el pinch-in "no responde" al intentar desagrandar.
+        const maxX = Math.max(0, (baseWidth * (targetScale - 1)) / 2);
+        const maxY = Math.max(0, (baseHeight * (targetScale - 1)) / 2);
         const nx = -cx * (targetScale - 1);
         const ny = -cy * (targetScale - 1);
         x.set(Math.min(Math.max(nx, -maxX), maxX));
