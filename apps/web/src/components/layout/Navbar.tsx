@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { collection, query, where, orderBy, onSnapshot, doc, getDoc } from 'firebase/firestore';
@@ -111,7 +112,7 @@ export default function Navbar() {
               overflow: 'hidden',
             }}>
               {navConfig.logo
-                ? <img src={navConfig.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                ? <Image src={navConfig.logo} alt={navConfig.nombre || 'J&M Decoraciones y Eventos'} width={40} height={40} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 : '🎉'}
             </div>
             <div>
@@ -404,8 +405,8 @@ export default function Navbar() {
                               <source src={featured.mediaSrc} type="video/mp4" />
                             </video>
                           ) : (
-                            <img src={featured.mediaSrc} alt={featured.title} loading="lazy" decoding="async"
-                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                            <Image src={featured.mediaSrc} alt={featured.title} fill sizes="(max-width: 900px) 0px, 260px"
+                              style={{ objectFit: 'cover' }} />
                           )
                         ) : (
                           <div style={{ width: '100%', height: '100%', background: 'linear-gradient(160deg,#1e3a5f,#0a1628)' }} />

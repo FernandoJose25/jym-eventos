@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 const DEFAULT_BRANDS = [
   { name:'Telecable Smart',   logo:'📡' },
@@ -49,10 +50,10 @@ export default function BrandsSection({ data }: { data: any }) {
                    el.style.background  = '#fff';
                  }}>
               {b.logoUrl
-                ? <img src={b.logoUrl} alt={b.name} style={{ width:40, height:40, objectFit:'contain' }}/>
+                ? <Image src={b.logoUrl} alt={b.name} width={40} height={40} style={{ width:40, height:40, objectFit:'contain' }}/>
                 : b.logo && b.logo.length <= 4
                   ? <span style={{ fontSize:'1.4rem' }}>{b.logo}</span>
-                  : b.logo && <img src={b.logo} alt={b.name} style={{ width:40, height:40, objectFit:'contain' }}/>
+                  : b.logo && <Image src={b.logo} alt={b.name} width={40} height={40} style={{ width:40, height:40, objectFit:'contain' }}/>
               }
               <span style={{ fontSize:'0.88rem', fontWeight:600, color:'#475569' }}>{b.name}</span>
             </div>

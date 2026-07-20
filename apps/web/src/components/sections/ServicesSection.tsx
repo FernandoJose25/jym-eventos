@@ -1,5 +1,6 @@
 'use client';
 import { useRef, useCallback } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import VideoSoundControl from '@/components/ui/VideoSoundControl';
 import { SERVICE_ICONS, isIconKey } from '@/lib/serviceIcons';
@@ -126,8 +127,8 @@ function AtvCard({ s, idx }: { s: Service; idx: number }) {
                   )}
                 </>
               ) : (
-                <img src={s.mediaSrc} alt={s.title} loading="lazy" decoding="async"
-                     style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>
+                <Image src={s.mediaSrc} alt={s.title} fill sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
+                     style={{ objectFit:'cover' }}/>
               )
             ) : (
               <div style={{ width:'100%', height:'100%', background:bgColor }}/>

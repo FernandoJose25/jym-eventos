@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import VideoSoundControl from '@/components/ui/VideoSoundControl';
 
 interface AboutProps { data: Record<string,any>; }
@@ -145,8 +146,8 @@ export default function AboutSection({ data }: AboutProps) {
                                style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
                         {img1Sound && <VideoSoundControl videoRef={vid1Ref} position="bottom-left"/>}
                       </>
-                    : <img src={img1} alt={h2} loading="lazy" decoding="async"
-                           style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:img1Pos,
+                    : <Image src={img1} alt={h2.replace(/<[^>]*>/g, '') || 'J&M Decoraciones y Eventos'} fill sizes="(max-width: 1023px) 90vw, 45vw"
+                           style={{ objectFit:'cover', objectPosition:img1Pos,
                                      transition:'transform .6s ease',
                                      transform: imgHover1 ? 'scale(1.06)' : 'scale(1)' }}/>
                 ) : (
@@ -204,8 +205,8 @@ export default function AboutSection({ data }: AboutProps) {
                                style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
                         {img2Sound && <VideoSoundControl videoRef={vid2Ref} position="bottom-right"/>}
                       </>
-                    : <img src={img2} alt="Evento J&M" loading="lazy" decoding="async"
-                           style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:img2Pos }}/>
+                    : <Image src={img2} alt="Evento organizado por J&M Decoraciones y Eventos" fill sizes="(max-width: 640px) 44vw, (max-width: 1023px) 40vw, 24vw"
+                           style={{ objectFit:'cover', objectPosition:img2Pos }}/>
                   }
                   {imgHover2 && (
                     <div style={{ position:'absolute', inset:0, background:'rgba(212,160,23,0.1)', pointerEvents:'none' }}/>

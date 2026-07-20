@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import Image from 'next/image';
 import type { Servicio } from '@/types';
 export default function ServiceHeroClient({ servicio: s }: { servicio: Servicio }) {
   const ref = useRef<HTMLElement>(null);
@@ -13,7 +14,7 @@ export default function ServiceHeroClient({ servicio: s }: { servicio: Servicio 
   const fp = `${(s.hero?.focalX??0.5)*100}% ${(s.hero?.focalY??0.4)*100}%`;
   return (
     <section ref={ref} style={{ minHeight:'60vh', display:'flex', alignItems:'center', position:'relative', overflow:'hidden', background:'linear-gradient(135deg,#050d1a,#0a1628,#1e3a5f)', paddingTop:72 }}>
-      {s.hero?.imagen && <div style={{ position:'absolute', inset:0, opacity:.3 }}><img src={s.hero.imagen} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:fp }} /></div>}
+      {s.hero?.imagen && <div style={{ position:'absolute', inset:0, opacity:.3 }}><Image src={s.hero.imagen} alt="" fill priority sizes="100vw" style={{ objectFit:'cover', objectPosition:fp }} /></div>}
       <div style={{ position:'absolute', inset:0, background:'linear-gradient(to right,rgba(5,13,26,.85),rgba(5,13,26,.35))' }} />
       <div className="container" style={{ position:'relative', zIndex:10, paddingTop:'2rem', paddingBottom:'2.5rem' }}>
         <nav style={{ color:'rgba(255,255,255,0.45)', fontSize:'0.75rem', marginBottom:16, display:'flex', flexWrap:'wrap', gap:'0.25rem', alignItems:'center' }}>

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -56,7 +57,7 @@ export default function Footer() {
                 fontSize: '1.5rem', flexShrink: 0
               }}>
                 {logo
-                  ? <img src={logo} alt="J&M Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  ? <Image src={logo} alt={footer.legalName || 'J&M Decoraciones y Eventos'} width={52} height={52} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                   : '🎉'}
               </div>
               <div>

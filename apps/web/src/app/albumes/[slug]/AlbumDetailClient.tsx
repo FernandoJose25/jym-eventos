@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { cxCard, cxFull, cxVideo, cxShareVideo } from '@/lib/cloudinary';
 import { ShareBar } from '@/components/ui/ShareBar';
 import CustomVideoPlayer from '@/components/ui/CustomVideoPlayer';
@@ -64,10 +65,11 @@ export default function AlbumDetailClient({ fotos }: { fotos: AlbumFoto[] }) {
                 <video key={item.url} src={cxVideo(item.url)} muted playsInline preload="metadata"
                   style={{ width: '100%', display: 'block', objectFit: 'cover', objectPosition: fp }} />
               ) : (
-                <img src={cxCard(item.url)} alt={item.alt || `Foto del álbum ${i + 1}`}
-                  loading={i < 6 ? 'eager' : 'lazy'}
-                  decoding="async"
-                  style={{ width: '100%', display: 'block', objectFit: 'cover', objectPosition: fp }} />
+                <Image src={cxCard(item.url)} alt={item.alt || `Foto del álbum ${i + 1}`}
+                  width={700} height={700}
+                  sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, 33vw"
+                  priority={i < 6}
+                  style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover', objectPosition: fp }} />
               )}
               {vid && (
                 <div style={{
@@ -111,11 +113,12 @@ export default function AlbumDetailClient({ fotos }: { fotos: AlbumFoto[] }) {
             {isVideo(fotos[lightbox]) ? (
               <CustomVideoPlayer key={fotos[lightbox].id} src={fotos[lightbox].url} sonidoPermitido={fotos[lightbox].sonidoPermitido === true} />
             ) : (
-              <img src={cxFull(fotos[lightbox].url)}
+              <Image src={cxFull(fotos[lightbox].url)}
                 alt={fotos[lightbox].alt || 'Foto del evento'}
-                decoding="async"
+                width={1400} height={900}
+                sizes="(max-width: 960px) 95vw, 960px"
                 style={{
-                  width: '100%', maxHeight: '72vh', objectFit: 'contain', display: 'block',
+                  width: '100%', height: 'auto', maxHeight: '72vh', objectFit: 'contain', display: 'block',
                   borderRadius: 16, boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
                 }} />
             )}

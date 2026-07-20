@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -66,9 +67,8 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
           }}>
             {hasAvatar ? (
               <>
-                <img src={t.avatar} alt={t.name} onError={() => setImgError(true)}
-                     style={{ position:'absolute', width:'100%', height:'100%',
-                               objectFit:'cover', objectPosition:fp, opacity:.7 }}/>
+                <Image src={t.avatar!} alt={t.name} fill sizes="240px" onError={() => setImgError(true)}
+                     style={{ objectFit:'cover', objectPosition:fp, opacity:.7 }}/>
                 <div style={{ position:'absolute', inset:0,
                                background:'linear-gradient(to top,rgba(21,21,21,0.85),rgba(21,21,21,0.2))' }}/>
               </>
@@ -94,7 +94,7 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
                            fontWeight:700, color:'#fff',
                            overflow: hasAvatar ? 'hidden' : 'visible' }}>
               {hasAvatar
-                ? <img src={t.avatar} alt={t.name} onError={() => setImgError(true)} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:fp }}/>
+                ? <Image src={t.avatar!} alt={t.name} fill sizes="76px" onError={() => setImgError(true)} style={{ objectFit:'cover', objectPosition:fp }}/>
                 : initials}
             </div>
             <div style={{ position:'relative', zIndex:2, textAlign:'center', padding:'0 12px' }}>
@@ -116,9 +116,8 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
           transform:'rotateY(180deg)', color:'#fff',
         }}>
           {hasAvatar && (
-            <img src={t.avatar} alt={t.name} onError={() => setImgError(true)}
-                 style={{ position:'absolute', width:'100%', height:'100%',
-                           objectFit:'cover', objectPosition:fp, opacity:.18 }}/>
+            <Image src={t.avatar!} alt={t.name} fill sizes="240px" onError={() => setImgError(true)}
+                 style={{ objectFit:'cover', objectPosition:fp, opacity:.18 }}/>
           )}
           <div style={{ position:'absolute', width:90, height:90, borderRadius:'50%',
                          background:col.c1, filter:'blur(20px)', top:40, left:20, opacity:.25,
@@ -229,7 +228,7 @@ function MobileCard({ t, idx }: { t: Testimonial; idx: number }) {
       {/* Footer */}
       <div style={{ display:'flex', alignItems:'center', gap:12, padding:'1rem 1.25rem 1.25rem', position:'relative', zIndex:2 }}>
         <div style={{
-          width:44, height:44, borderRadius:'50%', flexShrink:0,
+          width:44, height:44, borderRadius:'50%', flexShrink:0, position:'relative',
           background:`linear-gradient(135deg,${col.c1},${col.c2})`,
           border:'2px solid rgba(212,160,23,0.4)',
           display:'flex', alignItems:'center', justifyContent:'center',
@@ -237,7 +236,7 @@ function MobileCard({ t, idx }: { t: Testimonial; idx: number }) {
           overflow: hasAvatar ? 'hidden' : 'visible',
         }}>
           {hasAvatar
-            ? <img src={t.avatar} alt={t.name} onError={() => setImgError(true)} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:fp }}/>
+            ? <Image src={t.avatar!} alt={t.name} fill sizes="44px" onError={() => setImgError(true)} style={{ objectFit:'cover', objectPosition:fp }}/>
             : initials}
         </div>
         <div>

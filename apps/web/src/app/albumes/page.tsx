@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { adminDb } from '@/lib/firebase-admin';
 import { SITE_URL } from '@/lib/site';
@@ -105,13 +106,12 @@ export default async function Page() {
                   }}
                 >
                   {album.coverUrl && (
-                    <img
+                    <Image
                       src={cxCard(album.coverUrl)}
                       alt={album.titulo}
-                      loading="lazy"
-                      decoding="async"
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 900px) 50vw, 280px"
                       style={{
-                        position: 'absolute', inset: 0, width: '100%', height: '100%',
                         objectFit: 'cover',
                         objectPosition: `${(album.coverFocalX ?? 0.5) * 100}% ${(album.coverFocalY ?? 0.5) * 100}%`,
                       }}
