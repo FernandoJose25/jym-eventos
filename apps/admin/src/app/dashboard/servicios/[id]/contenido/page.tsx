@@ -9,6 +9,8 @@ import { useModal } from '@/components/ui/Modal';
 import EditModal from '@/components/ui/EditModal';
 import { Eye, EyeOff, Trash2, Edit2, ArrowLeft, Save, Sparkles } from 'lucide-react';
 import { authHeaders } from '@/lib/get-token';
+import IconPicker from '@/components/ui/IconPicker';
+import { SERVICE_ICONS, isIconKey } from '@/lib/serviceIcons';
 
 /* ── Label helper ── */
 const lbl = (text: string) => (
@@ -258,7 +260,9 @@ export default function ServiceContentPage() {
         </button>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <span style={{ fontSize:'1.5rem', flexShrink:0 }}>{srvData.icon||'🎉'}</span>
+            {isIconKey(srvData.icon)
+              ? (() => { const Icon = SERVICE_ICONS[srvData.icon]; return <Icon size={22} color="#1e3a5f" style={{ flexShrink:0 }} />; })()
+              : <span style={{ fontSize:'1.5rem', flexShrink:0 }}>{srvData.icon||'🎉'}</span>}
             <div style={{ minWidth:0 }}>
               <h1 style={{ fontFamily:'var(--font-playfair)', fontSize:'1.2rem', fontWeight:700, color:'#0a1628', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{srvData.title||'Servicio'}</h1>
               <p style={{ color:'#64748b', fontSize:'0.75rem', margin:0 }}>Editando contenido del servicio</p>
@@ -293,10 +297,11 @@ export default function ServiceContentPage() {
         <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:14, padding:'1.25rem 1.5rem' }}>
           <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 8px' }}>Info básica</legend>
           <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-            <div style={{ display:'grid', gridTemplateColumns:'70px 1fr', gap:14 }}>
-              <F label="Icono" field="icon" value={srvData.icon||''} onChange={set} placeholder="🎉"/>
-              <F label="Título" field="title" value={srvData.title||''} onChange={set} placeholder="Shows Infantiles"/>
+            <div>
+              {lbl('Icono')}
+              <IconPicker value={srvData.icon||''} onChange={v => set('icon', v)} />
             </div>
+            <F label="Título" field="title" value={srvData.title||''} onChange={set} placeholder="Shows Infantiles"/>
             <F label="Descripción corta" field="desc" value={srvData.desc||''} onChange={set} type="textarea" rows={2} placeholder="Espectáculos llenos de magia, música y diversión..."/>
           </div>
         </fieldset>
