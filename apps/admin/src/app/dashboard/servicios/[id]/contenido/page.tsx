@@ -71,6 +71,8 @@ export default function ServiceContentPage() {
   const [statModal, setStatModal] = useState<{ index:number|null; form:any } | null>(null);
   /* Opciones modal (grid de estilos/variantes, ej. temáticas, personajes) */
   const [opcModal, setOpcModal] = useState<{ index:number|null; form:any } | null>(null);
+  /* Pasos modal (timeline "cómo trabajamos") */
+  const [pasoModal, setPasoModal] = useState<{ index:number|null; form:any } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -88,6 +90,7 @@ export default function ServiceContentPage() {
     'longDescH2', 'longDesc', 'longDesc2', 'includes', 'stats',
     'testimonialName', 'testimonialRating', 'testimonialLocation',
     'ctaH2', 'ctaP', 'btn1Text', 'opciones', 'opcionesEyebrow', 'opcionesTitulo',
+    'pasos', 'pasosEyebrow', 'pasosTitulo',
   ]);
 
   const handleGenerate = async () => {
@@ -213,6 +216,31 @@ export default function ServiceContentPage() {
 
   const setOpcField = (k: string, v: any) =>
     setOpcModal(p => p ? { ...p, form: { ...p.form, [k]: v } } : null);
+
+  /* ── Pasos helpers (timeline "cómo trabajamos", máx 4) ── */
+  const pasos: any[] = srvData.detail?.pasos || [];
+  const renumerar = (arr: any[]) => arr.map((p, i) => ({ ...p, num: i + 1 }));
+
+  const openPasoEdit = (index: number) => setPasoModal({ index, form: { ...pasos[index] } });
+  const openPasoAdd  = () => setPasoModal({ index:null, form:{ title:'', desc:'' } });
+
+  const savePaso = () => {
+    if (!pasoModal) return;
+    const { index, form } = pasoModal;
+    const next = [...pasos];
+    if (index === null) next.push(form); else next[index] = form;
+    setDetail('pasos', renumerar(next.slice(0, 4)));
+    setPasoModal(null);
+  };
+
+  const deletePaso = (i: number) => open({
+    type:'delete', title:'Eliminar paso',
+    description:'Esta acción no se puede deshacer.',
+    onConfirm: async () => setDetail('pasos', renumerar(pasos.filter((_: any, j: number) => j !== i))),
+  });
+
+  const setPasoField = (k: string, v: any) =>
+    setPasoModal(p => p ? { ...p, form: { ...p.form, [k]: v } } : null);
 
   if (loading) return (
     <div style={{ display:'flex', flexDirection:'column', gap:16, maxWidth:900, margin:'0 auto' }}>
@@ -396,6 +424,37 @@ export default function ServiceContentPage() {
           </div>
         </fieldset>
 
+        {/* Pasos — timeline "cómo trabajamos" */}
+        <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:14, padding:'1.25rem 1.5rem' }}>
+          <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 8px' }}>Nuestro Proceso (timeline, máx. 4 pasos)</legend>
+          <p style={{ fontSize:'0.78rem', color:'#64748b', margin:'0 0 12px' }}>
+            Opcional. Si lo dejas vacío, esta sección no se muestra en la web.
+          </p>
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+              <F label="Texto pequeño (eyebrow)" field="pasosEyebrow"
+                 value={srvData.detail?.pasosEyebrow||''} onChange={(k,v)=>setDetail(k,v)}
+                 placeholder="Nuestro Proceso"/>
+              <F label="Título de la sección" field="pasosTitulo"
+                 value={srvData.detail?.pasosTitulo||''} onChange={(k,v)=>setDetail(k,v)}
+                 placeholder="Cómo Trabajamos Contigo"/>
+            </div>
+            <div style={{ display:'flex', justifyContent:'flex-end' }}>
+              <button onClick={openPasoAdd} disabled={pasos.length >= 4} className="btn-outline" style={{ fontSize:'0.78rem', padding:'0.35rem 0.875rem', opacity: pasos.length >= 4 ? 0.5 : 1 }}>+ Agregar paso</button>
+            </div>
+            {pasos.length === 0 && (
+              <p style={{ color:'#94a3b8', fontSize:'0.82rem', textAlign:'center', padding:'1.5rem', background:'#f8fafc', borderRadius:10, border:'1px dashed #e2e8f0' }}>
+                Sin pasos. Esta sección no aparecerá en la web hasta que agregues al menos uno.
+              </p>
+            )}
+            {pasos.map((p: any, i: number) => (
+              <ItemCard key={i} item={{ icon: String(p.num ?? i + 1), title: p.title, desc: p.desc }}
+                onEdit={() => openPasoEdit(i)}
+                onDelete={() => deletePaso(i)}/>
+            ))}
+          </div>
+        </fieldset>
+
         {/* CTA */}
         <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:14, padding:'1.25rem 1.5rem' }}>
           <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 8px' }}>CTA final de la página</legend>
@@ -540,6 +599,29 @@ export default function ServiceContentPage() {
               {lbl('Descripción')}
               <textarea rows={3} value={opcModal.form.desc||''} onChange={e=>setOpcField('desc',e.target.value)}
                         className="admin-input" style={{ resize:'vertical' }} placeholder="Descripción breve de la opción..."/>
+            </div>
+          </div>
+        )}
+      </EditModal>
+
+      {/* Modal pasos */}
+      <EditModal
+        open={!!pasoModal}
+        title={pasoModal?.index === null ? 'Agregar paso' : 'Editar paso'}
+        onSave={savePaso}
+        onCancel={() => setPasoModal(null)}
+      >
+        {pasoModal && (
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div>
+              {lbl('Título')}
+              <input type="text" value={pasoModal.form.title||''} onChange={e=>setPasoField('title',e.target.value)}
+                     className="admin-input" placeholder="Ej: Consulta Inicial"/>
+            </div>
+            <div>
+              {lbl('Descripción')}
+              <textarea rows={3} value={pasoModal.form.desc||''} onChange={e=>setPasoField('desc',e.target.value)}
+                        className="admin-input" style={{ resize:'vertical' }} placeholder="Descripción breve del paso..."/>
             </div>
           </div>
         )}
