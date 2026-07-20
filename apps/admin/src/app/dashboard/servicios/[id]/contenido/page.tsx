@@ -81,6 +81,13 @@ export default function ServiceContentPage() {
   const set = useCallback((k: string, v: any) => setSrvData((p: any) => ({ ...p, [k]: v })), []);
   const setDetail = useCallback((k: string, v: any) => setSrvData((p: any) => ({ ...p, detail: { ...(p.detail||{}), [k]: v } })), []);
 
+  const CAMPOS_EN_DETAIL = new Set([
+    'eyebrow', 'hero_desc', 'categoryLabel', 'titleAccentWord',
+    'longDescH2', 'longDesc', 'longDesc2', 'includes', 'stats',
+    'testimonialName', 'testimonialRating', 'testimonialLocation',
+    'ctaH2', 'ctaP', 'btn1Text',
+  ]);
+
   const handleGenerate = async () => {
     if (!srvData.title) { toast.error('El servicio necesita un título'); return; }
     setGenerating(true);
@@ -88,29 +95,31 @@ export default function ServiceContentPage() {
       const res = await fetch('/api/generate-servicio', {
         method: 'POST',
         headers: await authHeaders(),
-        body: JSON.stringify({ nombre: srvData.title, instrucciones: srvData.aiInstrucciones || '' }),
+        body: JSON.stringify({
+          nombre: srvData.title,
+          instrucciones: srvData.aiInstrucciones || '',
+          contenidoActual: { desc: srvData.desc || '', ...(srvData.detail || {}) },
+        }),
       });
       const ai = await res.json();
       if (ai.error) throw new Error(ai.error);
 
-      setSrvData((p: any) => ({
-        ...p,
-        desc: ai.descripcion || p.desc,
-        detail: {
-          ...(p.detail || {}),
-          hero_desc:  ai.descripcion  || '',
-          longDescH2: ai.detalleH2   || '',
-          longDesc:   ai.parrafo1    || '',
-          longDesc2:  ai.parrafo2    || '',
-          includes: (ai.cards || []).map((c: any) => ({
-            icon: c.icono, title: c.titulo, desc: c.descripcion, visible: true,
-          })),
-          ctaH2:    ai.ctaH2         || '',
-          ctaP:     ai.ctaDescripcion || '',
-          btn1Text: `Cotizar ${srvData.title}`,
-        },
-      }));
-      toast.success('✨ Contenido generado. Revisa los campos y guarda.');
+      const campos = ai.campos || {};
+      const nCampos = Object.keys(campos).length;
+      if (nCampos === 0) {
+        toast.success(ai.resumen || 'No había nada que completar o modificar.');
+        return;
+      }
+
+      setSrvData((p: any) => {
+        const next = { ...p, detail: { ...(p.detail || {}) } };
+        for (const [k, v] of Object.entries(campos)) {
+          if (CAMPOS_EN_DETAIL.has(k)) next.detail[k] = v;
+          else next[k] = v;
+        }
+        return next;
+      });
+      toast.success(`✨ ${ai.resumen || `${nCampos} campo(s) actualizados.`} Revisa y guarda.`);
     } catch (e: any) {
       toast.error(`Error: ${e.message}`);
     } finally {
@@ -208,7 +217,7 @@ export default function ServiceContentPage() {
               rows={2}
               value={srvData.aiInstrucciones || ''}
               onChange={e => set('aiInstrucciones', e.target.value)}
-              placeholder="Instrucciones para la IA (opcional)…"
+              placeholder="Vacío = completa solo lo que falta. O pide algo puntual: 'mejora el párrafo principal', 'agrega una estadística de bodas', 'regenera todo'…"
               className="admin-input"
               style={{ width:'100%', resize:'vertical', fontSize:'0.78rem', minHeight:52 }}
             />
