@@ -11,15 +11,15 @@ import BrandsSection       from '@/components/sections/BrandsSection';
 import ContactSection      from '@/components/sections/ContactSection';
 import type { HomeData }   from '@/lib/homeData';
 
-// Wrapper con animación de entrada al scroll (spring físico vía Framer Motion)
+// Wrapper con animación de entrada al scroll (fade + slide suave, sin rebote)
 function Section({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, y: 36 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.15, margin: '0px 0px -80px 0px' }}
-      transition={{ type: 'spring', stiffness: 60, damping: 16, delay }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay }}
     >
       {children}
     </motion.div>
