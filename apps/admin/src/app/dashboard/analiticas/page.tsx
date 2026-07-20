@@ -232,110 +232,6 @@ export default function AnaliticasPage() {
         </div>
       </div>
 
-      {/* Summary cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14 }}>
-        <SummaryCard icon={MessageSquare} label="Mensajes totales"  value={msgsLoad ? '…' : totalMsgs}    sub={`últimos ${days} días`}        color="#1e3a5f" />
-        <SummaryCard icon={Bell}          label="Sin leer"           value={msgsLoad ? '…' : unreadMsgs}   sub="requieren atención"            color="#dc2626" />
-        <SummaryCard icon={TrendingUp}    label="Mensajes hoy"       value={msgsLoad ? '…' : todayMsgs}    sub="recibidos hoy"                 color="#059669" />
-        <SummaryCard icon={BarChart2}     label="Tasa de gestión"    value={msgsLoad ? '…' : `${tasa}%`}   sub={`${cotizados} cotizados/cerrados`} color="#d97706" />
-      </div>
-
-      {/* Charts row 1 */}
-      <div className="charts-2col">
-
-        {/* Bar chart: mensajes por día */}
-        <ChartCard title={`Mensajes por día — ${days === 7 ? 'última semana' : `últimos ${days} días`}`}>
-          {msgsLoad ? (
-            <div className="skeleton" style={{ height: 210, borderRadius: 8 }} />
-          ) : (
-            <ResponsiveContainer width="100%" height={210}>
-              <BarChart data={dayData} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false}
-                       interval={days <= 7 ? 0 : days <= 30 ? 4 : 8} />
-                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(37,99,235,0.06)' }} />
-                <Bar dataKey="count" fill="#2563eb" radius={[6, 6, 0, 0]} maxBarSize={36} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </ChartCard>
-
-        {/* Donut: por estado */}
-        <ChartCard title="Por estado">
-          {msgsLoad ? (
-            <div className="skeleton" style={{ height: 210, borderRadius: 8 }} />
-          ) : statusData.length === 0 ? (
-            <p style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center', padding: '3.5rem 0', margin: 0 }}>Sin mensajes</p>
-          ) : (
-            <>
-              <ResponsiveContainer width="100%" height={150}>
-                <PieChart>
-                  <Pie data={statusData} cx="50%" cy="50%" innerRadius={42} outerRadius={66}
-                       dataKey="value" paddingAngle={3} startAngle={90} endAngle={-270}>
-                    {statusData.map((d, i) => <Cell key={i} fill={d.color} stroke="none" />)}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ background: '#0a1628', border: 'none', borderRadius: 10, color: '#fff', fontSize: '0.78rem' }}
-                    formatter={(v: any, name: any) => [v, name]} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                {statusData.map(d => (
-                  <div key={d.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: 2, background: d.color, flexShrink: 0 }} />
-                      <span style={{ fontSize: '0.78rem', color: '#475569' }}>{d.name}</span>
-                    </div>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0a1628' }}>{d.value}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </ChartCard>
-      </div>
-
-      {/* Charts row 2 */}
-      <div className="charts-equal">
-        <ChartCard title="Tipos de evento solicitados">
-          {msgsLoad
-            ? <div className="skeleton" style={{ height: 180, borderRadius: 8 }} />
-            : <HBarList data={topTypes} color="#8b5cf6" />}
-        </ChartCard>
-        <ChartCard title="Distritos de procedencia">
-          {msgsLoad
-            ? <div className="skeleton" style={{ height: 180, borderRadius: 8 }} />
-            : <HBarList data={topDist} color="#10b981" />}
-        </ChartCard>
-      </div>
-
-      {/* Inventario */}
-      <div>
-        <p style={{ margin: '0 0 12px', fontWeight: 700, fontSize: '0.88rem', color: '#0a1628' }}>Inventario del contenido</p>
-        <div className="charts-3col">
-          {([
-            { icon: Briefcase,  label: 'Servicios',   active: svcActive, total: svcTotal, color: '#1e3a5f' },
-            { icon: ImageIcon,  label: 'Galería',      active: galVis,   total: galTotal, color: '#7c3aed' },
-            { icon: Star,       label: 'Testimonios', active: tesVis,   total: tesTotal, color: '#f59e0b' },
-          ] as const).map(({ icon: Icon, label, active, total, color }) => (
-            <div key={label} className="admin-card" style={{ padding: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                <div style={{ width: 34, height: 34, borderRadius: 9, background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon size={16} color="#fff" />
-                </div>
-                <p style={{ margin: 0, fontWeight: 600, fontSize: '0.88rem', color: '#0a1628' }}>{label}</p>
-              </div>
-              <p style={{ margin: '0 0 2px', fontSize: '2rem', fontWeight: 800, color: '#0a1628', lineHeight: 1 }}>{active}</p>
-              <p style={{ margin: '0 0 10px', fontSize: '0.72rem', color: '#64748b' }}>visibles de {total}</p>
-              <div style={{ height: 5, borderRadius: 999, background: '#f1f5f9' }}>
-                <div style={{ height: '100%', borderRadius: 999, background: color, width: `${total ? (active / total) * 100 : 0}%`, transition: 'width .5s' }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Google Analytics 4: tráfico real del sitio */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
@@ -497,6 +393,110 @@ export default function AnaliticasPage() {
           </div>
           );
         })()}
+      </div>
+
+      {/* Summary cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14 }}>
+        <SummaryCard icon={MessageSquare} label="Mensajes totales"  value={msgsLoad ? '…' : totalMsgs}    sub={`últimos ${days} días`}        color="#1e3a5f" />
+        <SummaryCard icon={Bell}          label="Sin leer"           value={msgsLoad ? '…' : unreadMsgs}   sub="requieren atención"            color="#dc2626" />
+        <SummaryCard icon={TrendingUp}    label="Mensajes hoy"       value={msgsLoad ? '…' : todayMsgs}    sub="recibidos hoy"                 color="#059669" />
+        <SummaryCard icon={BarChart2}     label="Tasa de gestión"    value={msgsLoad ? '…' : `${tasa}%`}   sub={`${cotizados} cotizados/cerrados`} color="#d97706" />
+      </div>
+
+      {/* Charts row 1 */}
+      <div className="charts-2col">
+
+        {/* Bar chart: mensajes por día */}
+        <ChartCard title={`Mensajes por día — ${days === 7 ? 'última semana' : `últimos ${days} días`}`}>
+          {msgsLoad ? (
+            <div className="skeleton" style={{ height: 210, borderRadius: 8 }} />
+          ) : (
+            <ResponsiveContainer width="100%" height={210}>
+              <BarChart data={dayData} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false}
+                       interval={days <= 7 ? 0 : days <= 30 ? 4 : 8} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(37,99,235,0.06)' }} />
+                <Bar dataKey="count" fill="#2563eb" radius={[6, 6, 0, 0]} maxBarSize={36} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </ChartCard>
+
+        {/* Donut: por estado */}
+        <ChartCard title="Por estado">
+          {msgsLoad ? (
+            <div className="skeleton" style={{ height: 210, borderRadius: 8 }} />
+          ) : statusData.length === 0 ? (
+            <p style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center', padding: '3.5rem 0', margin: 0 }}>Sin mensajes</p>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={150}>
+                <PieChart>
+                  <Pie data={statusData} cx="50%" cy="50%" innerRadius={42} outerRadius={66}
+                       dataKey="value" paddingAngle={3} startAngle={90} endAngle={-270}>
+                    {statusData.map((d, i) => <Cell key={i} fill={d.color} stroke="none" />)}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ background: '#0a1628', border: 'none', borderRadius: 10, color: '#fff', fontSize: '0.78rem' }}
+                    formatter={(v: any, name: any) => [v, name]} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {statusData.map(d => (
+                  <div key={d.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: 2, background: d.color, flexShrink: 0 }} />
+                      <span style={{ fontSize: '0.78rem', color: '#475569' }}>{d.name}</span>
+                    </div>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0a1628' }}>{d.value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </ChartCard>
+      </div>
+
+      {/* Charts row 2 */}
+      <div className="charts-equal">
+        <ChartCard title="Tipos de evento solicitados">
+          {msgsLoad
+            ? <div className="skeleton" style={{ height: 180, borderRadius: 8 }} />
+            : <HBarList data={topTypes} color="#8b5cf6" />}
+        </ChartCard>
+        <ChartCard title="Distritos de procedencia">
+          {msgsLoad
+            ? <div className="skeleton" style={{ height: 180, borderRadius: 8 }} />
+            : <HBarList data={topDist} color="#10b981" />}
+        </ChartCard>
+      </div>
+
+      {/* Inventario */}
+      <div>
+        <p style={{ margin: '0 0 12px', fontWeight: 700, fontSize: '0.88rem', color: '#0a1628' }}>Inventario del contenido</p>
+        <div className="charts-3col">
+          {([
+            { icon: Briefcase,  label: 'Servicios',   active: svcActive, total: svcTotal, color: '#1e3a5f' },
+            { icon: ImageIcon,  label: 'Galería',      active: galVis,   total: galTotal, color: '#7c3aed' },
+            { icon: Star,       label: 'Testimonios', active: tesVis,   total: tesTotal, color: '#f59e0b' },
+          ] as const).map(({ icon: Icon, label, active, total, color }) => (
+            <div key={label} className="admin-card" style={{ padding: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                <div style={{ width: 34, height: 34, borderRadius: 9, background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon size={16} color="#fff" />
+                </div>
+                <p style={{ margin: 0, fontWeight: 600, fontSize: '0.88rem', color: '#0a1628' }}>{label}</p>
+              </div>
+              <p style={{ margin: '0 0 2px', fontSize: '2rem', fontWeight: 800, color: '#0a1628', lineHeight: 1 }}>{active}</p>
+              <p style={{ margin: '0 0 10px', fontSize: '0.72rem', color: '#64748b' }}>visibles de {total}</p>
+              <div style={{ height: 5, borderRadius: 999, background: '#f1f5f9' }}>
+                <div style={{ height: '100%', borderRadius: 999, background: color, width: `${total ? (active / total) * 100 : 0}%`, transition: 'width .5s' }} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
     </div>
