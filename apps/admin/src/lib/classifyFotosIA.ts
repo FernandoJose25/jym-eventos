@@ -77,7 +77,7 @@ export async function clasificarLoteConIA(
             'Authorization': `Bearer ${GROQ_API_KEY}`,
         },
         body: JSON.stringify({
-            model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+            model: 'qwen/qwen3.6-27b',
             messages: [
                 {
                     role: 'user',
@@ -89,6 +89,9 @@ export async function clasificarLoteConIA(
             ],
             temperature: 0.15,
             max_completion_tokens: 350 * fotos.length + 200,
+            // qwen3.6-27b es un modelo con razonamiento: sin esto antepone un bloque
+            // <think>...</think> que consume el budget de tokens y rompe el JSON.parse de abajo.
+            reasoning_effort: 'none',
             response_format: { type: 'json_object' },
         }),
     });
