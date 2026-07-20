@@ -476,6 +476,9 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
   const firestoreType = rawMediaType;
   const mediaSrc = (firestoreMedia && !mediaError) ? firestoreMedia : (sd.img || '');
   const isVideo = firestoreMedia && !mediaError && firestoreType === 'video';
+  // 'contain' evita recortar logos/diseños con texto pegado al borde en el
+  // panel vertical 2:3 — por defecto 'cover' (mejor para fotos de eventos).
+  const heroMediaFit: 'cover' | 'contain' = servicio?.heroMediaFit === 'contain' ? 'contain' : 'cover';
 
   // includesMediaSrc — fondo independiente de la sección "¿Qué incluye?"; si no hay, usa el hero
   const includesMediaSrc = servicio?.includesMediaSrc || mediaSrc;
@@ -698,7 +701,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           {isVideo ? (
             <video key={mediaSrc} ref={videoRef} autoPlay muted loop playsInline
               onError={() => setMediaError(true)}
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}>
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: heroMediaFit }}>
               <source src={cxVideo(mediaSrc)} type="video/mp4" />
               <source src={cxVideo(mediaSrc)} type="video/webm" />
             </video>
@@ -706,7 +709,9 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
             <Image src={cxHero(mediaSrc)} alt={title}
               fill priority sizes="(max-width: 900px) 100vw, 520px"
               onError={() => setMediaError(true)}
-              style={{ objectFit: 'cover', transition: 'transform 10s ease', animation: 'imgZoom 10s ease forwards' }} />
+              style={heroMediaFit === 'contain'
+                ? { objectFit: 'contain', background: '#0c1e30' }
+                : { objectFit: 'cover', transition: 'transform 10s ease', animation: 'imgZoom 10s ease forwards' }} />
           ) : (
             /* Placeholder when no media */
             <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, #0c1e30, ${accentColor}30)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

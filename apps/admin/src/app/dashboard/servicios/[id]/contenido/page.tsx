@@ -500,6 +500,11 @@ export default function ServiceContentPage() {
             acceptVideo={true} soundEnabled={false}
             previewAspect={2/3} previewLabel="Panel hero derecho (retrato)"
             onComplete={(url,fp,type)=>{ set('heroMediaSrc',url); set('heroFocalX',fp.x); set('heroFocalY',fp.y); set('heroMediaType',type||'image'); }}/>
+          <label style={{ display:'flex', alignItems:'center', gap:8, marginTop:12, fontSize:'0.8rem', color:'#334155', fontWeight:600, cursor:'pointer' }}>
+            <input type="checkbox" checked={srvData.heroMediaFit === 'contain'}
+              onChange={e => set('heroMediaFit', e.target.checked ? 'contain' : 'cover')} />
+            🖼️ Ajustar sin recortar (usar para logos o diseños que no deben cortarse en el panel vertical)
+          </label>
         </fieldset>
 
         {/* Media — fondo sección "¿Qué incluye?" */}
