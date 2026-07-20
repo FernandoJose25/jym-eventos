@@ -745,7 +745,9 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(5,13,26,0.96)',
           backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', padding: '16px 16px 12px', cursor: 'zoom-out'
+          justifyContent: 'center',
+          padding: isTouch ? 0 : '16px 16px 12px',
+          cursor: 'zoom-out'
         }}
           onClick={() => setLightbox(null)}
           onTouchStart={isTouch ? onLightboxTouchStart : undefined}
@@ -757,7 +759,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
               position: 'absolute', top: 16, right: 16, width: 40, height: 40,
               borderRadius: '50%', background: 'rgba(255,255,255,0.12)', border: 'none',
               color: '#fff', fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
-              alignItems: 'center', justifyContent: 'center', transition: 'background .2s', zIndex: 1
+              alignItems: 'center', justifyContent: 'center', transition: 'background .2s', zIndex: 2
             }}
             onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.25)'}
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.12)'}>
@@ -765,14 +767,21 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
           </button>
 
           <div onClick={e => e.stopPropagation()}
-            style={{
+            style={isTouch ? {
+              width: '100%', height: '100%', cursor: 'default', display: 'flex',
+              flexDirection: 'column', animation: 'lbIn .3s cubic-bezier(0.34,1.56,0.64,1)'
+            } : {
               maxWidth: 960, width: '100%', cursor: 'default', display: 'flex',
               flexDirection: 'column', gap: 10,
               animation: 'lbIn .3s cubic-bezier(0.34,1.56,0.64,1)'
             }}>
 
-            {/* Media — sin nada encima */}
-            <div ref={mediaBoxRef} style={{ position: 'relative', overflow: 'hidden', borderRadius: 16 }}>
+            {/* Media — pantalla completa en mobile (estilo X/Twitter), tarjeta en desktop */}
+            <div ref={mediaBoxRef} style={isTouch ? {
+              position: 'relative', overflow: 'hidden',
+              flex: 1, minHeight: 0, width: '100%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            } : { position: 'relative', overflow: 'hidden', borderRadius: 16 }}>
               <AnimatePresence mode="wait" initial={false} custom={swipeDir}>
                 <motion.div
                   key={visibles[lightbox].id}
@@ -784,9 +793,13 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                   }}
                   exit={{ y: swipeDir > 0 ? -40 : 40, opacity: 0 }}
                   transition={{ duration: bounce ? 0.15 : 0.2 }}
+                  style={isTouch ? {
+                    width: '100%', height: '100%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  } : undefined}
                 >
                   {isVideo(visibles[lightbox]) ? (
-                    <CustomVideoPlayer key={visibles[lightbox].id} src={visibles[lightbox].url} sonidoPermitido={visibles[lightbox].sonidoPermitido === true} />
+                    <CustomVideoPlayer key={visibles[lightbox].id} src={visibles[lightbox].url} sonidoPermitido={visibles[lightbox].sonidoPermitido === true} fullBleed={isTouch} />
                   ) : (
                     <motion.div
                       {...(isTouch ? imgZoomHandlers : {})}
@@ -795,13 +808,20 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                         x: isTouch ? imgX : 0,
                         y: isTouch ? imgY : 0,
                         touchAction: isTouch ? 'none' : 'auto',
+                        ...(isTouch ? {
+                          width: '100%', height: '100%',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        } : {}),
                       }}
                     >
                       <Image src={cxFull(visibles[lightbox].url)}
                         alt={visibles[lightbox].alt || 'Evento J&M'}
                         width={1400} height={900}
-                        sizes="(max-width: 960px) 95vw, 960px"
-                        style={{
+                        sizes={isTouch ? '100vw' : '(max-width: 960px) 95vw, 960px'}
+                        style={isTouch ? {
+                          width: '100%', height: '100%', maxHeight: '100dvh',
+                          objectFit: 'contain', display: 'block',
+                        } : {
                           width: '100%', height: 'auto', maxHeight: '72vh', objectFit: 'contain', display: 'block',
                           borderRadius: 16, boxShadow: '0 32px 80px rgba(0,0,0,0.6)'
                         }} />
@@ -814,7 +834,12 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
             </div>
 
             {/* Barra inferior: flechas + info centrada */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: isTouch ? '10px 16px 12px' : 0,
+              background: isTouch ? 'linear-gradient(transparent, rgba(5,13,26,0.85))' : 'transparent',
+              flexShrink: 0,
+            }}>
 
               {!isTouch && (
                 <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! - 1 + visibles.length) % visibles.length)); }}
@@ -869,14 +894,16 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
               )}
             </div>
 
-            <ShareBar
-              itemId={visibles[lightbox].id}
-              title={visibles[lightbox].alt || visibles[lightbox].categoria}
-              {...(isVideo(visibles[lightbox])
-                ? { videoUrl: cxShareVideo(visibles[lightbox].url) }
-                : { imageUrl: cxFull(visibles[lightbox].url) }
-              )}
-            />
+            <div style={{ padding: isTouch ? '0 16px 10px' : 0, flexShrink: 0 }}>
+              <ShareBar
+                itemId={visibles[lightbox].id}
+                title={visibles[lightbox].alt || visibles[lightbox].categoria}
+                {...(isVideo(visibles[lightbox])
+                  ? { videoUrl: cxShareVideo(visibles[lightbox].url) }
+                  : { imageUrl: cxFull(visibles[lightbox].url) }
+                )}
+              />
+            </div>
           </div>
         </div>
       )}
