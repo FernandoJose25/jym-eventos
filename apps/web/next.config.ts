@@ -4,6 +4,11 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'res.cloudinary.com' },
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
+      // El bucket público de Firebase Storage sirve los assets migrados de
+      // Cloudinary (ver commit "Configura Firebase Storage como respaldo
+      // real de Cloudinary") bajo storage.googleapis.com, no bajo
+      // firebasestorage.googleapis.com — son hosts distintos, ambos hacen falta.
+      { protocol: 'https', hostname: 'storage.googleapis.com' },
       // Fallback estático de SERVICIOS_DATA en ServicioClient.tsx usa fotos de
       // Unsplash cuando Firestore no trae media propia — mismo bloque JSX que
       // renderiza las URLs de Cloudinary, así que ambos hosts deben poder
