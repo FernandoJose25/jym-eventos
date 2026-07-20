@@ -1382,33 +1382,39 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
               </div>
 
               <div>
-                {faqList.map((f: any, i: number) => (
-                  <details key={i} className="srv-faq-item" open={openFaqIndex === i}
-                    onClick={e => {
-                      e.preventDefault();
-                      setOpenFaqIndex(prev => prev === i ? null : i);
-                    }}
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '1.1rem 0' }}>
-                    <summary style={{
-                      cursor: 'pointer', listStyle: 'none',
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem',
-                      color: '#fff', fontFamily: 'var(--font-playfair)', fontSize: '1.02rem',
-                    }}>
-                      {f.pregunta}
-                      <span className="srv-faq-plus" style={{ color: '#f5c842', fontSize: '1.3rem', flexShrink: 0, transition: 'transform .2s ease' }}>+</span>
-                    </summary>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.88rem', lineHeight: 1.7, margin: '0.85rem 0 0', fontFamily: 'var(--font-jakarta)' }}>
-                      {f.respuesta}
-                    </p>
-                  </details>
-                ))}
+                {faqList.map((f: any, i: number) => {
+                  const isOpen = openFaqIndex === i;
+                  return (
+                    <div key={i} className="srv-faq-item"
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '1.1rem 0' }}>
+                      <div role="button" tabIndex={0}
+                        onClick={() => setOpenFaqIndex(prev => prev === i ? null : i)}
+                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenFaqIndex(prev => prev === i ? null : i); } }}
+                        style={{
+                          cursor: 'pointer', userSelect: 'none',
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem',
+                          color: '#fff', fontFamily: 'var(--font-playfair)', fontSize: '1.02rem',
+                        }}>
+                        {f.pregunta}
+                        <span className="srv-faq-plus" style={{ color: '#f5c842', fontSize: '1.3rem', flexShrink: 0, transition: 'transform .3s ease', transform: isOpen ? 'rotate(45deg)' : 'none' }}>+</span>
+                      </div>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateRows: isOpen ? '1fr' : '0fr',
+                        opacity: isOpen ? 1 : 0,
+                        transition: 'grid-template-rows .35s ease, opacity .3s ease',
+                      }}>
+                        <div style={{ overflow: 'hidden' }}>
+                          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.88rem', lineHeight: 1.7, margin: '0.85rem 0 0', fontFamily: 'var(--font-jakarta)' }}>
+                            {f.respuesta}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-
-            <style>{`
-              .srv-faq-item summary::-webkit-details-marker { display: none; }
-              .srv-faq-item[open] .srv-faq-plus { transform: rotate(45deg); }
-            `}</style>
           </section>
         );
       })()}
