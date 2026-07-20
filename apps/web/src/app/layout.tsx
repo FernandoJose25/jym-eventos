@@ -116,11 +116,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="es" className={`${playfair.variable} ${jakarta.variable}`}>
-      <head>
-        {/* Preconnect para fonts */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      </head>
       <body>
         <JsonLd data={localBusinessSchema} />
         <MotionProvider>

@@ -27,6 +27,13 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default function Page() {
-  return <SobreNosotrosClient />;
+export default async function Page() {
+  let initialCfg: Record<string, any> = {};
+  try {
+    const snap = await adminDb.collection('site_config').doc('nosotros').get();
+    if (snap.exists) initialCfg = snap.data() ?? {};
+  } catch {
+    // sin datos: SobreNosotrosClient usa sus valores por defecto
+  }
+  return <SobreNosotrosClient initialCfg={initialCfg} />;
 }
