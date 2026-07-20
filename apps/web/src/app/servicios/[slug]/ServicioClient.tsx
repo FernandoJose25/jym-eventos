@@ -503,6 +503,12 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
   const ctaH2text = dt.ctaH2 || sd.cta || '¿Listo para reservar?';
   const ctaPtext = dt.ctaP || sd.ctaDesc || 'Contáctanos hoy y preparamos una propuesta personalizada sin compromiso.';
 
+  // opciones: grid de estilos/variantes propias del servicio (ej. temáticas, personajes).
+  // Firestore detail.opciones primero, luego fallback estático (hoy solo decoracion-tematica).
+  const opcionesList: any[] = (dt.opciones?.length > 0) ? dt.opciones : (sd.tematicas || []);
+  const opcionesEyebrow = dt.opcionesEyebrow || (sd.tematicas ? 'Estilos disponibles' : '');
+  const opcionesTitulo = dt.opcionesTitulo || (sd.tematicas ? 'Temáticas Más Populares' : '');
+
   const waText = sd.waText || `Hola, me interesa ${title}`;
   const accentColor = sd.color || '#d4a017';
   const ctaLabel = dt.btn1Text || (rawSlug === 'decoracion-tematica' ? 'Cotizar Decoración' : rawSlug === 'shows-infantiles' ? 'Cotizar Show' : 'Cotizar Ahora');
@@ -1013,17 +1019,17 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
       )}
 
       {/* ═══════════════════════════════════════════
-          TEMÁTICAS — solo decoración
+          OPCIONES — grid de estilos/variantes propias del servicio
       ═══════════════════════════════════════════ */}
-      {sd.tematicas?.length > 0 && (
+      {opcionesList.length > 0 && (
         <section style={{ padding: 'clamp(5rem,9vw,8rem) 0', background: '#fff' }}>
           <div className="container">
             <div data-reveal="tem-header" style={{ textAlign: 'center', marginBottom: 'clamp(2.5rem,5vw,4rem)', opacity: isVisible('tem-header') ? 1 : 0, transform: isVisible('tem-header') ? 'none' : 'translateY(24px)', transition: 'all .7s ease' }}>
-              <p style={{ color: accentColor, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Estilos disponibles</p>
-              <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#0c1e30', margin: 0, letterSpacing: '-.03em' }}>Temáticas Más Populares</h2>
+              <p style={{ color: accentColor, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>{opcionesEyebrow}</p>
+              <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#0c1e30', margin: 0, letterSpacing: '-.03em' }}>{opcionesTitulo}</h2>
             </div>
             <div className="srv-tematicas" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem' }}>
-              {sd.tematicas.map((t: any, i: number) => {
+              {opcionesList.map((t: any, i: number) => {
                 const palettes = [
                   { bg: '#fef9ee', border: '#f5c842', text: '#92660a' },
                   { bg: '#eff6ff', border: '#93c5fd', text: '#1d4ed8' },
