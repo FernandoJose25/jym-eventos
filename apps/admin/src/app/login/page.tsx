@@ -62,7 +62,11 @@ export default function LoginPage() {
     try {
       await signIn(email, pass);
       setStage('success');
-      setTimeout(() => router.push('/dashboard'), 900);
+      // Navegación dura: fuerza una request real al servidor para que
+      // middleware.ts vea la cookie recién seteada por /api/session. Un
+      // router.push (soft nav) puede evaluarse antes de que el navegador
+      // confirme el Set-Cookie, provocando un rebote silencioso a /login.
+      setTimeout(() => { window.location.href = '/dashboard'; }, 900);
     } catch (err: any) {
       setStage('form');
       setError(
