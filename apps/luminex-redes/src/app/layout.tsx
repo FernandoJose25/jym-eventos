@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Luminex Studio & Events — Fotografía Instantánea',
-  description: 'Fotografía instantánea, photobooks y fotografía profesional para tu evento.',
+  description: 'Fotografía que convierte cada momento en un recuerdo eterno.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
