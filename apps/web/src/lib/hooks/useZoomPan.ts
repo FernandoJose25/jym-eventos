@@ -40,17 +40,25 @@ export function useZoomPan(containerRef: React.RefObject<HTMLElement | null>) {
   const isPanning = useRef(false);
   const lastTap = useRef<{ time: number; x: number; y: number } | null>(null);
 
+  // `getBoundingClientRect()` de un elemento con `transform: scale()` YA
+  // vigente devuelve el rect visualmente escalado, no el tamaño base — si no
+  // se corrige, cada pinch subsecuente calcula límites de pan sobre un rect
+  // cada vez más grande (bucle de "se agranda solo" al soltar). Se divide
+  // por la escala actual para recuperar el tamaño base real del elemento.
   const clampPan = useCallback((nx: number, ny: number, s: number) => {
     const el = containerRef.current;
     if (!el) return { x: nx, y: ny };
     const rect = el.getBoundingClientRect();
-    const maxX = (rect.width * (s - 1)) / 2;
-    const maxY = (rect.height * (s - 1)) / 2;
+    const currentScale = scale.get() || 1;
+    const baseWidth = rect.width / currentScale;
+    const baseHeight = rect.height / currentScale;
+    const maxX = (baseWidth * (s - 1)) / 2;
+    const maxY = (baseHeight * (s - 1)) / 2;
     return {
       x: Math.min(Math.max(nx, -maxX), maxX),
       y: Math.min(Math.max(ny, -maxY), maxY),
     };
-  }, [containerRef]);
+  }, [containerRef, scale]);
 
   const reset = useCallback(() => {
     animate(scale, 1, { duration: 0.25 });
@@ -63,8 +71,11 @@ export function useZoomPan(containerRef: React.RefObject<HTMLElement | null>) {
     const el = containerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const cx = point.x - rect.left - rect.width / 2;
-    const cy = point.y - rect.top - rect.height / 2;
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const currentScale = scale.get() || 1;
+    const cx = (point.x - centerX) / currentScale;
+    const cy = (point.y - centerY) / currentScale;
     const nx = -cx * (targetScale - 1);
     const ny = -cy * (targetScale - 1);
     const clamped = clampPan(nx, ny, targetScale);
@@ -99,17 +110,26 @@ export function useZoomPan(containerRef: React.RefObject<HTMLElement | null>) {
       const newDist = dist(a, b);
       const factor = newDist / (pinchStartDist.current || 1);
       const targetScale = Math.min(Math.max(pinchStartScale.current * factor, MIN_SCALE), MAX_SCALE);
-      scale.set(targetScale);
       const center = mid(a, b);
       const el = containerRef.current;
       if (el) {
+        // Rect leído ANTES de aplicar targetScale, para no leer el tamaño
+        // ya distorsionado por la transform (ver nota en clampPan).
         const rect = el.getBoundingClientRect();
-        const cx = center.x - rect.left - rect.width / 2;
-        const cy = center.y - rect.top - rect.height / 2;
-        const clamped = clampPan(-cx * (targetScale - 1), -cy * (targetScale - 1), targetScale);
-        x.set(clamped.x);
-        y.set(clamped.y);
+        const baseWidth = rect.width / (pinchStartScale.current || 1);
+        const baseHeight = rect.height / (pinchStartScale.current || 1);
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const cx = (center.x - centerX) / (pinchStartScale.current || 1);
+        const cy = (center.y - centerY) / (pinchStartScale.current || 1);
+        const maxX = (baseWidth * (targetScale - 1)) / 2;
+        const maxY = (baseHeight * (targetScale - 1)) / 2;
+        const nx = -cx * (targetScale - 1);
+        const ny = -cy * (targetScale - 1);
+        x.set(Math.min(Math.max(nx, -maxX), maxX));
+        y.set(Math.min(Math.max(ny, -maxY), maxY));
       }
+      scale.set(targetScale);
       e.preventDefault();
       return;
     }

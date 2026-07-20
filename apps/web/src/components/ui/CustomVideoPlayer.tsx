@@ -50,7 +50,7 @@ function fmtTime(s: number) {
  * visitante no puede activar el sonido bajo ninguna circunstancia (para
  * videos con conversaciones/audio que no se quiere hacer público).
  */
-function CustomVideoPlayer({ src, sonidoPermitido = false }: { src: string; sonidoPermitido?: boolean }) {
+function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false }: { src: string; sonidoPermitido?: boolean; fullBleed?: boolean }) {
   const videoRef  = useRef<HTMLVideoElement>(null);
   const wrapRef   = useRef<HTMLDivElement>(null);
   const timerRef  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -306,9 +306,14 @@ function CustomVideoPlayer({ src, sonidoPermitido = false }: { src: string; soni
       onClick={sp}
       onMouseMove={bump}
       style={{
-        position: 'relative', background: '#000', width: '100%',
-        borderRadius: isFull ? 0 : 16,
-        boxShadow: isFull ? 'none' : '0 32px 80px rgba(0,0,0,0.6)',
+        position: 'relative', background: '#000',
+        width: '100%', height: fullBleed ? '100%' : undefined,
+        overflow: 'hidden',
+        display: fullBleed ? 'flex' : undefined,
+        alignItems: fullBleed ? 'center' : undefined,
+        justifyContent: fullBleed ? 'center' : undefined,
+        borderRadius: isFull || fullBleed ? 0 : 16,
+        boxShadow: isFull || fullBleed ? 'none' : '0 32px 80px rgba(0,0,0,0.6)',
       }}
     >
       {/* Video */}
@@ -329,9 +334,13 @@ function CustomVideoPlayer({ src, sonidoPermitido = false }: { src: string; soni
           onTouchEnd: (e: React.TouchEvent) => { sp(e); zoomHandlers.onTouchEnd(e); handleVideoTouchEnd(e); },
         } : {})}
         style={{
-          width: '100%', maxHeight: isFull ? '100dvh' : '72vh',
+          width: fullBleed ? 'auto' : '100%',
+          height: fullBleed ? '100%' : undefined,
+          maxWidth: '100%',
+          maxHeight: fullBleed ? '100%' : isFull ? '100dvh' : '72vh',
           display: 'block', background: '#000', cursor: 'pointer',
-          borderRadius: isFull ? 0 : 16,
+          objectFit: 'contain',
+          borderRadius: isFull || fullBleed ? 0 : 16,
           scale, x: panX, y: panY,
           touchAction: isTouch ? 'none' : 'auto',
         }}
