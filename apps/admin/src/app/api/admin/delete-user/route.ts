@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase-admin';
-import { verifyToken } from '@/lib/auth-server';
+import { requireAdmin } from '@/lib/auth-server';
 
 export async function POST(req: NextRequest) {
-  const auth = await verifyToken(req);
+  const auth = await requireAdmin(req);
   if (auth.response) return auth.response;
 
   try {

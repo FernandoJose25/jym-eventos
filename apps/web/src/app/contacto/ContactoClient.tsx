@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 function toPlain(d: Record<string, any>): Record<string, any> {
@@ -30,6 +30,7 @@ export default function ContactoClient({ initialContacto }: { initialContacto?: 
     nombre: '', telefono: '', correo: '', distrito: '',
     tipoEvento: '', fechaEvento: '', invitados: '', presupuesto: '', mensaje: ''
   });
+  const [_web, setWeb] = useState(''); // honeypot anti-bot, no lo llena un humano
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState('');
 
@@ -47,10 +48,20 @@ export default function ContactoClient({ initialContacto }: { initialContacto?: 
     }
     setError(''); setStatus('loading');
     try {
-      await addDoc(collection(db, 'mensajes'), {
-        ...form, fechaEnvio: new Date().toISOString(),
-        estado: 'pendiente', leido: false, origen: '/contacto',
+      const res = await fetch('/api/contacto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, _web }),
       });
+      if (!res.ok) {
+        if (res.status === 429) {
+          setError('Ya enviaste varias consultas seguidas. Espera unos minutos o escríbenos por WhatsApp.');
+        } else {
+          setError('Error al enviar. Por favor escríbenos directamente al WhatsApp.');
+        }
+        setStatus('error');
+        return;
+      }
       setStatus('success');
       setForm({ nombre: '', telefono: '', correo: '', distrito: '', tipoEvento: '', fechaEvento: '', invitados: '', presupuesto: '', mensaje: '' });
     } catch {
@@ -407,6 +418,10 @@ export default function ContactoClient({ initialContacto }: { initialContacto?: 
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }} noValidate>
+                    {/* Honeypot: invisible para humanos, un bot que autorellena todos los inputs sí lo completa */}
+                    <input type="text" name="empresa" value={_web} onChange={e => setWeb(e.target.value)}
+                      tabIndex={-1} autoComplete="off" aria-hidden="true"
+                      style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
                     <div className="cp-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                       <div>
                         <label style={lbl} htmlFor="nombre">Nombre *</label>

@@ -63,9 +63,13 @@ export default function LoginPage() {
       await signIn(email, pass);
       setStage('success');
       setTimeout(() => router.push('/dashboard'), 900);
-    } catch {
+    } catch (err: any) {
       setStage('form');
-      setError('Correo o contraseña incorrectos');
+      setError(
+        err?.message?.includes('Demasiados intentos')
+          ? err.message
+          : 'Correo o contraseña incorrectos'
+      );
     }
   };
 

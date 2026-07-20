@@ -7,36 +7,65 @@ service cloud.firestore {
       allow read: if true;
     }
 
-    // Escrituras autenticadas (panel admin)
-    match /{document=**} {
-      allow write: if request.auth != null;
+    function rolDe(uid) {
+      return get(/databases/$(database)/documents/usuarios/$(uid)).data.rol;
+    }
+    function esAdmin() {
+      return request.auth != null && rolDe(request.auth.uid) == 'admin';
+    }
+    function esEditor() {
+      return request.auth != null &&
+        (rolDe(request.auth.uid) == 'admin' || rolDe(request.auth.uid) == 'editor');
     }
 
-    // Formulario de contacto — cualquier visitante puede crear un mensaje
-    match /mensajes/{id} {
-      allow create: if
-        request.resource.data.nombre is string &&
-        request.resource.data.nombre.size() >= 2 &&
-        request.resource.data.telefono is string &&
-        request.resource.data.telefono.size() >= 6 &&
-        request.resource.data.correo is string;
+    // Colección de usuarios: cualquier cuenta autenticada puede crear su
+    // propio doc (primer login) y editar sus propios datos, pero NO puede
+    // cambiar su propio rol — eso solo lo hace un admin. Evita que una
+    // cuenta 'lector' se autoasigne 'admin' escribiendo directo a Firestore.
+    match /usuarios/{uid} {
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow update: if esAdmin() ||
+        (request.auth.uid == uid && request.resource.data.rol == resource.data.rol);
+      allow delete: if esAdmin();
     }
+
+    // Resto de colecciones del panel admin: exige rol editor/admin real,
+    // no solo "estar autenticado" (antes cualquier cuenta autenticada,
+    // incluida 'lector', podía escribir cualquier cosa).
+    match /{document=**} {
+      allow write: if esEditor();
+    }
+
+    // El formulario de contacto ya NO escribe directo a Firestore — pasa por
+    // /api/contacto (Admin SDK, ignora estas reglas), que aplica rate
+    // limiting, honeypot y validación real de servidor. Sin regla pública de
+    // create aquí a propósito: el catch-all de arriba (esEditor()) es la
+    // única vía de escritura para 'mensajes' desde el cliente.
 
     // Cámara Invitado — un invitado sin sesión puede subir una foto/video a
-    // un álbum concreto (el endpoint /api/camara-invitado/sign ya validó que
-    // el token existe y está activo antes de firmar el upload a Cloudinary;
-    // esta regla solo valida la forma del documento que crea en Firestore).
-    // visible puede ser true o false: las fotos de invitado se publican
-    // automáticamente en el álbum sin aprobación manual.
+    // un álbum concreto. /api/camara-invitado/sign ya validó el token antes
+    // de firmar el upload a Cloudinary, pero esta regla es una puerta
+    // independiente (cualquiera puede llamar al SDK cliente directo), así
+    // que valida por su cuenta: (a) la URL debe venir de Cloudinary — cierra
+    // la inyección de contenido arbitrario (imágenes/URLs ajenas a lo que el
+    // propio flujo de subida genera); (b) debe existir el álbum destino —
+    // cierra el caso de escribir a un albumId inventado que no existe.
+    // NOTA: no ata la escritura a un token específico de Cámara Invitado ni
+    // verifica que ese álbum tenga la Cámara activa — camara_invitado_links
+    // se indexa por token vía query (no por id de doc), y las Firestore
+    // Rules no soportan where(), solo get()/exists() por path exacto. Cerrar
+    // esa parte requeriría cambiar el modelo de datos (ej. usar albumId como
+    // id del doc del link) — queda fuera de este cambio.
     match /gallery_items/{id} {
       allow create: if
         request.resource.data.origen == 'invitado' &&
         request.resource.data.albumId is string &&
         request.resource.data.albumId.size() > 0 &&
         request.resource.data.url is string &&
-        request.resource.data.url.size() > 0 &&
+        request.resource.data.url.matches('^https://res[.]cloudinary[.]com/.*') &&
         request.resource.data.tipo in ['imagen', 'video'] &&
-        request.resource.data.visible is bool;
+        request.resource.data.visible is bool &&
+        exists(/databases/$(database)/documents/albums/$(request.resource.data.albumId));
     }
   }
 }

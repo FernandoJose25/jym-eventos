@@ -31,6 +31,15 @@ const nextConfig: NextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' },
         ],
       },
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+        ],
+      },
     ];
   },
 };

@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getCamaraLinkByToken } from '@/lib/camaraInvitado';
+import { camaraSignLimiter, checkLimit } from '@/lib/rateLimit';
 
 // Firma pública de subidas a Cloudinary para invitados sin sesión, restringida
 // a un álbum concreto. Solo firma si el token existe y su link sigue activo —
@@ -16,6 +17,14 @@ export async function POST(req: NextRequest) {
 
   if (typeof token !== 'string' || !token) {
     return NextResponse.json({ error: 'Falta token' }, { status: 400 });
+  }
+
+  const rateLimitResult = await checkLimit(camaraSignLimiter, token);
+  if (!rateLimitResult.ok) {
+    return NextResponse.json(
+      { error: 'Demasiadas subidas seguidas. Espera un momento.' },
+      { status: 429, headers: { 'Retry-After': String(rateLimitResult.retryAfterSeconds) } }
+    );
   }
 
   const link = await getCamaraLinkByToken(token);

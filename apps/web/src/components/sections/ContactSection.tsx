@@ -1,7 +1,5 @@
 'use client';
 import { useState } from 'react';
-import { collection, addDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { z } from 'zod';
 import confetti from 'canvas-confetti';
 
@@ -47,6 +45,7 @@ export default function ContactSection({ data }: Props) {
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errMsg, setErrMsg] = useState('');
+  const [_web, setWeb] = useState(''); // honeypot anti-bot, no lo llena un humano
 
   const wa = data?.whatsapp || '51945203708';
 
@@ -57,18 +56,18 @@ export default function ContactSection({ data }: Props) {
     if (!result.success) { setErrMsg(result.error.errors[0].message); return; }
     setStatus('loading');
     try {
-      const now = new Date();
-      await addDoc(collection(db, 'mensajes'), {
-        ...result.data,
-        fechaEnvio: now.toISOString(),
-        fechaLegible: now.toLocaleString('es-PE', { timeZone: 'America/Lima', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-        estado: 'pendiente', leido: false,
-        origen: typeof window !== 'undefined' ? window.location.pathname : '/',
+      const res = await fetch('/api/contacto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...result.data, _web }),
       });
-      fetch('/api/notify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...result.data, fechaLegible: now.toLocaleString('es-PE', { timeZone: 'America/Lima' }) }),
-      }).catch(() => { });
+      if (!res.ok) {
+        setErrMsg(res.status === 429
+          ? 'Ya enviaste varias consultas seguidas. Espera unos minutos o escríbenos por WhatsApp.'
+          : 'No se pudo enviar. Escríbenos al WhatsApp: +51 945 203 708');
+        setStatus('error');
+        return;
+      }
       setStatus('success');
       confetti({
         particleCount: 120,
@@ -373,6 +372,10 @@ export default function ContactSection({ data }: Props) {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }} noValidate>
+                  {/* Honeypot: invisible para humanos, un bot que autorellena todos los inputs sí lo completa */}
+                  <input type="text" name="empresa" value={_web} onChange={e => setWeb(e.target.value)}
+                    tabIndex={-1} autoComplete="off" aria-hidden="true"
+                    style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
                   <div className="cs-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
                       <label style={lbl} htmlFor="nombre">Nombre *</label>
