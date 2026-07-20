@@ -10,7 +10,9 @@ import {
   LayoutDashboard, Image, MessageSquare,
   Palette, Users, LogOut, Menu, X,
   ChevronRight, Briefcase, Bell, ChevronDown, Layers, Globe, BarChart2, Camera, Share2,
+  PartyPopper,
 } from 'lucide-react';
+import { SERVICE_ICONS } from '@/lib/serviceIcons';
 
 const NAV = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', group: 'principal' },
@@ -58,7 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (!srvOpen || srvList.length > 0) return;
     getDocs(query(collection(db, COL.SERVICIOS), orderBy('order', 'asc'))).then(snap =>
-      setSrvList(snap.docs.map(d => ({ id: d.id, title: (d.data() as any).title || '', icon: (d.data() as any).icon || '🎉' })))
+      setSrvList(snap.docs.map(d => ({ id: d.id, title: (d.data() as any).title || '', icon: (d.data() as any).icon || 'party' })))
     );
   }, [srvOpen, srvList.length]);
 
@@ -144,19 +146,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       {srvList.length === 0 && (
                         <p style={{ color: 'rgba(255,255,255,.3)', fontSize: '0.72rem', padding: '0.35rem 0.75rem', margin: 0 }}>Cargando…</p>
                       )}
-                      {srvList.map(s => (
-                        <Link key={s.id}
-                          href={`/dashboard/servicios/${s.id}/contenido`}
-                          onClick={() => setSideOpen(false)}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 8, padding: '0.4rem 0.75rem',
-                            borderRadius: 8, textDecoration: 'none', color: 'rgba(255,255,255,.5)',
-                            fontSize: '0.78rem', transition: 'color .15s'
-                          }}>
-                          <span style={{ fontSize: '0.95rem' }}>{s.icon}</span>
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{s.title}</span>
-                        </Link>
-                      ))}
+                      {srvList.map(s => {
+                        const SrvIcon = SERVICE_ICONS[s.icon] || PartyPopper;
+                        return (
+                          <Link key={s.id}
+                            href={`/dashboard/servicios/${s.id}/contenido`}
+                            onClick={() => setSideOpen(false)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 8, padding: '0.4rem 0.75rem',
+                              borderRadius: 8, textDecoration: 'none', color: 'rgba(255,255,255,.5)',
+                              fontSize: '0.78rem', transition: 'color .15s'
+                            }}>
+                            <SrvIcon size={14} style={{ flexShrink: 0 }} />
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{s.title}</span>
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
