@@ -331,6 +331,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
   const [visibleCards, setVisibleCards] = useState<Set<string>>(new Set());
   const [otrosServicios, setOtrosServicios] = useState<any[]>([]);
   const [galeriaFotos, setGaleriaFotos] = useState<any[]>([]);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const statsRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -508,6 +509,12 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
   const opcionesList: any[] = (dt.opciones?.length > 0) ? dt.opciones : (sd.tematicas || []);
   const opcionesEyebrow = dt.opcionesEyebrow || (sd.tematicas ? 'Estilos disponibles' : '');
   const opcionesTitulo = dt.opcionesTitulo || (sd.tematicas ? 'Temáticas Más Populares' : '');
+
+  // pasos: timeline "cómo trabajamos" propia del servicio.
+  // Firestore detail.pasos primero, luego fallback estático (hoy solo decoracion-tematica).
+  const pasosList: any[] = (dt.pasos?.length > 0) ? dt.pasos : (sd.pasos || []);
+  const pasosEyebrow = dt.pasosEyebrow || (sd.pasos ? 'Nuestro Proceso' : '');
+  const pasosTitulo = dt.pasosTitulo || (sd.pasos ? 'Tu Decoración en 4 Pasos' : '');
 
   const waText = sd.waText || `Hola, me interesa ${title}`;
   const accentColor = sd.color || '#d4a017';
@@ -1067,17 +1074,17 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
       )}
 
       {/* ═══════════════════════════════════════════
-          PROCESO — solo decoración, timeline
+          PROCESO — timeline "cómo trabajamos" propia del servicio
       ═══════════════════════════════════════════ */}
-      {sd.pasos?.length > 0 && (
+      {pasosList.length > 0 && (
         <section style={{ padding: 'clamp(5rem,9vw,8rem) 0', background: '#0c1e30', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(${accentColor}18 1px,transparent 1px)`, backgroundSize: '32px 32px', opacity: 0.6 }} />
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 800, height: 400, borderRadius: '50%', background: `radial-gradient(ellipse,${accentColor}10 0%,transparent 60%)`, pointerEvents: 'none' }} />
 
           <div className="container" style={{ position: 'relative' }}>
             <div data-reveal="steps-header" style={{ textAlign: 'center', marginBottom: 'clamp(2.5rem,5vw,4rem)', opacity: isVisible('steps-header') ? 1 : 0, transform: isVisible('steps-header') ? 'none' : 'translateY(24px)', transition: 'all .7s ease' }}>
-              <p style={{ color: `${accentColor}aa`, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Nuestro Proceso</p>
-              <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#fff', margin: 0, letterSpacing: '-.03em' }}>Tu Decoración en 4 Pasos</h2>
+              <p style={{ color: `${accentColor}aa`, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>{pasosEyebrow}</p>
+              <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#fff', margin: 0, letterSpacing: '-.03em' }}>{pasosTitulo}</h2>
             </div>
 
             <div style={{ position: 'relative' }}>
@@ -1090,7 +1097,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                 zIndex: 0,
               }} />
               <div className="srv-steps" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1.5rem', position: 'relative', zIndex: 1 }}>
-                {sd.pasos.map((p: any, i: number) => {
+                {pasosList.map((p: any, i: number) => {
                   const rid = `step-${i}`;
                   return (
                     <div key={i} data-reveal={rid}
@@ -1376,7 +1383,11 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
 
               <div>
                 {faqList.map((f: any, i: number) => (
-                  <details key={i} className="srv-faq-item" open={i === 0}
+                  <details key={i} className="srv-faq-item" open={openFaqIndex === i}
+                    onClick={e => {
+                      e.preventDefault();
+                      setOpenFaqIndex(prev => prev === i ? null : i);
+                    }}
                     style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '1.1rem 0' }}>
                     <summary style={{
                       cursor: 'pointer', listStyle: 'none',

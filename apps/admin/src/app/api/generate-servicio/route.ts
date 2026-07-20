@@ -23,6 +23,9 @@ const CAMPOS = {
   opciones:           'OPCIONAL, solo si el servicio tiene variantes/estilos reales para elegir (ej. temáticas de decoración, personajes de un show, tipos de animación). Array de hasta 6: [{icon, title, desc}]. NO lo generes si el servicio no tiene variantes claras (ej. catering, fotografía general) — deja el campo fuera en ese caso.',
   opcionesEyebrow:    'OPCIONAL, texto pequeño sobre el título de la sección de opciones, ej. "Estilos disponibles" o "Personajes disponibles". Solo si generas "opciones".',
   opcionesTitulo:     'OPCIONAL, título H2 de la sección de opciones, ej. "Temáticas Más Populares" o "Personajes Favoritos". Solo si generas "opciones".',
+  pasos:              'OPCIONAL, timeline de "cómo trabajamos contigo" específica de este servicio (no genérica de decoración). Array de EXACTAMENTE 4 pasos: [{num, title, desc}], num de 1 a 4. Ejemplo genérico a evitar copiar: "Consulta Inicial / Propuesta y Diseño / Montaje el Día D / Desmontaje" — solo úsalo si de verdad aplica igual a este servicio; si el proceso es distinto (ej. un show, una activación), adáptalo a los pasos reales de ESE servicio.',
+  pasosEyebrow:       'OPCIONAL, texto pequeño sobre el título de la sección de pasos, normalmente "Nuestro Proceso". Solo si generas "pasos".',
+  pasosTitulo:        'OPCIONAL, título H2 de la sección de pasos, ej. "Cómo Trabajamos Contigo" o "Tu Show en 4 Pasos". Solo si generas "pasos".',
 } as const;
 
 type CampoKey = keyof typeof CAMPOS;
@@ -73,6 +76,15 @@ function limpiarCampos(raw: any): Record<string, any> {
           title: typeof it.title === 'string' ? it.title : '',
           desc: typeof it.desc === 'string' ? it.desc : '',
           ...(k === 'includes' ? { visible: it.visible !== false } : {}),
+        }));
+    } else if (k === 'pasos' && Array.isArray(v)) {
+      out[k] = v
+        .filter(it => it && typeof it === 'object')
+        .slice(0, 4)
+        .map((it, idx) => ({
+          num: idx + 1,
+          title: typeof it.title === 'string' ? it.title : '',
+          desc: typeof it.desc === 'string' ? it.desc : '',
         }));
     } else if (k === 'stats' && Array.isArray(v)) {
       out[k] = v
