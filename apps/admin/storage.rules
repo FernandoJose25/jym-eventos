@@ -1,0 +1,18 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Lecturas públicas (las imágenes/videos alimentan la web pública)
+    match /{allPaths=**} {
+      allow read: if true;
+    }
+
+    // Escrituras solo desde el panel admin autenticado.
+    // Es el fallback de ImageUploader cuando falla la firma de Cloudinary.
+    match /{allPaths=**} {
+      allow write: if request.auth != null
+        && request.resource.size < 100 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*|video/.*');
+    }
+  }
+}
