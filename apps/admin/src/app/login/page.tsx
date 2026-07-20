@@ -72,7 +72,23 @@ export default function LoginPage() {
   if (loading) return null;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', background: '#050d1a', fontFamily: 'var(--font-jakarta)' }}>
+    <div className="jym-shell" style={{ minHeight: '100vh', display: 'flex', background: '#050d1a', fontFamily: 'var(--font-jakarta)' }}>
+
+      {/* ═══ Header de marca compacto (solo mobile) ═══ */}
+      <div className="jym-mobile-brand jym-fade-in">
+        <div style={{
+          width: 36, height: 36, borderRadius: 11, flexShrink: 0,
+          background: 'linear-gradient(135deg,#b8860b,#f5c842)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.15rem',
+          boxShadow: '0 6px 18px rgba(212,160,23,0.4)',
+        }}>🎉</div>
+        <div>
+          <p style={{ color: '#fff', fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.15, margin: 0, letterSpacing: '-.01em' }}>
+            J&amp;M Decoraciones y Eventos
+          </p>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.62rem', margin: '2px 0 0', letterSpacing: '.08em', textTransform: 'uppercase' }}>Panel Administrativo</p>
+        </div>
+      </div>
 
       {/* ═══ Panel de marca (izquierda) ═══ */}
       <div style={{
@@ -97,7 +113,7 @@ export default function LoginPage() {
         }} />
 
         {/* Logo + marca */}
-        <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="jym-fade-in" style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
             width: 48, height: 48, borderRadius: 14, flexShrink: 0,
             background: 'linear-gradient(135deg,#b8860b,#f5c842)',
@@ -115,7 +131,7 @@ export default function LoginPage() {
         {/* Saludo dinámico */}
         <div style={{ position: 'relative', zIndex: 2 }} key={saludo}>
           {fecha && (
-            <p className="jym-fade-in" style={{
+            <p className="jym-fade-in jym-delay-1" style={{
               color: '#f5c842', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase',
               letterSpacing: '.2em', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: 8,
             }}>
@@ -123,20 +139,20 @@ export default function LoginPage() {
               {fecha} · {hora}
             </p>
           )}
-          <h1 className="jym-fade-in" style={{
+          <h1 className="jym-fade-in jym-delay-2" style={{
             fontFamily: 'var(--font-playfair)', color: '#fff', fontWeight: 700,
             fontSize: 'clamp(2rem,3.6vw,3rem)', lineHeight: 1.08, margin: '0 0 1rem', letterSpacing: '-.02em',
           }}>
             {saludo},<br />equipo J&amp;M.
           </h1>
-          <p className="jym-fade-in" style={{
+          <p className="jym-fade-in jym-delay-3" style={{
             color: 'rgba(255,255,255,0.55)', fontSize: '1rem', lineHeight: 1.6, maxWidth: 420, margin: 0,
           }}>
             {msg}
           </p>
         </div>
 
-        <p style={{ position: 'relative', zIndex: 2, color: 'rgba(255,255,255,0.25)', fontSize: '0.75rem', margin: 0 }}>
+        <p className="jym-fade-in jym-delay-3" style={{ position: 'relative', zIndex: 2, color: 'rgba(255,255,255,0.25)', fontSize: '0.75rem', margin: 0 }}>
           Sechura, Piura · Desde 2014
         </p>
       </div>
@@ -149,7 +165,7 @@ export default function LoginPage() {
         <div style={{ width: '100%', maxWidth: 380 }}>
 
           {stage === 'success' ? (
-            <div className="jym-fade-in" style={{ textAlign: 'center' }}>
+            <div className="jym-modal-in" style={{ textAlign: 'center' }}>
               <div style={{
                 width: 64, height: 64, borderRadius: '50%', margin: '0 auto 1.25rem',
                 background: 'linear-gradient(135deg,#10b981,#059669)',
@@ -157,7 +173,7 @@ export default function LoginPage() {
                 boxShadow: '0 8px 28px rgba(16,185,129,0.4)',
               }}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
+                  <polyline points="20 6 9 17 4 12" className="jym-check-draw" />
                 </svg>
               </div>
               <p style={{ color: '#fff', fontFamily: 'var(--font-playfair)', fontSize: '1.3rem', fontWeight: 700, margin: '0 0 0.4rem' }}>
@@ -168,7 +184,7 @@ export default function LoginPage() {
               </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="jym-modal-in">
               <p style={{ color: '#f5c842', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.2em', margin: '0 0 0.6rem' }}>
                 Iniciar sesión
               </p>
@@ -239,28 +255,54 @@ export default function LoginPage() {
       </div>
 
       <style>{`
+        .jym-mobile-brand { display: none; }
         @media (max-width: 860px) {
+          .jym-shell { flex-direction: column; }
           .jym-brand-panel { display: none !important; }
+          .jym-mobile-brand {
+            display: flex; align-items: center; gap: 10px;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
+          }
         }
         @keyframes jym-grid-pan {
           from { background-position: 0 0; }
           to   { background-position: 200px 200px; }
         }
         @keyframes jym-fade-in-kf {
-          from { opacity: 0; transform: translateY(8px); }
+          from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        .jym-fade-in { animation: jym-fade-in-kf .6s ease both; }
+        .jym-fade-in { animation: jym-fade-in-kf .65s cubic-bezier(0.16,1,0.3,1) both; }
+        .jym-delay-1 { animation-delay: .08s; }
+        .jym-delay-2 { animation-delay: .16s; }
+        .jym-delay-3 { animation-delay: .24s; }
+
+        /* Transición tipo modal entre estados (form ⇄ loading ⇄ success) */
+        @keyframes jym-modal-in-kf {
+          from { opacity: 0; transform: translateY(6px) scale(.985); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .jym-modal-in { animation: jym-modal-in-kf .45s cubic-bezier(0.16,1,0.3,1) both; }
+
+        @keyframes jym-check-draw-kf {
+          from { stroke-dasharray: 24; stroke-dashoffset: 24; }
+          to   { stroke-dasharray: 24; stroke-dashoffset: 0; }
+        }
+        .jym-check-draw { animation: jym-check-draw-kf .45s ease .15s both; }
+
         .jym-field {
           display: flex; align-items: center; gap: 10px;
           background: rgba(255,255,255,0.04);
           border: 1px solid rgba(255,255,255,0.1);
           border-radius: 12px; padding: 0.8rem 0.95rem;
-          transition: border-color .2s ease, background .2s ease;
+          transition: border-color .25s cubic-bezier(0.16,1,0.3,1), background .25s cubic-bezier(0.16,1,0.3,1), box-shadow .25s ease;
         }
         .jym-field:focus-within {
           border-color: #f5c842;
           background: rgba(245,200,66,0.05);
+          box-shadow: 0 0 0 3px rgba(245,200,66,0.1);
         }
         .jym-field-icon { color: rgba(255,255,255,0.35); flex-shrink: 0; }
         .jym-input {
@@ -274,7 +316,7 @@ export default function LoginPage() {
           background: linear-gradient(135deg,#b8860b,#f5c842);
           color: #0a1628; font-weight: 700; font-size: 0.92rem; font-family: var(--font-jakarta);
           box-shadow: 0 8px 24px rgba(212,160,23,0.35);
-          transition: transform .15s ease, box-shadow .15s ease;
+          transition: transform .2s cubic-bezier(0.16,1,0.3,1), box-shadow .2s ease;
         }
         .jym-submit:hover:not(:disabled) {
           transform: translateY(-1px);
@@ -283,6 +325,10 @@ export default function LoginPage() {
         .jym-submit:disabled { opacity: 0.75; cursor: not-allowed; }
         .jym-spin { animation: jym-spin-kf .8s linear infinite; }
         @keyframes jym-spin-kf { to { transform: rotate(360deg); } }
+
+        @media (prefers-reduced-motion: reduce) {
+          .jym-fade-in, .jym-modal-in, .jym-check-draw { animation: none !important; }
+        }
       `}</style>
     </div>
   );

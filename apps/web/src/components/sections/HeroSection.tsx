@@ -26,8 +26,8 @@ export default function HeroSection({ data }: { data: HeroData }) {
     if (!el) return;
 
     el.style.opacity = '0';
-    el.style.transform = 'translateY(20px)';
-    el.style.transition = 'opacity .7s ease, transform .7s ease';
+    el.style.transform = 'translateY(16px)';
+    el.style.transition = 'opacity .7s cubic-bezier(0.16,1,0.3,1), transform .7s cubic-bezier(0.16,1,0.3,1)';
 
     const t = setTimeout(() => {
       el.style.opacity = '1';
