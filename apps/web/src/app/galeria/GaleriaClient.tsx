@@ -175,6 +175,13 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
   const mediaBoxRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const { scale: imgScale, x: imgX, y: imgY, isZoomed: imgZoomed, handlers: imgZoomHandlers } = useZoomPan(mediaBoxRef);
+  // Zoom del VIDEO activo: vive en un useZoomPan distinto dentro de
+  // CustomVideoPlayer (cada video tiene su propia caja/aspect-ratio), así
+  // que el lightbox no lo conoce salvo que el hijo lo reporte explícitamente.
+  // Sin esto, el guard de swipe de abajo solo miraba imgZoomed y dejaba
+  // navegar de slide en medio de un pan sobre un video ampliado.
+  const [videoZoomed, setVideoZoomed] = useState(false);
+  const mediaZoomed = imgZoomed || videoZoomed;
 
   useEffect(() => {
     const CACHE_KEY = 'jym_gallery_cache_v1';
@@ -293,6 +300,11 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
 
   useLockBodyScroll(lightbox !== null);
 
+  // Al cambiar de slide (o cerrar) el video anterior se desmonta y ya
+  // dispara onZoomChange(false) en su cleanup, pero lo forzamos aquí también
+  // para no depender del orden exacto de efectos entre padre/hijo.
+  useEffect(() => { setVideoZoomed(false); }, [lightbox]);
+
   // Lightbox keyboard
   useEffect(() => {
     if (lightbox === null) return;
@@ -340,7 +352,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
 
   // Swipe vertical (solo mobile, solo si el medio activo no está en zoom)
   const onLightboxTouchStart = (e: React.TouchEvent) => {
-    if (imgZoomed || e.touches.length !== 1) return;
+    if (mediaZoomed || e.touches.length !== 1) return;
     const t = e.touches[0];
     touchStartRef.current = { x: t.clientX, y: t.clientY, time: Date.now() };
     if (showHint) dismissHint();
@@ -348,7 +360,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
   const onLightboxTouchEnd = (e: React.TouchEvent) => {
     const start = touchStartRef.current;
     touchStartRef.current = null;
-    if (!start || imgZoomed) return;
+    if (!start || mediaZoomed) return;
     const t = e.changedTouches[0]; if (!t) return;
     const dx = t.clientX - start.x;
     const dy = t.clientY - start.y;
@@ -798,7 +810,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                   } : undefined}
                 >
                   {isVideo(visibles[lightbox]) ? (
-                    <CustomVideoPlayer key={visibles[lightbox].id} src={visibles[lightbox].url} sonidoPermitido={visibles[lightbox].sonidoPermitido === true} fullBleed={isTouch} />
+                    <CustomVideoPlayer key={visibles[lightbox].id} src={visibles[lightbox].url} sonidoPermitido={visibles[lightbox].sonidoPermitido === true} fullBleed={isTouch} onZoomChange={setVideoZoomed} />
                   ) : (
                     <motion.div
                       {...(isTouch ? imgZoomHandlers : {})}
