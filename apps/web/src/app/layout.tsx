@@ -7,6 +7,7 @@ import CookieBanner from '@/components/ui/CookieBanner';
 import WhatsAppWidget from '@/components/ui/WhatsAppWidget';
 import JsonLd from '@/components/ui/JsonLd';
 import { Analytics } from '@vercel/analytics/next';
+import { GoogleAnalytics } from '@next/third-parties/google';
 import { adminDb } from '@/lib/firebase-admin';
 import { unstable_cache } from 'next/cache';
 import { SITE_URL } from '@/lib/site';
@@ -126,6 +127,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Analytics />
           <WhatsAppWidget />
         </MotionProvider>
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        )}
       </body>
     </html>
   );

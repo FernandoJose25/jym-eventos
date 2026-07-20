@@ -384,16 +384,24 @@ export default function LoginPage() {
 
         /* ── Layout responsivo ── */
         @media (max-width: 980px) {
-          .jym-scene { flex-direction: column; justify-content: flex-start; padding-top: 3.5rem; }
-          .jym-editorial { max-width: 560px; padding-right: 0; text-align: center; margin-bottom: 2.5rem; }
-          .jym-brandmark { justify-content: center; margin-bottom: 2rem; }
-          .jym-datestamp { display: inline-flex; }
-          .jym-sub { margin-left: auto; margin-right: auto; }
+          .jym-scene {
+            flex-direction: column; justify-content: flex-start;
+            align-items: stretch; min-height: 100dvh;
+            padding: 2.5rem 1.5rem 2rem;
+          }
+          .jym-editorial { max-width: 560px; padding-right: 0; text-align: center; margin-bottom: 1.75rem; }
+          .jym-brandmark { justify-content: center; margin-bottom: 1.5rem; }
+          .jym-datestamp { display: inline-flex; margin-bottom: 0.9rem; }
+          .jym-headline { margin-bottom: 0.7rem; }
+          .jym-sub { margin: 0 auto; }
           .jym-locale { display: none; }
-          .jym-card-wrap { transform: none; }
+          .jym-card-wrap { transform: none; margin: 0 auto; }
         }
         @media (max-width: 480px) {
-          .jym-headline { font-size: 2.2rem; }
+          .jym-scene { padding: 2rem 1.25rem 1.5rem; }
+          .jym-headline { font-size: 2rem; }
+          .jym-brandmark { margin-bottom: 1.25rem; }
+          .jym-sub { font-size: 0.95rem; margin-bottom: 0; }
           .jym-card { padding: 1.75rem 1.4rem; border-radius: 18px; }
         }
 
