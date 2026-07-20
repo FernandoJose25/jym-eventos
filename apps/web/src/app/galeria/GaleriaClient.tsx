@@ -768,8 +768,8 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
 
           <div onClick={e => e.stopPropagation()}
             style={isTouch ? {
-              width: '100%', height: '100%', cursor: 'default', display: 'flex',
-              flexDirection: 'column', animation: 'lbIn .3s cubic-bezier(0.34,1.56,0.64,1)'
+              width: '100%', height: '100%', cursor: 'default', position: 'relative',
+              animation: 'lbIn .3s cubic-bezier(0.34,1.56,0.64,1)'
             } : {
               maxWidth: 960, width: '100%', cursor: 'default', display: 'flex',
               flexDirection: 'column', gap: 10,
@@ -778,8 +778,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
 
             {/* Media — pantalla completa en mobile (estilo X/Twitter), tarjeta en desktop */}
             <div ref={mediaBoxRef} style={isTouch ? {
-              position: 'relative', overflow: 'hidden',
-              flex: 1, minHeight: 0, width: '100%',
+              position: 'absolute', inset: 0, overflow: 'hidden',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             } : { position: 'relative', overflow: 'hidden', borderRadius: 16 }}>
               <AnimatePresence mode="wait" initial={false} custom={swipeDir}>
@@ -833,77 +832,113 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
               <LightboxGestureHint visible={isTouch && showHint} onDismiss={dismissHint} />
             </div>
 
-            {/* Barra inferior: flechas + info centrada */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: isTouch ? '10px 16px 12px' : 0,
-              background: isTouch ? 'linear-gradient(transparent, rgba(5,13,26,0.85))' : 'transparent',
-              flexShrink: 0,
-            }}>
-
-              {!isTouch && (
-                <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! - 1 + visibles.length) % visibles.length)); }}
-                  style={{
-                    flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-                    color: '#fff', fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center', transition: 'all .2s'
-                  }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,0.3)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
-                  ←
-                </button>
-              )}
-
-              <div style={{ flex: 1, minWidth: 0 }}>
-                {visibles[lightbox].categoria && (
-                  <span style={{
-                    display: 'inline-block', background: 'rgba(212,160,23,0.9)', color: '#0a1628',
-                    fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999,
-                    textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2
-                  }}>
-                    {visibles[lightbox].categoria}
-                    {visibles[lightbox].subcategoria ? ` › ${visibles[lightbox].subcategoria}` : ''}
-                  </span>
-                )}
-                {visibles[lightbox].alt && (
-                  <p style={{
-                    color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', margin: '2px 0 0',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-                  }}>
-                    {visibles[lightbox].alt}
+            {isTouch ? (
+              /* Overlay flotante estilo X/Twitter: info + acciones superpuestas sobre el medio, sin robarle alto */
+              <div style={{
+                position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 2,
+                display: 'flex', flexDirection: 'column', gap: 8,
+                padding: '28px 16px 12px',
+                background: 'linear-gradient(transparent, rgba(5,13,26,0.85) 45%)',
+                pointerEvents: 'none',
+              }}>
+                <div style={{ flex: 1, minWidth: 0, pointerEvents: 'auto' }}>
+                  {visibles[lightbox].categoria && (
+                    <span style={{
+                      display: 'inline-block', background: 'rgba(212,160,23,0.9)', color: '#0a1628',
+                      fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999,
+                      textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2
+                    }}>
+                      {visibles[lightbox].categoria}
+                      {visibles[lightbox].subcategoria ? ` › ${visibles[lightbox].subcategoria}` : ''}
+                    </span>
+                  )}
+                  {visibles[lightbox].alt && (
+                    <p style={{
+                      color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', margin: '2px 0 0',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                    }}>
+                      {visibles[lightbox].alt}
+                    </p>
+                  )}
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.68rem', margin: '2px 0 0' }}>
+                    {lightbox + 1} / {visibles.length}
                   </p>
-                )}
-                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.68rem', margin: '2px 0 0' }}>
-                  {lightbox + 1} / {visibles.length}
-                </p>
+                </div>
+
+                <div style={{ pointerEvents: 'auto' }}>
+                  <ShareBar
+                    itemId={visibles[lightbox].id}
+                    title={visibles[lightbox].alt || visibles[lightbox].categoria}
+                    {...(isVideo(visibles[lightbox])
+                      ? { videoUrl: cxShareVideo(visibles[lightbox].url) }
+                      : { imageUrl: cxFull(visibles[lightbox].url) }
+                    )}
+                  />
+                </div>
               </div>
+            ) : (
+              <>
+                {/* Barra inferior: flechas + info centrada */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! - 1 + visibles.length) % visibles.length)); }}
+                    style={{
+                      flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                      color: '#fff', fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', transition: 'all .2s'
+                    }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,0.3)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
+                    ←
+                  </button>
 
-              {!isTouch && (
-                <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! + 1) % visibles.length)); }}
-                  style={{
-                    flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-                    color: '#fff', fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center', transition: 'all .2s'
-                  }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,0.3)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
-                  →
-                </button>
-              )}
-            </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {visibles[lightbox].categoria && (
+                      <span style={{
+                        display: 'inline-block', background: 'rgba(212,160,23,0.9)', color: '#0a1628',
+                        fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999,
+                        textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2
+                      }}>
+                        {visibles[lightbox].categoria}
+                        {visibles[lightbox].subcategoria ? ` › ${visibles[lightbox].subcategoria}` : ''}
+                      </span>
+                    )}
+                    {visibles[lightbox].alt && (
+                      <p style={{
+                        color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', margin: '2px 0 0',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                      }}>
+                        {visibles[lightbox].alt}
+                      </p>
+                    )}
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.68rem', margin: '2px 0 0' }}>
+                      {lightbox + 1} / {visibles.length}
+                    </p>
+                  </div>
 
-            <div style={{ padding: isTouch ? '0 16px 10px' : 0, flexShrink: 0 }}>
-              <ShareBar
-                itemId={visibles[lightbox].id}
-                title={visibles[lightbox].alt || visibles[lightbox].categoria}
-                {...(isVideo(visibles[lightbox])
-                  ? { videoUrl: cxShareVideo(visibles[lightbox].url) }
-                  : { imageUrl: cxFull(visibles[lightbox].url) }
-                )}
-              />
-            </div>
+                  <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! + 1) % visibles.length)); }}
+                    style={{
+                      flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                      color: '#fff', fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', transition: 'all .2s'
+                    }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,0.3)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
+                    →
+                  </button>
+                </div>
+
+                <ShareBar
+                  itemId={visibles[lightbox].id}
+                  title={visibles[lightbox].alt || visibles[lightbox].categoria}
+                  {...(isVideo(visibles[lightbox])
+                    ? { videoUrl: cxShareVideo(visibles[lightbox].url) }
+                    : { imageUrl: cxFull(visibles[lightbox].url) }
+                  )}
+                />
+              </>
+            )}
           </div>
         </div>
       )}
