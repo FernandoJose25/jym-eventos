@@ -11,6 +11,7 @@ import {
 import {
   MessageSquare, Briefcase, Image as ImageIcon, Star,
   TrendingUp, Bell, RefreshCw, ExternalLink, AlertCircle, BarChart2,
+  Smartphone, Globe, Compass, Clock,
 } from 'lucide-react';
 
 /* ─── Types ─────────────────────────────────────────────── */
@@ -27,6 +28,21 @@ const STATUS: Record<string, { label: string; color: string }> = {
   cotizado:      { label: 'Cotizado',     color: '#10b981' },
   cerrado:       { label: 'Cerrado',      color: '#6b7280' },
 };
+
+const CHANNEL_COLORS: Record<string, string> = {
+  'Facebook':          '#1877f2',
+  'Instagram':         '#e1306c',
+  'TikTok':            '#000000',
+  'WhatsApp':          '#25d366',
+  'Google (búsqueda)': '#ea4335',
+  'Direct':            '#64748b',
+  'Directo':           '#64748b',
+  'Organic Search':    '#ea4335',
+  'Referral':          '#8b5cf6',
+  'Paid Social':       '#f59e0b',
+  'Email':             '#0ea5e9',
+};
+const channelColor = (name: string) => CHANNEL_COLORS[name] ?? '#6366f1';
 
 /* ─── Helper: period → days ──────────────────────────────── */
 const toDays = (p: Period) => p === '7d' ? 7 : p === '30d' ? 30 : 90;
@@ -129,20 +145,20 @@ export default function AnaliticasPage() {
     return () => { u1(); u2(); u3(); u4(); u5(); u6(); };
   }, []);
 
-  /* ── Vercel Analytics ── */
-  const [vercel,     setVercel]     = useState<any>(null);
-  const [vercelLoad, setVercelLoad] = useState(true);
+  /* ── Google Analytics 4: tráfico web real (páginas, dispositivos, navegadores, origen) ── */
+  const [ga,     setGa]     = useState<any>(null);
+  const [gaLoad, setGaLoad] = useState(true);
 
-  const fetchVercel = useCallback(async (p: Period) => {
-    setVercelLoad(true);
+  const fetchGa = useCallback(async (p: Period) => {
+    setGaLoad(true);
     try {
-      const res = await fetch(`/api/vercel-analytics?period=${p}`);
-      setVercel(await res.json());
-    } catch { setVercel({ configured: false }); }
-    setVercelLoad(false);
+      const res = await fetch(`/api/ga4-analytics?period=${p}`);
+      setGa(await res.json());
+    } catch { setGa({ configured: false }); }
+    setGaLoad(false);
   }, []);
 
-  useEffect(() => { fetchVercel(period); }, [period, fetchVercel]);
+  useEffect(() => { fetchGa(period); }, [period, fetchGa]);
 
   /* ── Datos derivados ── */
   const days   = toDays(period);
@@ -207,7 +223,7 @@ export default function AnaliticasPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'var(--font-playfair)', fontSize: '1.5rem', fontWeight: 700, color: '#0a1628', margin: 0 }}>Métricas</h1>
-          <p style={{ color: '#64748b', fontSize: '0.82rem', marginTop: 4 }}>Actividad del negocio en tiempo real · Firebase + Vercel</p>
+          <p style={{ color: '#64748b', fontSize: '0.82rem', marginTop: 4 }}>Actividad del negocio en tiempo real · Firebase + Google Analytics</p>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <PBtn p="7d"  label="7 días"  />
@@ -320,12 +336,12 @@ export default function AnaliticasPage() {
         </div>
       </div>
 
-      {/* Vercel Analytics */}
+      {/* Google Analytics 4: tráfico real del sitio */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-          <p style={{ margin: 0, fontWeight: 700, fontSize: '0.88rem', color: '#0a1628' }}>Analytics Web — Vercel</p>
-          {vercel?.configured && !vercel?.error && (
-            <button onClick={() => fetchVercel(period)}
+          <p style={{ margin: 0, fontWeight: 700, fontSize: '0.88rem', color: '#0a1628' }}>Tráfico web — Google Analytics</p>
+          {ga?.configured && !ga?.error && (
+            <button onClick={() => fetchGa(period)}
                     style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 7, padding: '4px 10px',
                               cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.75rem', color: '#64748b', fontFamily: 'var(--font-jakarta)' }}>
               <RefreshCw size={12} /> Actualizar
@@ -333,10 +349,10 @@ export default function AnaliticasPage() {
           )}
         </div>
 
-        {vercelLoad ? (
+        {gaLoad ? (
           <div className="skeleton" style={{ height: 120, borderRadius: 12 }} />
 
-        ) : !vercel?.configured ? (
+        ) : !ga?.configured ? (
           /* ── Setup guide ── */
           <div className="admin-card" style={{ padding: '1.5rem' }}>
             <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
@@ -344,106 +360,73 @@ export default function AnaliticasPage() {
                 <AlertCircle size={22} color="#f5c842" />
               </div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0a1628', margin: '0 0 6px' }}>Conectar Vercel Analytics</p>
+                <p style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0a1628', margin: '0 0 6px' }}>Conectar Google Analytics</p>
                 <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 14px' }}>
-                  Añade estas variables de entorno en el panel de Vercel (Settings → Environment Variables) para ver tráfico web, páginas más visitadas, dispositivos y países:
+                  El sitio ya envía datos a Google Analytics (GA4). Para mostrarlos aquí falta dar acceso de lectura a la misma cuenta de servicio que ya usa Firebase Admin, y añadir el ID de la propiedad en Vercel (Settings → Environment Variables):
                 </p>
                 <div style={{ background: '#0a1628', borderRadius: 10, padding: '0.875rem 1.1rem', fontFamily: 'monospace', fontSize: '0.78rem', color: '#a3e635', marginBottom: 14, lineHeight: 1.8 }}>
-                  <div>VERCEL_API_TOKEN = <span style={{ color: '#fde68a' }}>tu_token_personal</span></div>
-                  <div>VERCEL_PROJECT_ID = <span style={{ color: '#fde68a' }}>tu_project_id</span></div>
-                  <div style={{ color: '#6b7280' }}># Opcional si tienes team:</div>
-                  <div>VERCEL_TEAM_ID = <span style={{ color: '#fde68a' }}>tu_team_id</span></div>
+                  <div>GA4_PROPERTY_ID = <span style={{ color: '#fde68a' }}>123456789</span></div>
                 </div>
+                <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0 0 6px' }}>
+                  Pasos: 1) En Google Analytics → Administrar → Detalles de la propiedad, copia el <strong style={{ color: '#475569' }}>ID de propiedad</strong>.
+                </p>
                 <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0 0 14px' }}>
-                  El <strong style={{ color: '#475569' }}>Project ID</strong> lo encuentras en Vercel → tu proyecto → Settings → General.
-                  El <strong style={{ color: '#475569' }}>Token</strong> se crea en Vercel → Account → Settings → Tokens.
+                  2) En esa misma propiedad → Administración de acceso, agrega como <strong style={{ color: '#475569' }}>Viewer</strong> el correo de la cuenta de servicio que aparece en <code>FIREBASE_ADMIN_CLIENT_EMAIL</code>.
                 </p>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <a href="https://vercel.com/account/tokens" target="_blank" rel="noopener noreferrer"
+                  <a href="https://analytics.google.com/" target="_blank" rel="noopener noreferrer"
                      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0.45rem 0.875rem',
                                background: '#1e3a5f', color: '#f5c842', borderRadius: 8, fontSize: '0.78rem',
                                fontWeight: 600, textDecoration: 'none' }}>
-                    <ExternalLink size={12} /> Crear token API
-                  </a>
-                  <a href="https://vercel.com/dashboard" target="_blank" rel="noopener noreferrer"
-                     style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0.45rem 0.875rem',
-                               background: '#f1f5f9', color: '#475569', borderRadius: 8, fontSize: '0.78rem',
-                               fontWeight: 600, textDecoration: 'none' }}>
-                    <ExternalLink size={12} /> Dashboard Vercel
+                    <ExternalLink size={12} /> Abrir Google Analytics
                   </a>
                 </div>
               </div>
             </div>
           </div>
 
-        ) : vercel?.error ? (
+        ) : ga?.error ? (
           <div className="admin-card" style={{ padding: '1.25rem', background: '#fef2f2', border: '1px solid #fecaca' }}>
             <p style={{ fontSize: '0.82rem', color: '#dc2626', margin: 0 }}>
-              ⚠️ Error al consultar la API de Vercel. Verifica que <strong>VERCEL_API_TOKEN</strong> y <strong>VERCEL_PROJECT_ID</strong> sean correctos.
+              ⚠️ Error al consultar Google Analytics: {ga.message || 'Verifica GA4_PROPERTY_ID y que la cuenta de servicio tenga acceso de Viewer a la propiedad.'}
             </p>
           </div>
 
         ) : (() => {
-          /* ── Helpers para extraer data de múltiples formatos de respuesta Vercel ── */
-          const extract = (obj: any) =>
-            Array.isArray(obj?.data) ? obj.data :
-            Array.isArray(obj)       ? obj       : [];
+          const { totals, byDay, byPage, byDevice, byBrowser, byChannel } = ga;
+          const minutes = Math.floor((totals?.avgDuration ?? 0) / 60);
+          const seconds = Math.round((totals?.avgDuration ?? 0) % 60);
 
-          const val = (d: any) =>
-            d.total ?? d.value ?? d.count ?? d.visitors ?? d.pageViews ?? 0;
+          const dayChartData = (byDay ?? []).map((d: any) => ({
+            label: /^\d{8}$/.test(d.date) ? format(new Date(`${d.date.slice(0,4)}-${d.date.slice(4,6)}-${d.date.slice(6,8)}`), days <= 7 ? 'EEE d' : 'dd/MM', { locale: es }) : d.date,
+            value: d.value,
+          }));
 
-          const pvData   = extract(vercel.pageViews).map((d: any) => ({ key: d.key ?? d.date ?? d.period ?? '', value: val(d) }));
-          const pvTotal  = vercel.pageViews?.total ?? pvData.reduce((s: number, d: any) => s + d.value, 0);
-          const visTotal = vercel.visitors?.total  ?? extract(vercel.visitors).reduce((s: number, d: any) => s + val(d), 0);
-
-          const pathData    = extract(vercel.topPaths).map((d: any) => ({ name: d.key ?? d.path ?? d.page ?? '/', value: val(d) }));
-          const deviceData  = extract(vercel.devices).map((d: any)  => ({ name: d.key ?? d.device  ?? '?', value: val(d) }));
-          const browserData = extract(vercel.browsers).map((d: any) => ({ name: d.key ?? d.browser ?? '?', value: val(d) }));
-          const countryData = extract(vercel.countries).map((d: any)=> ({ name: d.key ?? d.country ?? '?', value: val(d) }));
-          const osData      = extract(vercel.os).map((d: any)        => ({ name: d.key ?? d.os      ?? '?', value: val(d) }));
-
-          const allZero = pvTotal === 0 && visTotal === 0;
+          const pageData    = (byPage ?? []).map((p: any) => ({ name: p.name, value: p.value }));
+          const deviceLabels: Record<string, string> = { mobile: 'Celular', desktop: 'Computadora', tablet: 'Tablet' };
+          const deviceData   = (byDevice ?? []).map((d: any) => ({ name: deviceLabels[d.name] ?? d.name, value: d.value }));
+          const browserData  = (byBrowser ?? []).map((b: any) => ({ name: b.name, value: b.value }));
+          const channelData  = (byChannel ?? []).map((c: any) => ({ name: c.name, value: c.value, color: channelColor(c.name) }));
 
           return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
             {/* KPI row */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 14 }}>
-              {[
-                { label: 'Vistas de página', value: pvTotal,  color: '#6366f1' },
-                { label: 'Visitantes únicos', value: visTotal, color: '#0ea5e9' },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="admin-card" style={{ padding: '1.25rem', borderTop: `3px solid ${color}` }}>
-                  <p style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 700, margin: '0 0 8px' }}>{label}</p>
-                  <p style={{ fontSize: '2rem', fontWeight: 800, color: '#0a1628', margin: 0, lineHeight: 1 }}>
-                    {typeof value === 'number' ? value.toLocaleString('es-PE') : '—'}
-                  </p>
-                </div>
-              ))}
+              <SummaryCard icon={Globe}      label="Vistas de página"   value={(totals?.pageViews ?? 0).toLocaleString('es-PE')} color="#6366f1" />
+              <SummaryCard icon={Smartphone} label="Visitantes únicos"  value={(totals?.users ?? 0).toLocaleString('es-PE')}     color="#0ea5e9" />
+              <SummaryCard icon={Compass}    label="Sesiones"           value={(totals?.sessions ?? 0).toLocaleString('es-PE')} color="#10b981" />
+              <SummaryCard icon={Clock}      label="Duración promedio"  value={`${minutes}m ${seconds}s`}                        color="#d97706" />
             </div>
 
-            {/* Diagnóstico: si todo es 0, mostrar respuesta cruda para depuración */}
-            {allZero && vercel._raw && (
-              <details className="admin-card" style={{ padding: '1rem', cursor: 'pointer' }}>
-                <summary style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, userSelect: 'none' }}>
-                  ⚠️ Los datos muestran 0 — ver respuesta cruda de la API (diagnóstico)
-                </summary>
-                <pre style={{ marginTop: 10, fontSize: '0.7rem', color: '#475569', overflow: 'auto', maxHeight: 200, background: '#f8fafc', borderRadius: 8, padding: '0.75rem' }}>
-                  {JSON.stringify(vercel._raw, null, 2)}
-                </pre>
-                <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 8, marginBottom: 0 }}>
-                  Copia este JSON y compártelo para ajustar el parser.
-                </p>
-              </details>
-            )}
-
             {/* Gráfico vistas por día */}
-            {pvData.length > 0 && pvData.some((d: any) => d.value > 0) && (
+            {dayChartData.length > 0 && dayChartData.some((d: any) => d.value > 0) && (
               <ChartCard title="Vistas de página por día">
                 <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={pvData} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
+                  <BarChart data={dayChartData} margin={{ top: 4, right: 4, left: -22, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                    <XAxis dataKey="key" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false}
+                           interval={days <= 7 ? 0 : days <= 30 ? 4 : 8} />
                     <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} allowDecimals={false} />
                     <Tooltip contentStyle={{ background: '#0a1628', border: 'none', borderRadius: 10, color: '#fff', fontSize: '0.78rem' }}
                              formatter={(v: any) => [v, 'Vistas']} />
@@ -453,12 +436,48 @@ export default function AnaliticasPage() {
               </ChartCard>
             )}
 
+            {/* De dónde viene el tráfico — Facebook, Instagram, TikTok, Google, directo... */}
+            <ChartCard title="De dónde llegan tus visitantes">
+              {channelData.length === 0 ? (
+                <p style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center', padding: '1.5rem 0', margin: 0 }}>
+                  Sin datos en este período
+                </p>
+              ) : (
+                <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <ResponsiveContainer width={180} height={180}>
+                    <PieChart>
+                      <Pie data={channelData} cx="50%" cy="50%" innerRadius={44} outerRadius={80}
+                           dataKey="value" paddingAngle={2} startAngle={90} endAngle={-270}>
+                        {channelData.map((d: any, i: number) => <Cell key={i} fill={d.color} stroke="none" />)}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ background: '#0a1628', border: 'none', borderRadius: 10, color: '#fff', fontSize: '0.78rem' }}
+                        formatter={(v: any, name: any) => [`${v} sesiones`, name]} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minWidth: 160 }}>
+                    {channelData.map((d: any) => (
+                      <div key={d.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: 2, background: d.color, flexShrink: 0 }} />
+                          <span style={{ fontSize: '0.78rem', color: '#475569' }}>{d.name}</span>
+                        </div>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0a1628' }}>{d.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </ChartCard>
+
             {/* Grid de stats */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
-              {pathData.length > 0 && (
-                <ChartCard title="Páginas más visitadas">
+              <ChartCard title="Apartados más visitados">
+                {pageData.length === 0 ? (
+                  <p style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center', padding: '1.5rem 0', margin: 0 }}>Sin datos en este período</p>
+                ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {pathData.slice(0, 8).map((p: any, i: number) => (
+                    {pageData.slice(0, 8).map((p: any, i: number) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 700, width: 18, flexShrink: 0 }}>{i + 1}</span>
                         <span style={{ fontSize: '0.78rem', color: '#475569', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
@@ -466,28 +485,14 @@ export default function AnaliticasPage() {
                       </div>
                     ))}
                   </div>
-                </ChartCard>
-              )}
-              {deviceData.length > 0 && (
-                <ChartCard title="Dispositivos">
-                  <HBarList data={deviceData} color="#8b5cf6" />
-                </ChartCard>
-              )}
-              {browserData.length > 0 && (
-                <ChartCard title="Navegadores">
-                  <HBarList data={browserData.slice(0, 6)} color="#f59e0b" />
-                </ChartCard>
-              )}
-              {countryData.length > 0 && (
-                <ChartCard title="Países">
-                  <HBarList data={countryData.slice(0, 6)} color="#10b981" />
-                </ChartCard>
-              )}
-              {osData.length > 0 && (
-                <ChartCard title="Sistemas operativos">
-                  <HBarList data={osData.slice(0, 6)} color="#0ea5e9" />
-                </ChartCard>
-              )}
+                )}
+              </ChartCard>
+              <ChartCard title="Dispositivos">
+                <HBarList data={deviceData} color="#8b5cf6" />
+              </ChartCard>
+              <ChartCard title="Navegadores">
+                <HBarList data={browserData.slice(0, 6)} color="#f59e0b" />
+              </ChartCard>
             </div>
           </div>
           );
