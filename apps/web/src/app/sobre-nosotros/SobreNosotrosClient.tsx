@@ -409,9 +409,16 @@ export default function SobreNosotrosClient({ initialCfg }: { initialCfg?: Recor
                   onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.transform='translateX(-9px) scale(1)';(e.currentTarget as HTMLElement).style.boxShadow='0 0 0 5px #fff, 0 0 0 7px rgba(212,160,23,0.2)';}}/>
 
                   <p style={{ fontFamily:'var(--font-playfair)', fontSize:'3rem', fontWeight:900, color:'rgba(10,22,40,0.05)', lineHeight:1, margin:'0 0 2px' }}>{h.year}</p>
-                  <div style={{ padding:'1.25rem 1.5rem', borderRadius:16, background:'#f8fafc', border:'1px solid #e2e8f0', transition:'all .35s cubic-bezier(0.23,1,0.32,1)', cursor:'default' }}
-                       onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.transform='translateX(8px)';el.style.background='linear-gradient(135deg,rgba(212,160,23,0.06),rgba(212,160,23,0.02))';el.style.borderColor='rgba(212,160,23,0.3)';el.style.boxShadow='0 8px 24px rgba(10,22,40,0.08)';}}
-                       onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.transform='';el.style.background='#f8fafc';el.style.borderColor='#e2e8f0';el.style.boxShadow='';}}>
+                  <div style={{ padding:'1.25rem 1.5rem', borderRadius:16, background:'#f8fafc', border:'1px solid #e2e8f0', transition:'all .35s cubic-bezier(0.23,1,0.32,1)', cursor:'default', willChange:'transform' }}
+                       onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.background='linear-gradient(135deg,rgba(212,160,23,0.06),rgba(212,160,23,0.02))';el.style.borderColor='rgba(212,160,23,0.3)';el.style.boxShadow='0 12px 32px rgba(10,22,40,0.1)';}}
+                       onMouseMove={e=>{
+                         const el=e.currentTarget as HTMLElement;
+                         const r=el.getBoundingClientRect();
+                         const x=(e.clientX-r.left)/r.width-0.5, y=(e.clientY-r.top)/r.height-0.5;
+                         el.style.transition='transform .1s ease-out, background .35s, border-color .35s, box-shadow .35s';
+                         el.style.transform=`perspective(800px) rotateX(${-y*6}deg) rotateY(${x*8}deg) translateX(8px)`;
+                       }}
+                       onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.transition='transform .5s cubic-bezier(.16,1,.3,1), background .35s, border-color .35s, box-shadow .35s';el.style.transform='';el.style.background='#f8fafc';el.style.borderColor='#e2e8f0';el.style.boxShadow='';}}>
                     <p style={{ fontWeight:700, color:'#0a1628', fontSize:'1rem', margin:'0 0 4px' }}>{h.label}</p>
                     <p style={{ color:'#64748b', fontSize:'0.88rem', lineHeight:1.6, margin:0 }}>{h.desc}</p>
                   </div>

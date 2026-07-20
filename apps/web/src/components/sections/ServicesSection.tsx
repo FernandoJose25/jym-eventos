@@ -12,14 +12,14 @@ interface Service {
 
 const toSlug = (link:string) => link?.replace('servicios/','').replace('.html','') || '';
 
-/* ── Colores de fondo por índice si no hay imagen ── */
+/* ── Colores de fondo por índice si no hay imagen (paleta de marca) ── */
 const BG_COLORS = [
   'linear-gradient(135deg,#0a1628,#1e3a5f)',
-  'linear-gradient(135deg,#1e1b4b,#4338ca)',
-  'linear-gradient(135deg,#14532d,#16a34a)',
-  'linear-gradient(135deg,#7c2d12,#ea580c)',
-  'linear-gradient(135deg,#4a044e,#a21caf)',
-  'linear-gradient(135deg,#0c4a6e,#0284c7)',
+  'linear-gradient(135deg,#050d1a,#0a1628)',
+  'linear-gradient(135deg,#1e3a5f,#0a1628)',
+  'linear-gradient(150deg,#0a1628 60%,#3d2f0a)',
+  'linear-gradient(135deg,#0a1628,#123252)',
+  'linear-gradient(150deg,#050d1a 55%,#1e3a5f)',
 ];
 
 function AtvCard({ s, idx }: { s: Service; idx: number }) {
@@ -104,8 +104,9 @@ function AtvCard({ s, idx }: { s: Service; idx: number }) {
 
         {/* Container — el que rota */}
         <div ref={containerRef} style={{
-          position:'relative', width:'100%', height:220, borderRadius:16,
-          transition:'transform 0.2s ease-out, box-shadow 0.2s ease-out',
+          position:'relative', width:'100%', aspectRatio:'4/5', borderRadius:18,
+          border:'1px solid rgba(212,160,23,0.16)',
+          transition:'transform 0.2s ease-out, box-shadow 0.2s ease-out, border-color 0.3s ease',
           transformStyle:'preserve-3d', overflow:'hidden',
         }}>
 
@@ -133,17 +134,17 @@ function AtvCard({ s, idx }: { s: Service; idx: number }) {
             ) : (
               <div style={{ width:'100%', height:'100%', background:bgColor }}/>
             )}
-            {/* Overlay para legibilidad */}
+            {/* Overlay para legibilidad — degradado inferior estilo premium */}
             <div style={{ position:'absolute', inset:0,
-                           background:'linear-gradient(to top,rgba(5,13,26,0.75) 0%,rgba(5,13,26,0.25) 60%,transparent 100%)'
+                           background:'linear-gradient(180deg,rgba(10,22,40,0) 30%,rgba(10,22,40,0.55) 65%,rgba(10,22,40,0.94) 100%)'
                          }}/>
           </div>
 
-          {/* ── CAPA 2: Emoji + texto (flota encima con más parallax) ── */}
+          {/* ── CAPA 2: Ícono + texto anclados abajo (flota con parallax) ── */}
           <div ref={layerFgRef} style={{
             position:'absolute', inset:0, zIndex:3,
-            display:'flex', flexDirection:'column', alignItems:'center',
-            justifyContent:'center', gap:10,
+            display:'flex', flexDirection:'column', alignItems:'flex-start',
+            justifyContent:'flex-end', gap:8, padding:'1.5rem 1.4rem',
             transition:'transform 0.1s ease-out',
             transformStyle:'preserve-3d',
           }}>
@@ -154,14 +155,14 @@ function AtvCard({ s, idx }: { s: Service; idx: number }) {
               transform:'translateZ(20px)',
             }}>
               {isIconKey(s.icon)
-                ? (() => { const Icon = SERVICE_ICONS[s.icon]; return <Icon size={44} strokeWidth={1.75} color="#f5c842" />; })()
-                : <span style={{ fontSize:'2.75rem' }}>{s.icon || '🎭'}</span>}
+                ? (() => { const Icon = SERVICE_ICONS[s.icon]; return <Icon size={38} strokeWidth={1.75} color="#f5c842" />; })()
+                : <span style={{ fontSize:'2.2rem' }}>{s.icon || '🎭'}</span>}
             </div>
 
             {/* Título */}
             <h3 style={{
-              fontFamily:'var(--font-playfair)', fontWeight:700, fontSize:'1rem',
-              color:'#fff', textAlign:'center', margin:0, padding:'0 1rem',
+              fontFamily:'var(--font-playfair)', fontWeight:700, fontSize:'1.35rem',
+              color:'#fff', textAlign:'left', margin:0,
               textShadow:'0 2px 12px rgba(0,0,0,0.6)',
               transform:'translateZ(15px)',
             }}>
@@ -170,26 +171,24 @@ function AtvCard({ s, idx }: { s: Service; idx: number }) {
 
             {/* Descripción */}
             <p style={{
-              color:'rgba(255,255,255,0.72)', fontSize:'0.78rem',
-              lineHeight:1.55, textAlign:'center', margin:0, padding:'0 1.25rem',
+              color:'rgba(255,255,255,0.72)', fontSize:'0.82rem',
+              lineHeight:1.55, textAlign:'left', margin:0,
               textShadow:'0 1px 6px rgba(0,0,0,0.5)',
               transform:'translateZ(10px)',
             }}>
-              {s.desc?.slice(0,70)}{(s.desc?.length||0)>70?'…':''}
+              {s.desc?.slice(0,90)}{(s.desc?.length||0)>90?'…':''}
             </p>
 
-            {/* Botón */}
-            <div style={{
+            {/* Enlace */}
+            <span style={{
               display:'inline-flex', alignItems:'center', gap:6,
-              padding:'5px 14px', borderRadius:9999,
-              background:'linear-gradient(135deg,#b8860b,#f5c842)',
-              color:'#0a1628', fontSize:'0.72rem', fontWeight:700,
-              boxShadow:'0 4px 12px rgba(212,160,23,0.45)',
+              color:'#f5c842', fontSize:'0.85rem', fontWeight:700,
+              textShadow:'0 1px 6px rgba(0,0,0,0.5)',
               transform:'translateZ(25px)',
-              marginTop:4,
+              marginTop:2,
             }}>
               Ver más →
-            </div>
+            </span>
           </div>
 
           {/* ── CAPA 3: Shine ── */}

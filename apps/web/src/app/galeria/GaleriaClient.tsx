@@ -520,12 +520,9 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
       <section style={{ padding: '3rem 0 5rem', background: '#f8fafc', minHeight: '60vh' }}>
         <div className="container">
           {loading ? (
-            <div style={{ columns: '3 220px', gap: '1rem' }}>
+            <div className="gal-grid">
               {[...Array(12)].map((_, i) => (
-                <div key={i} className="skeleton" style={{
-                  breakInside: 'avoid', marginBottom: '1rem',
-                  height: i % 3 === 0 ? 280 : i % 3 === 1 ? 220 : 260, borderRadius: 14
-                }} />
+                <div key={i} className="skeleton" style={{ aspectRatio: '1 / 1', borderRadius: 16 }} />
               ))}
             </div>
           ) : visibles.length === 0 ? (
@@ -571,8 +568,8 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                 {searchQ && ` · búsqueda: "${searchQ}"`}
               </p>
 
-              {/* Masonry */}
-              <div style={{ columns: '3 220px', gap: '1.25rem' }}>
+              {/* Grid de cuadrados — 4 columnas con tilt 3D al cursor */}
+              <div className="gal-grid">
                 {visibles.slice(0, visibleLimit).map((item, i) => {
                   const fp = `${(item.focalX ?? 0.5) * 100}% ${(item.focalY ?? 0.5) * 100}%`;
                   const vid = isVideo(item);
@@ -584,28 +581,39 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                     <CardTag key={item.id}
                       {...cardProps}
                       style={{
-                        breakInside: 'avoid', marginBottom: '1.25rem', borderRadius: 16,
+                        aspectRatio: '1 / 1', borderRadius: 16,
                         overflow: 'hidden', cursor: 'pointer', position: 'relative',
                         boxShadow: '0 4px 16px rgba(10,22,40,0.1)',
                         transition: 'transform .3s, box-shadow .3s',
-                        background: '#0a1628', display: 'block', textDecoration: 'none'
+                        background: '#0a1628', display: 'block', textDecoration: 'none',
+                        willChange: 'transform',
                       }}
                       onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
                         const el = e.currentTarget as HTMLElement;
-                        el.style.transform = 'translateY(-4px) scale(1.01)';
-                        el.style.boxShadow = '0 12px 32px rgba(10,22,40,0.2)';
+                        el.style.boxShadow = '0 16px 40px rgba(10,22,40,0.25)';
+                        el.style.zIndex = '5';
                         el.querySelector('.gal-overlay')?.classList.add('visible');
+                      }}
+                      onMouseMove={(e: React.MouseEvent<HTMLElement>) => {
+                        const el = e.currentTarget as HTMLElement;
+                        const r = el.getBoundingClientRect();
+                        const x = (e.clientX - r.left) / r.width - 0.5;
+                        const y = (e.clientY - r.top) / r.height - 0.5;
+                        el.style.transition = 'transform .1s ease-out, box-shadow .3s';
+                        el.style.transform = `perspective(900px) rotateX(${-y * 8}deg) rotateY(${x * 10}deg) scale(1.03)`;
                       }}
                       onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
                         const el = e.currentTarget as HTMLElement;
+                        el.style.transition = 'transform .5s cubic-bezier(.16,1,.3,1), box-shadow .3s';
                         el.style.transform = '';
                         el.style.boxShadow = '0 4px 16px rgba(10,22,40,0.1)';
+                        el.style.zIndex = '';
                         el.querySelector('.gal-overlay')?.classList.remove('visible');
                       }}>
 
                       {item.isAlbum && item.albumCount === 0 && !item.url ? (
                         <div style={{
-                          width: '100%', minHeight: 220, display: 'flex', flexDirection: 'column',
+                          position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
                           alignItems: 'center', justifyContent: 'center', gap: 8, padding: '2rem 1rem',
                           background: 'linear-gradient(135deg,#1e3a5f,#0a1628)', textAlign: 'center'
                         }}>
@@ -616,14 +624,15 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                         </div>
                       ) : vid ? (
                         <video key={item.url} src={cxVideo(item.url)} muted playsInline preload="metadata"
-                          style={{ width: '100%', display: 'block', objectFit: 'cover', objectPosition: fp }} />
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: fp }} />
                       ) : (
                         <Image src={cxCard(item.url)} alt={item.alt || `Evento J&M ${i + 1}`}
                           width={700} height={700}
-                          sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, 220px"
-                          priority={i < 6}
+                          sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, 25vw"
+                          priority={i < 8}
                           style={{
-                            width: '100%', height: 'auto', display: 'block', objectFit: 'cover', objectPosition: fp,
+                            position: 'absolute', inset: 0, width: '100%', height: '100%',
+                            objectFit: 'cover', objectPosition: fp,
                             transition: 'transform .5s'
                           }} />
                       )}
@@ -958,8 +967,14 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
       <style>{`
         .gal-overlay.visible { opacity: 1 !important; }
         @keyframes lbIn { from{opacity:0;transform:scale(0.92)} to{opacity:1;transform:scale(1)} }
-        @media(max-width:768px){ div[style*="columns:3"] { columns: 2 180px !important; gap:0.875rem !important; } }
-        @media(max-width:480px){ div[style*="columns:3"], div[style*="columns:2"] { columns: 1 !important; } }
+        /* Grid de cuadrados: 4 columnas → 3 → 2 según pantalla */
+        .gal-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1.1rem;
+        }
+        @media(max-width:1024px){ .gal-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media(max-width:768px){ .gal-grid { grid-template-columns: repeat(2, 1fr); gap: 0.8rem; } }
         @media(max-width:640px){
           .gal-filters-scroll{ -webkit-overflow-scrolling:touch; scrollbar-width:none; }
           .gal-filters-scroll::-webkit-scrollbar{ display:none; }
