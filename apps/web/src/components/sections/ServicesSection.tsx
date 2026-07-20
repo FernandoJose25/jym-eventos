@@ -141,7 +141,7 @@ function AtvCard({ s, idx }: { s: Service; idx: number }) {
           </div>
 
           {/* ── CAPA 2: Ícono + texto anclados abajo (flota con parallax) ── */}
-          <div ref={layerFgRef} style={{
+          <div ref={layerFgRef} className="srv-card-fg" style={{
             position:'absolute', inset:0, zIndex:3,
             display:'flex', flexDirection:'column', alignItems:'flex-start',
             justifyContent:'flex-end', gap:8, padding:'1.5rem 1.4rem',
@@ -234,8 +234,8 @@ export default function ServicesSection({ services }: { services: Service[] }) {
           </p>
         </div>
 
-        {/* Grid 3 columnas */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'2rem' }}
+        {/* Grid 4 columnas — cards más compactas */}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'1.5rem' }}
              className="srv-grid">
           {services.map((s, i) => (
             <div key={s.id} className={`reveal stagger-${Math.min(i+1,8)}`}>
@@ -249,8 +249,16 @@ export default function ServicesSection({ services }: { services: Service[] }) {
         .atvImg-container.over {
           box-shadow: 0 45px 100px rgba(14,21,47,0.4), 0 16px 40px rgba(14,21,47,0.4);
         }
+        @media(max-width:1200px){ .srv-grid{ grid-template-columns:repeat(3,1fr) !important; } }
         @media(max-width:900px){ .srv-grid{ grid-template-columns:1fr 1fr !important; gap:1.25rem !important; } }
-        @media(max-width:600px){ .srv-grid{ grid-template-columns:1fr !important; } }
+        @media(max-width:600px){
+          .srv-grid{ grid-template-columns:1fr 1fr !important; gap:0.875rem !important; }
+          .srv-card-fg{ padding:0.9rem 0.85rem !important; gap:4px !important; }
+          .srv-card-fg h3{ font-size:1rem !important; }
+          .srv-card-fg p{ font-size:0.7rem !important; }
+          .srv-card-fg > span{ font-size:0.75rem !important; }
+          .srv-card-fg > div span{ font-size:1.6rem !important; }
+        }
         @media(max-width:480px){
           .services-section{ padding:4rem 0 !important; }
         }

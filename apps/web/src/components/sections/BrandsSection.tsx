@@ -18,22 +18,18 @@ export default function BrandsSection({ data }: { data: any }) {
   if (!brands.length) return null;
 
   return (
-    <section style={{ padding:'3.5rem 0', background:'linear-gradient(180deg,#0a1628 0%,#050d1a 100%)',
-                       borderTop:'1px solid rgba(212,160,23,0.12)', borderBottom:'1px solid rgba(212,160,23,0.12)',
+    <section style={{ padding:'5.5rem 0 4rem', background:'linear-gradient(180deg,#0a1628 0%,#050d1a 100%)',
+                       borderBottom:'1px solid rgba(212,160,23,0.12)',
                        position:'relative', overflow:'hidden' }}>
-      <div className="container">
-        <div style={{ textAlign:'center', marginBottom:'2.25rem' }}>
-          <p style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.22em', color:'rgba(255,255,255,0.45)' }}>
-            {h2}
-          </p>
-        </div>
+      <div style={{ textAlign:'center', marginBottom:'2.5rem', padding:'0 1rem' }}>
+        <p style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.22em', color:'rgba(255,255,255,0.45)' }}>
+          {h2}
+        </p>
+      </div>
 
-        {/* Carrusel infinito (marquee) — se pausa al pasar el cursor */}
-        <div className="brands-marquee"
-             style={{ overflow:'hidden',
-                       maskImage:'linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)',
-                       WebkitMaskImage:'linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)' }}>
-          <div className="brands-track" style={{ display:'flex', width:'max-content' }}>
+      {/* Carrusel infinito (marquee) a ancho completo — se pausa al pasar el cursor */}
+      <div className="brands-marquee" style={{ overflow:'hidden', width:'100%' }}>
+        <div className="brands-track" style={{ display:'flex', width:'max-content' }}>
             {Array.from({ length: 6 }).flatMap((_, rep) =>
               brands.map((b: any, i: number) => (
                 <div key={`${rep}-${i}`}
@@ -67,12 +63,11 @@ export default function BrandsSection({ data }: { data: any }) {
                 </div>
               ))
             )}
-          </div>
         </div>
       </div>
 
       <style>{`
-        .brands-track { animation: brandsMarquee 32s linear infinite; }
+        .brands-track { animation: brandsMarquee 45s linear infinite; }
         .brands-marquee:hover .brands-track { animation-play-state: paused; }
         @keyframes brandsMarquee {
           from { transform: translateX(0); }
