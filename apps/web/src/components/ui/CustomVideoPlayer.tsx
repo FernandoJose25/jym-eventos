@@ -1,6 +1,9 @@
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cxVideo, cxVideoQuality } from '@/lib/cloudinary';
+import { useIsTouchDevice } from '@/lib/hooks/useIsTouchDevice';
+import { useZoomPan } from '@/lib/hooks/useZoomPan';
 
 // ── CustomVideoPlayer ──────────────────────────────────────────────
 const VBTN: React.CSSProperties = {
@@ -68,6 +71,13 @@ function CustomVideoPlayer({ src, sonidoPermitido = false }: { src: string; soni
 
   const resumeRef     = useRef<{ time: number; wasPlaying: boolean } | null>(null);
   const skipNextResume = useRef(true); // no restaurar posición en el primer render
+
+  // Gestos táctiles (solo mobile): pinch-zoom persistente + doble-tap lateral
+  const isTouch = useIsTouchDevice();
+  const { scale, x: panX, y: panY, isZoomed, handlers: zoomHandlers } = useZoomPan(videoRef as React.RefObject<HTMLElement>);
+  const [skipFeedback, setSkipFeedback] = useState<{ side: 'left' | 'right'; key: number } | null>(null);
+  const lastVideoTapRef = useRef<{ time: number; x: number } | null>(null);
+  const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const computedSrc = useMemo(
     () => (quality === 'auto' ? cxVideo(src) : cxVideoQuality(src, quality)),
@@ -147,6 +157,7 @@ function CustomVideoPlayer({ src, sonidoPermitido = false }: { src: string; soni
       document.removeEventListener('fullscreenchange',       onFs);
       document.removeEventListener('webkitfullscreenchange', onFs);
       clearTimeout(timerRef.current);
+      clearTimeout(singleTapTimerRef.current);
     };
   }, []);
 
@@ -202,6 +213,40 @@ function CustomVideoPlayer({ src, sonidoPermitido = false }: { src: string; soni
     const v = videoRef.current; if (!v) return;
     if (v.paused) v.play(); else v.pause();
     bump();
+  };
+
+  const skip = (delta: number, side: 'left' | 'right') => {
+    const v = videoRef.current; if (!v || !v.duration) return;
+    v.currentTime = Math.min(Math.max(v.currentTime + delta, 0), v.duration);
+    setSkipFeedback({ side, key: Date.now() });
+    bump();
+  };
+
+  // Doble-tap lateral (solo mobile, solo si no hay zoom activo): tap derecho
+  // = +5s, tap izquierdo = -5s. Un solo tap conserva el comportamiento
+  // original (togglePlay/bump), con un pequeño delay para poder distinguirlo
+  // de un doble-tap.
+  const handleVideoTouchEnd = (e: React.TouchEvent) => {
+    if (isZoomed) return; // en zoom, el doble-tap lo maneja useZoomPan (reset)
+    const t = e.changedTouches[0]; if (!t) return;
+    const now = Date.now();
+    const last = lastVideoTapRef.current;
+    const isDouble = !!last && (now - last.time) < 300 && Math.abs(t.clientX - last.x) < 40;
+
+    if (isDouble) {
+      clearTimeout(singleTapTimerRef.current);
+      lastVideoTapRef.current = null;
+      const rect = wrapRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const isRight = (t.clientX - rect.left) > rect.width / 2;
+      skip(isRight ? 5 : -5, isRight ? 'right' : 'left');
+    } else {
+      lastVideoTapRef.current = { time: now, x: t.clientX };
+      singleTapTimerRef.current = setTimeout(() => {
+        if (ctrlVisible) togglePlay(); else bump();
+        lastVideoTapRef.current = null;
+      }, 300);
+    }
   };
 
   const seek = (val: number) => {
@@ -267,19 +312,39 @@ function CustomVideoPlayer({ src, sonidoPermitido = false }: { src: string; soni
       }}
     >
       {/* Video */}
-      <video
+      <motion.video
         ref={videoRef}
         src={computedSrc}
         autoPlay
         playsInline
         muted={!sonidoPermitido}
-        onClick={e => { e.stopPropagation(); if (ctrlVisible) togglePlay(); else bump(); }}
+        onClick={e => {
+          if (isTouch) return; // en touch, el gesto se resuelve en onTouchEnd
+          e.stopPropagation();
+          if (ctrlVisible) togglePlay(); else bump();
+        }}
+        {...(isTouch ? {
+          onTouchStart: (e: React.TouchEvent) => { sp(e); zoomHandlers.onTouchStart(e); },
+          onTouchMove: (e: React.TouchEvent) => { sp(e); zoomHandlers.onTouchMove(e); },
+          onTouchEnd: (e: React.TouchEvent) => { sp(e); zoomHandlers.onTouchEnd(e); handleVideoTouchEnd(e); },
+        } : {})}
         style={{
           width: '100%', maxHeight: isFull ? '100dvh' : '72vh',
           display: 'block', background: '#000', cursor: 'pointer',
           borderRadius: isFull ? 0 : 16,
+          scale, x: panX, y: panY,
+          touchAction: isTouch ? 'none' : 'auto',
         }}
       />
+
+      {/* Feedback de doble-tap: ⏩/⏪ 5s */}
+      {isTouch && (
+        <AnimatePresence>
+          {skipFeedback && (
+            <SkipFeedback key={skipFeedback.key} side={skipFeedback.side} onDone={() => setSkipFeedback(null)} />
+          )}
+        </AnimatePresence>
+      )}
 
       {/* Barra de controles — siempre renderizada, visibilidad por opacity */}
       <div
@@ -451,6 +516,38 @@ function CustomVideoPlayer({ src, sonidoPermitido = false }: { src: string; soni
         </div>
       </div>
     </div>
+  );
+}
+
+// Feedback visual del doble-tap lateral (⏩ 5s / ⏪ 5s), auto-desaparece.
+function SkipFeedback({ side, onDone }: { side: 'left' | 'right'; onDone: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      style={{
+        position: 'absolute', top: 0, bottom: 0,
+        [side]: 0, width: '40%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        pointerEvents: 'none', zIndex: 3,
+      }}
+    >
+      <div style={{
+        background: 'rgba(0,0,0,0.55)', borderRadius: '50%', width: 68, height: 68,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+      }}>
+        <span style={{ fontSize: '1.3rem' }}>{side === 'right' ? '⏩' : '⏪'}</span>
+        <span style={{ color: '#fff', fontSize: '0.65rem', fontWeight: 700 }}>5s</span>
+      </div>
+    </motion.div>
   );
 }
 

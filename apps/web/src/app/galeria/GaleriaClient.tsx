@@ -5,12 +5,16 @@ import { collection, query, orderBy, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Image from 'next/image';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import { cxCard, cxFull, cxVideo, cxShareVideo } from '@/lib/cloudinary';
 import { ShareBar } from '@/components/ui/ShareBar';
 import CapybaraLoader from '@/components/ui/CapybaraLoader';
 import CustomVideoPlayer from '@/components/ui/CustomVideoPlayer';
 import { useLockBodyScroll } from '@/lib/hooks/useLockBodyScroll';
+import { useIsTouchDevice } from '@/lib/hooks/useIsTouchDevice';
+import { useZoomPan } from '@/lib/hooks/useZoomPan';
+import LightboxGestureHint, { hasSeenGestureHint, markGestureHintSeen } from '@/components/ui/LightboxGestureHint';
 
 export interface GItem {
   id: string; url: string; alt: string;
@@ -163,6 +167,15 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
   const searchRef = useRef<HTMLInputElement>(null);
   const autoOpened = useRef(false);
 
+  // Gestos táctiles del lightbox (solo mobile): swipe vertical + overlay de ayuda
+  const isTouch = useIsTouchDevice();
+  const [showHint, setShowHint] = useState(false);
+  const [swipeDir, setSwipeDir] = useState<1 | -1>(1); // dirección de la última transición, para la animación
+  const [bounce, setBounce] = useState<'top' | 'bottom' | null>(null); // rebote en los extremos
+  const mediaBoxRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const { scale: imgScale, x: imgX, y: imgY, isZoomed: imgZoomed, handlers: imgZoomHandlers } = useZoomPan(mediaBoxRef);
+
   useEffect(() => {
     const CACHE_KEY = 'jym_gallery_cache_v1';
 
@@ -295,6 +308,58 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
   useEffect(() => {
     setVisibleLimit(PAGE_SIZE);
   }, [catActiva, subActiva, searchQ]);
+
+  // Overlay de ayuda gestual — solo mobile, solo la primera apertura del lightbox
+  useEffect(() => {
+    if (!isTouch || lightbox === null) return;
+    if (hasSeenGestureHint()) return;
+    setShowHint(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTouch, lightbox !== null]);
+
+  const dismissHint = () => { setShowHint(false); markGestureHintSeen(); };
+
+  // Navegación con tope duro + rebote en los extremos (usada por el swipe vertical;
+  // las flechas de desktop siguen usando el wrap circular original, sin tocar).
+  const goToSlide = (dir: 1 | -1) => {
+    setLightbox(p => {
+      if (p === null) return p;
+      const next = p + dir;
+      if (next < 0) { setBounce('top'); return p; }
+      if (next >= visibles.length) { setBounce('bottom'); return p; }
+      setSwipeDir(dir);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (!bounce) return;
+    const t = setTimeout(() => setBounce(null), 220);
+    return () => clearTimeout(t);
+  }, [bounce]);
+
+  // Swipe vertical (solo mobile, solo si el medio activo no está en zoom)
+  const onLightboxTouchStart = (e: React.TouchEvent) => {
+    if (imgZoomed || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY, time: Date.now() };
+    if (showHint) dismissHint();
+  };
+  const onLightboxTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start || imgZoomed) return;
+    const t = e.changedTouches[0]; if (!t) return;
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    const dt = Date.now() - start.time;
+    if (Math.abs(dx) > Math.abs(dy)) return; // gesto más horizontal que vertical: ignorar
+    const dist = Math.abs(dy);
+    const speed = dist / Math.max(dt, 1);
+    const isSwipe = dist > 60 || (dist > 30 && speed > 0.5);
+    if (!isSwipe) return;
+    goToSlide(dy < 0 ? 1 : -1); // arriba = siguiente, abajo = anterior
+  };
 
   return (
     <>
@@ -682,7 +747,9 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
           backdropFilter: 'blur(16px)', display: 'flex', alignItems: 'center',
           justifyContent: 'center', padding: '16px 16px 12px', cursor: 'zoom-out'
         }}
-          onClick={() => setLightbox(null)}>
+          onClick={() => setLightbox(null)}
+          onTouchStart={isTouch ? onLightboxTouchStart : undefined}
+          onTouchEnd={isTouch ? onLightboxTouchEnd : undefined}>
 
           {/* Botón cerrar — siempre arriba a la derecha */}
           <button onClick={() => setLightbox(null)}
@@ -705,33 +772,63 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
             }}>
 
             {/* Media — sin nada encima */}
-            {isVideo(visibles[lightbox]) ? (
-              <CustomVideoPlayer key={visibles[lightbox].id} src={visibles[lightbox].url} sonidoPermitido={visibles[lightbox].sonidoPermitido === true} />
-            ) : (
-              <Image src={cxFull(visibles[lightbox].url)}
-                alt={visibles[lightbox].alt || 'Evento J&M'}
-                width={1400} height={900}
-                sizes="(max-width: 960px) 95vw, 960px"
-                style={{
-                  width: '100%', height: 'auto', maxHeight: '72vh', objectFit: 'contain', display: 'block',
-                  borderRadius: 16, boxShadow: '0 32px 80px rgba(0,0,0,0.6)'
-                }} />
-            )}
+            <div ref={mediaBoxRef} style={{ position: 'relative', overflow: 'hidden', borderRadius: 16 }}>
+              <AnimatePresence mode="wait" initial={false} custom={swipeDir}>
+                <motion.div
+                  key={visibles[lightbox].id}
+                  custom={swipeDir}
+                  initial={{ y: swipeDir > 0 ? 40 : -40, opacity: 0 }}
+                  animate={{
+                    y: bounce === 'top' ? 16 : bounce === 'bottom' ? -16 : 0,
+                    opacity: 1,
+                  }}
+                  exit={{ y: swipeDir > 0 ? -40 : 40, opacity: 0 }}
+                  transition={{ duration: bounce ? 0.15 : 0.2 }}
+                >
+                  {isVideo(visibles[lightbox]) ? (
+                    <CustomVideoPlayer key={visibles[lightbox].id} src={visibles[lightbox].url} sonidoPermitido={visibles[lightbox].sonidoPermitido === true} />
+                  ) : (
+                    <motion.div
+                      {...(isTouch ? imgZoomHandlers : {})}
+                      style={{
+                        scale: isTouch ? imgScale : 1,
+                        x: isTouch ? imgX : 0,
+                        y: isTouch ? imgY : 0,
+                        touchAction: isTouch ? 'none' : 'auto',
+                      }}
+                    >
+                      <Image src={cxFull(visibles[lightbox].url)}
+                        alt={visibles[lightbox].alt || 'Evento J&M'}
+                        width={1400} height={900}
+                        sizes="(max-width: 960px) 95vw, 960px"
+                        style={{
+                          width: '100%', height: 'auto', maxHeight: '72vh', objectFit: 'contain', display: 'block',
+                          borderRadius: 16, boxShadow: '0 32px 80px rgba(0,0,0,0.6)'
+                        }} />
+                    </motion.div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+
+              <LightboxGestureHint visible={isTouch && showHint} onDismiss={dismissHint} />
+            </div>
 
             {/* Barra inferior: flechas + info centrada */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 
-              <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! - 1 + visibles.length) % visibles.length)); }}
-                style={{
-                  flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-                  color: '#fff', fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', transition: 'all .2s'
-                }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,0.3)'}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
-                ←
-              </button>
+              {!isTouch && (
+                <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! - 1 + visibles.length) % visibles.length)); }}
+                  style={{
+                    flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                    color: '#fff', fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', transition: 'all .2s'
+                  }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,0.3)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
+                  ←
+                </button>
+              )}
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 {visibles[lightbox].categoria && (
@@ -757,17 +854,19 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                 </p>
               </div>
 
-              <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! + 1) % visibles.length)); }}
-                style={{
-                  flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
-                  color: '#fff', fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', transition: 'all .2s'
-                }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,0.3)'}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
-                →
-              </button>
+              {!isTouch && (
+                <button onClick={e => { e.stopPropagation(); setLightbox(p => ((p! + 1) % visibles.length)); }}
+                  style={{
+                    flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)',
+                    color: '#fff', fontSize: '1.1rem', cursor: 'pointer', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', transition: 'all .2s'
+                  }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(212,160,23,0.3)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'}>
+                  →
+                </button>
+              )}
             </div>
 
             <ShareBar
