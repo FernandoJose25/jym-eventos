@@ -1,17 +1,55 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useRouter }           from 'next/navigation';
-import { useAuth }             from '@/hooks/useAuth';
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 
 type Stage = 'form' | 'loading' | 'success';
 
+/* Mensajes según franja horaria — siempre hay algo relevante que decir,
+   sin importar a qué hora o qué día entre el equipo. */
+const FRANJAS = [
+  { hasta: 5,  saludo: 'Buona notte',    msg: 'La ciudad duerme, pero las reservas de mañana no esperan.' },
+  { hasta: 12, saludo: 'Buenos días',    msg: 'Nuevo día, nuevas fiestas por planear. Vamos con todo.' },
+  { hasta: 18, saludo: 'Buenas tardes',  msg: 'El ritmo del día sigue. Revisa qué eventos necesitan tu toque.' },
+  { hasta: 21, saludo: 'Buenas noches',  msg: 'El día casi termina, pero siempre hay un detalle más por afinar.' },
+  { hasta: 24, saludo: 'Buenas noches',  msg: 'Trabajo nocturno también cuenta. Gracias por el compromiso.' },
+];
+
+const DIAS_ESPECIALES: Record<number, string> = {
+  0: 'Los domingos también se organizan grandes celebraciones.',
+  5: 'Viernes: la temporada alta de reservas empieza justo hoy.',
+  6: 'Fin de semana — la temporada más movida del año.',
+};
+
+function useGreeting() {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  return useMemo(() => {
+    if (!now) return { saludo: 'Bienvenido', msg: 'Inicia sesión para gestionar tus eventos.', hora: '' };
+    const h = now.getHours();
+    const franja = FRANJAS.find(f => h < f.hasta) || FRANJAS[FRANJAS.length - 1];
+    const msgDia = DIAS_ESPECIALES[now.getDay()];
+    const hora = now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+    const fecha = now.toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
+    return { saludo: franja.saludo, msg: msgDia || franja.msg, hora, fecha };
+  }, [now]);
+}
+
 export default function LoginPage() {
-  const router  = useRouter();
+  const router = useRouter();
   const { signIn, user, loading } = useAuth();
-  const [stage,  setStage]  = useState<Stage>('form');
-  const [email,  setEmail]  = useState('');
-  const [pass,   setPass]   = useState('');
-  const [error,  setError]  = useState('');
+  const [stage, setStage] = useState<Stage>('form');
+  const [email, setEmail] = useState('');
+  const [pass, setPass] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [error, setError] = useState('');
+  const { saludo, msg, hora, fecha } = useGreeting();
 
   useEffect(() => {
     if (!loading && user) router.replace('/dashboard');
@@ -34,151 +72,217 @@ export default function LoginPage() {
   if (loading) return null;
 
   return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center',
-                   background:'#0d0d0d' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', background: '#050d1a', fontFamily: 'var(--font-jakarta)' }}>
 
-      {stage === 'success' ? (
-        <form className="uv-form">
-          <p id="uv-heading" style={{ textAlign:'center', color:'#fff' }}>✅ ¡Acceso concedido!</p>
-          <p style={{ textAlign:'center', color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>Redirigiendo...</p>
-        </form>
-      ) : (
-        <form className="uv-form" onSubmit={handleSubmit}>
-          <p id="uv-heading">Login</p>
+      {/* ═══ Panel de marca (izquierda) ═══ */}
+      <div style={{
+        flex: '1 1 50%', position: 'relative', overflow: 'hidden',
+        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        padding: 'clamp(2rem,4vw,4rem)',
+        background: 'linear-gradient(160deg,#050d1a 0%,#0a1628 45%,#1e3a5f 100%)',
+      }} className="jym-brand-panel">
+        {/* Textura de fondo: puntos dorados sutiles + glow */}
+        <div style={{
+          position: 'absolute', inset: 0, opacity: 0.5,
+          backgroundImage: 'radial-gradient(#f5c84222 1px, transparent 1px)',
+          backgroundSize: '28px 28px', animation: 'jym-grid-pan 40s linear infinite',
+        }} />
+        <div style={{
+          position: 'absolute', top: '-10%', right: '-10%', width: 480, height: 480, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(245,200,66,0.16) 0%, transparent 70%)', filter: 'blur(20px)',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: '-15%', left: '-10%', width: 420, height: 420, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(37,99,235,0.18) 0%, transparent 70%)', filter: 'blur(20px)',
+        }} />
 
-          <div className="uv-field">
-            <svg className="uv-input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M13.106 7.222c0-2.967-2.249-5.032-5.482-5.032-3.35 0-5.646 2.318-5.646 5.702 0 3.493 2.235 5.708 5.762 5.708.862 0 1.689-.123 2.304-.335v-.862c-.43.199-1.354.328-2.29.328-2.926 0-4.813-1.88-4.813-4.798 0-2.844 1.921-4.881 4.594-4.881 2.735 0 4.608 1.688 4.608 4.156 0 1.682-.554 2.769-1.416 2.769-.492 0-.772-.28-.772-.76V5.206H8.923v.834h-.11c-.266-.595-.881-.964-1.6-.964-1.4 0-2.378 1.162-2.378 2.823 0 1.737.957 2.906 2.379 2.906.8 0 1.415-.39 1.709-1.087h.11c.081.67.703 1.148 1.503 1.148 1.572 0 2.57-1.415 2.57-3.643zm-7.177.704c0-1.197.54-1.907 1.456-1.907.93 0 1.524.738 1.524 1.907S8.308 9.84 7.371 9.84c-.895 0-1.442-.725-1.442-1.914z"/>
-            </svg>
-            <input
-              autoComplete="email"
-              placeholder="Correo electrónico"
-              className="uv-input-field"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-            />
+        {/* Logo + marca */}
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: 14, flexShrink: 0,
+            background: 'linear-gradient(135deg,#b8860b,#f5c842)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem',
+            boxShadow: '0 8px 24px rgba(212,160,23,0.4)',
+          }}>🎉</div>
+          <div>
+            <p style={{ color: '#fff', fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: '1.15rem', lineHeight: 1.15, margin: 0, letterSpacing: '-.01em' }}>
+              J&amp;M Decoraciones<br />y Eventos
+            </p>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.7rem', margin: '2px 0 0', letterSpacing: '.08em', textTransform: 'uppercase' }}>Panel Administrativo</p>
           </div>
+        </div>
 
-          <div className="uv-field">
-            <svg className="uv-input-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
-            </svg>
-            <input
-              placeholder="Contraseña"
-              className="uv-input-field"
-              type="password"
-              value={pass}
-              onChange={e => setPass(e.target.value)}
-              autoComplete="current-password"
-            />
-          </div>
-
-          {error && (
-            <div style={{ background:'rgba(239,68,68,0.15)', border:'1px solid rgba(239,68,68,0.35)',
-                           borderRadius:10, padding:'0.5rem 0.875rem', color:'#fca5a5', fontSize:'0.82rem',
-                           textAlign:'center' }}>
-              ⚠️ {error}
-            </div>
+        {/* Saludo dinámico */}
+        <div style={{ position: 'relative', zIndex: 2 }} key={saludo}>
+          {fecha && (
+            <p className="jym-fade-in" style={{
+              color: '#f5c842', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '.2em', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f5c842', boxShadow: '0 0 8px #f5c842', display: 'inline-block' }} />
+              {fecha} · {hora}
+            </p>
           )}
+          <h1 className="jym-fade-in" style={{
+            fontFamily: 'var(--font-playfair)', color: '#fff', fontWeight: 700,
+            fontSize: 'clamp(2rem,3.6vw,3rem)', lineHeight: 1.08, margin: '0 0 1rem', letterSpacing: '-.02em',
+          }}>
+            {saludo},<br />equipo J&amp;M.
+          </h1>
+          <p className="jym-fade-in" style={{
+            color: 'rgba(255,255,255,0.55)', fontSize: '1rem', lineHeight: 1.6, maxWidth: 420, margin: 0,
+          }}>
+            {msg}
+          </p>
+        </div>
 
-          <div className="uv-btn">
-            <button type="submit" className="uv-button1" disabled={stage === 'loading'}>
-              {stage === 'loading'
-                ? <span style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.3)',
-                                  borderTopColor:'#fff', borderRadius:'50%', animation:'uv-spin .7s linear infinite',
-                                  display:'inline-block' }}/>
-                : 'Login'}
-            </button>
-          </div>
-        </form>
-      )}
+        <p style={{ position: 'relative', zIndex: 2, color: 'rgba(255,255,255,0.25)', fontSize: '0.75rem', margin: 0 }}>
+          Sechura, Piura · Desde 2014
+        </p>
+      </div>
+
+      {/* ═══ Panel de formulario (derecha) ═══ */}
+      <div style={{
+        flex: '1 1 50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '2rem', background: '#0c1420',
+      }}>
+        <div style={{ width: '100%', maxWidth: 380 }}>
+
+          {stage === 'success' ? (
+            <div className="jym-fade-in" style={{ textAlign: 'center' }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: '50%', margin: '0 auto 1.25rem',
+                background: 'linear-gradient(135deg,#10b981,#059669)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 8px 28px rgba(16,185,129,0.4)',
+              }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <p style={{ color: '#fff', fontFamily: 'var(--font-playfair)', fontSize: '1.3rem', fontWeight: 700, margin: '0 0 0.4rem' }}>
+                Acceso concedido
+              </p>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', margin: 0 }}>
+                Redirigiendo al panel...
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <p style={{ color: '#f5c842', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.2em', margin: '0 0 0.6rem' }}>
+                Iniciar sesión
+              </p>
+              <h2 style={{ fontFamily: 'var(--font-playfair)', color: '#fff', fontSize: '1.7rem', fontWeight: 700, margin: '0 0 2rem', letterSpacing: '-.01em' }}>
+                Ingresa a tu cuenta
+              </h2>
+
+              <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', fontWeight: 600, marginBottom: 6 }}>
+                Correo electrónico
+              </label>
+              <div className="jym-field" style={{ marginBottom: '1.1rem' }}>
+                <Mail size={16} className="jym-field-icon" />
+                <input
+                  autoComplete="email"
+                  placeholder="tucorreo@jymeventos.com"
+                  className="jym-input"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                />
+              </div>
+
+              <label style={{ display: 'block', color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', fontWeight: 600, marginBottom: 6 }}>
+                Contraseña
+              </label>
+              <div className="jym-field" style={{ marginBottom: error ? '0.9rem' : '1.6rem' }}>
+                <Lock size={16} className="jym-field-icon" />
+                <input
+                  placeholder="••••••••"
+                  className="jym-input"
+                  type={showPass ? 'text' : 'password'}
+                  value={pass}
+                  onChange={e => setPass(e.target.value)}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(v => !v)}
+                  aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', display: 'flex', padding: 4 }}
+                >
+                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+
+              {error && (
+                <div className="jym-fade-in" style={{
+                  background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+                  borderRadius: 10, padding: '0.65rem 0.9rem', color: '#fca5a5', fontSize: '0.8rem',
+                  marginBottom: '1.6rem',
+                }}>
+                  {error}
+                </div>
+              )}
+
+              <button type="submit" disabled={stage === 'loading'} className="jym-submit">
+                {stage === 'loading'
+                  ? <Loader2 size={16} className="jym-spin" />
+                  : <>Ingresar al panel <ArrowRight size={16} /></>}
+              </button>
+
+              <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.25)', fontSize: '0.72rem', marginTop: '1.75rem' }}>
+                Acceso exclusivo para el equipo J&amp;M
+              </p>
+            </form>
+          )}
+        </div>
+      </div>
 
       <style>{`
-        .uv-form {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          padding-left: 2em;
-          padding-right: 2em;
-          padding-bottom: 0.4em;
-          background-color: #171717;
-          border-radius: 25px;
-          transition: .4s ease-in-out;
-          min-width: 280px;
+        @media (max-width: 860px) {
+          .jym-brand-panel { display: none !important; }
         }
-        .uv-form:hover {
-          transform: scale(1.05);
-          border: 1px solid black;
+        @keyframes jym-grid-pan {
+          from { background-position: 0 0; }
+          to   { background-position: 200px 200px; }
         }
-        #uv-heading {
-          text-align: center;
-          margin: 2em;
-          color: rgb(255, 255, 255);
-          font-size: 1.2em;
+        @keyframes jym-fade-in-kf {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        .uv-field {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5em;
-          border-radius: 25px;
-          padding: 0.6em;
-          border: none;
-          outline: none;
-          color: white;
-          background-color: #171717;
-          box-shadow: inset 2px 5px 10px rgb(5, 5, 5);
+        .jym-fade-in { animation: jym-fade-in-kf .6s ease both; }
+        .jym-field {
+          display: flex; align-items: center; gap: 10px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 12px; padding: 0.8rem 0.95rem;
+          transition: border-color .2s ease, background .2s ease;
         }
-        .uv-input-icon {
-          height: 1.3em;
-          width: 1.3em;
-          fill: white;
-          flex-shrink: 0;
+        .jym-field:focus-within {
+          border-color: #f5c842;
+          background: rgba(245,200,66,0.05);
         }
-        .uv-input-field {
-          background: none;
-          border: none;
-          outline: none;
-          width: 100%;
-          color: #d3d3d3;
-          font-family: inherit;
+        .jym-field-icon { color: rgba(255,255,255,0.35); flex-shrink: 0; }
+        .jym-input {
+          flex: 1; background: none; border: none; outline: none;
+          color: #fff; font-family: var(--font-jakarta); font-size: 0.9rem;
         }
-        .uv-input-field::placeholder {
-          color: rgba(255,255,255,0.3);
+        .jym-input::placeholder { color: rgba(255,255,255,0.25); }
+        .jym-submit {
+          width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+          padding: 0.85rem; border-radius: 12px; border: none; cursor: pointer;
+          background: linear-gradient(135deg,#b8860b,#f5c842);
+          color: #0a1628; font-weight: 700; font-size: 0.92rem; font-family: var(--font-jakarta);
+          box-shadow: 0 8px 24px rgba(212,160,23,0.35);
+          transition: transform .15s ease, box-shadow .15s ease;
         }
-        .uv-btn {
-          display: flex;
-          justify-content: center;
-          flex-direction: row;
-          margin-top: 2.5em;
-          margin-bottom: 3em;
+        .jym-submit:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 12px 28px rgba(212,160,23,0.45);
         }
-        .uv-button1 {
-          padding: 0.5em 2em;
-          border-radius: 5px;
-          border: none;
-          outline: none;
-          transition: .4s ease-in-out;
-          background-color: #252525;
-          color: white;
-          cursor: pointer;
-          font-size: 0.95rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 120px;
-          min-height: 36px;
-        }
-        .uv-button1:hover {
-          background-color: black;
-          color: white;
-        }
-        .uv-button1:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-        @keyframes uv-spin { to { transform: rotate(360deg); } }
+        .jym-submit:disabled { opacity: 0.75; cursor: not-allowed; }
+        .jym-spin { animation: jym-spin-kf .8s linear infinite; }
+        @keyframes jym-spin-kf { to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
