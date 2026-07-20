@@ -20,6 +20,9 @@ const CAMPOS = {
   ctaH2:              'Título H2 del CTA final de la página',
   ctaP:                'Párrafo del CTA final (1 oración motivadora)',
   btn1Text:           'Texto del botón de cotizar',
+  opciones:           'OPCIONAL, solo si el servicio tiene variantes/estilos reales para elegir (ej. temáticas de decoración, personajes de un show, tipos de animación). Array de hasta 6: [{icon, title, desc}]. NO lo generes si el servicio no tiene variantes claras (ej. catering, fotografía general) — deja el campo fuera en ese caso.',
+  opcionesEyebrow:    'OPCIONAL, texto pequeño sobre el título de la sección de opciones, ej. "Estilos disponibles" o "Personajes disponibles". Solo si generas "opciones".',
+  opcionesTitulo:     'OPCIONAL, título H2 de la sección de opciones, ej. "Temáticas Más Populares" o "Personajes Favoritos". Solo si generas "opciones".',
 } as const;
 
 type CampoKey = keyof typeof CAMPOS;
@@ -61,7 +64,7 @@ function limpiarCampos(raw: any): Record<string, any> {
   for (const k of CAMPOS_KEYS) {
     if (!(k in raw)) continue;
     const v = raw[k];
-    if (k === 'includes' && Array.isArray(v)) {
+    if ((k === 'includes' || k === 'opciones') && Array.isArray(v)) {
       out[k] = v
         .filter(it => it && typeof it === 'object')
         .slice(0, 6)
@@ -69,7 +72,7 @@ function limpiarCampos(raw: any): Record<string, any> {
           icon: typeof it.icon === 'string' ? it.icon : '✅',
           title: typeof it.title === 'string' ? it.title : '',
           desc: typeof it.desc === 'string' ? it.desc : '',
-          visible: it.visible !== false,
+          ...(k === 'includes' ? { visible: it.visible !== false } : {}),
         }));
     } else if (k === 'stats' && Array.isArray(v)) {
       out[k] = v

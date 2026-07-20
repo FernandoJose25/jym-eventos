@@ -69,6 +69,8 @@ export default function ServiceContentPage() {
   const [inclModal, setInclModal] = useState<{ index:number|null; form:any } | null>(null);
   /* Stats modal */
   const [statModal, setStatModal] = useState<{ index:number|null; form:any } | null>(null);
+  /* Opciones modal (grid de estilos/variantes, ej. temáticas, personajes) */
+  const [opcModal, setOpcModal] = useState<{ index:number|null; form:any } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -85,7 +87,7 @@ export default function ServiceContentPage() {
     'eyebrow', 'hero_desc', 'categoryLabel', 'titleAccentWord',
     'longDescH2', 'longDesc', 'longDesc2', 'includes', 'stats',
     'testimonialName', 'testimonialRating', 'testimonialLocation',
-    'ctaH2', 'ctaP', 'btn1Text',
+    'ctaH2', 'ctaP', 'btn1Text', 'opciones', 'opcionesEyebrow', 'opcionesTitulo',
   ]);
 
   const handleGenerate = async () => {
@@ -187,6 +189,30 @@ export default function ServiceContentPage() {
 
   const setStatField = (k: string, v: any) =>
     setStatModal(p => p ? { ...p, form: { ...p.form, [k]: v } } : null);
+
+  /* ── Opciones helpers (grid de estilos/variantes propias del servicio) ── */
+  const opciones: any[] = srvData.detail?.opciones || [];
+
+  const openOpcEdit = (index: number) => setOpcModal({ index, form: { ...opciones[index] } });
+  const openOpcAdd  = () => setOpcModal({ index:null, form:{ icon:'✨', title:'', desc:'' } });
+
+  const saveOpc = () => {
+    if (!opcModal) return;
+    const { index, form } = opcModal;
+    const next = [...opciones];
+    if (index === null) next.push(form); else next[index] = form;
+    setDetail('opciones', next);
+    setOpcModal(null);
+  };
+
+  const deleteOpc = (i: number) => open({
+    type:'delete', title:'Eliminar opción',
+    description:'Esta acción no se puede deshacer.',
+    onConfirm: async () => setDetail('opciones', opciones.filter((_: any, j: number) => j !== i)),
+  });
+
+  const setOpcField = (k: string, v: any) =>
+    setOpcModal(p => p ? { ...p, form: { ...p.form, [k]: v } } : null);
 
   if (loading) return (
     <div style={{ display:'flex', flexDirection:'column', gap:16, maxWidth:900, margin:'0 auto' }}>
@@ -339,6 +365,37 @@ export default function ServiceContentPage() {
           </div>
         </fieldset>
 
+        {/* Opciones — grid de estilos/variantes (temáticas, personajes, etc.) */}
+        <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:14, padding:'1.25rem 1.5rem' }}>
+          <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 8px' }}>Opciones / Estilos (grid)</legend>
+          <p style={{ fontSize:'0.78rem', color:'#64748b', margin:'0 0 12px' }}>
+            Opcional. Solo si este servicio tiene variantes reales para elegir (ej. temáticas, personajes, tipos de animación). Si lo dejas vacío, esta sección no se muestra en la web.
+          </p>
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+              <F label="Texto pequeño (eyebrow)" field="opcionesEyebrow"
+                 value={srvData.detail?.opcionesEyebrow||''} onChange={(k,v)=>setDetail(k,v)}
+                 placeholder="Estilos disponibles"/>
+              <F label="Título de la sección" field="opcionesTitulo"
+                 value={srvData.detail?.opcionesTitulo||''} onChange={(k,v)=>setDetail(k,v)}
+                 placeholder="Temáticas Más Populares"/>
+            </div>
+            <div style={{ display:'flex', justifyContent:'flex-end' }}>
+              <button onClick={openOpcAdd} className="btn-outline" style={{ fontSize:'0.78rem', padding:'0.35rem 0.875rem' }}>+ Agregar opción</button>
+            </div>
+            {opciones.length === 0 && (
+              <p style={{ color:'#94a3b8', fontSize:'0.82rem', textAlign:'center', padding:'1.5rem', background:'#f8fafc', borderRadius:10, border:'1px dashed #e2e8f0' }}>
+                Sin opciones. Esta sección no aparecerá en la web hasta que agregues al menos una.
+              </p>
+            )}
+            {opciones.map((o: any, i: number) => (
+              <ItemCard key={i} item={o}
+                onEdit={() => openOpcEdit(i)}
+                onDelete={() => deleteOpc(i)}/>
+            ))}
+          </div>
+        </fieldset>
+
         {/* CTA */}
         <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:14, padding:'1.25rem 1.5rem' }}>
           <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 8px' }}>CTA final de la página</legend>
@@ -453,6 +510,36 @@ export default function ServiceContentPage() {
               {lbl('Etiqueta')}
               <input type="text" value={statModal.form.label||''} onChange={e=>setStatField('label',e.target.value)}
                      className="admin-input" placeholder="Bodas decoradas"/>
+            </div>
+          </div>
+        )}
+      </EditModal>
+
+      {/* Modal opciones */}
+      <EditModal
+        open={!!opcModal}
+        title={opcModal?.index === null ? 'Agregar opción' : 'Editar opción'}
+        onSave={saveOpc}
+        onCancel={() => setOpcModal(null)}
+      >
+        {opcModal && (
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div style={{ display:'flex', gap:12, alignItems:'flex-end' }}>
+              <div>
+                {lbl('Ícono')}
+                <input type="text" value={opcModal.form.icon||''} onChange={e=>setOpcField('icon',e.target.value)}
+                       className="admin-input" style={{ width:60, textAlign:'center', fontSize:'1.4rem', padding:'0.35rem' }} placeholder="✨"/>
+              </div>
+              <div style={{ flex:1 }}>
+                {lbl('Título')}
+                <input type="text" value={opcModal.form.title||''} onChange={e=>setOpcField('title',e.target.value)}
+                       className="admin-input" placeholder="Ej: Princesas y Fantasía"/>
+              </div>
+            </div>
+            <div>
+              {lbl('Descripción')}
+              <textarea rows={3} value={opcModal.form.desc||''} onChange={e=>setOpcField('desc',e.target.value)}
+                        className="admin-input" style={{ resize:'vertical' }} placeholder="Descripción breve de la opción..."/>
             </div>
           </div>
         )}
