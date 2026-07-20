@@ -4,6 +4,13 @@ import { SITE_URL } from '@/lib/site';
 import JsonLd from '@/components/ui/JsonLd';
 import ServicioClient, { SERVICIOS_DATA } from './ServicioClient';
 
+// ISR: cada servicio se sirve pre-generado y se revalida como máximo cada
+// hora — sin esto, la página queda estática desde el último build y los
+// cambios guardados en el admin (imagen hero, textos, etc.) nunca se
+// reflejan en producción hasta el próximo deploy.
+export const revalidate = 3600;
+export const dynamicParams = true;
+
 const FAQ_DEFAULT = [
   { pregunta: '¿Con cuánta anticipación debo reservar?', respuesta: 'Recomendamos al menos 15 días antes. En temporada alta (julio-diciembre) conviene reservar con 1-2 meses de anticipación para asegurar fecha y disponibilidad.' },
   { pregunta: '¿Puedo personalizar el paquete según mi presupuesto?', respuesta: 'Sí, armamos una propuesta a medida: puedes agregar o quitar elementos del paquete base según lo que necesites.' },
