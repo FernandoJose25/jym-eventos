@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { collection, query, orderBy, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Search, X } from 'lucide-react';
 import { cxCard, cxFull, cxVideo, cxShareVideo } from '@/lib/cloudinary';
@@ -540,11 +541,12 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                         <video key={item.url} src={cxVideo(item.url)} muted playsInline preload="metadata"
                           style={{ width: '100%', display: 'block', objectFit: 'cover', objectPosition: fp }} />
                       ) : (
-                        <img src={cxCard(item.url)} alt={item.alt || `Evento J&M ${i + 1}`}
-                          loading={i < 6 ? 'eager' : 'lazy'}
-                          decoding="async"
+                        <Image src={cxCard(item.url)} alt={item.alt || `Evento J&M ${i + 1}`}
+                          width={700} height={700}
+                          sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, 220px"
+                          priority={i < 6}
                           style={{
-                            width: '100%', display: 'block', objectFit: 'cover', objectPosition: fp,
+                            width: '100%', height: 'auto', display: 'block', objectFit: 'cover', objectPosition: fp,
                             transition: 'transform .5s'
                           }} />
                       )}
@@ -706,11 +708,12 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
             {isVideo(visibles[lightbox]) ? (
               <CustomVideoPlayer key={visibles[lightbox].id} src={visibles[lightbox].url} sonidoPermitido={visibles[lightbox].sonidoPermitido === true} />
             ) : (
-              <img src={cxFull(visibles[lightbox].url)}
+              <Image src={cxFull(visibles[lightbox].url)}
                 alt={visibles[lightbox].alt || 'Evento J&M'}
-                decoding="async"
+                width={1400} height={900}
+                sizes="(max-width: 960px) 95vw, 960px"
                 style={{
-                  width: '100%', maxHeight: '72vh', objectFit: 'contain', display: 'block',
+                  width: '100%', height: 'auto', maxHeight: '72vh', objectFit: 'contain', display: 'block',
                   borderRadius: 16, boxShadow: '0 32px 80px rgba(0,0,0,0.6)'
                 }} />
             )}

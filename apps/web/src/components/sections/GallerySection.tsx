@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { ShareBar } from '@/components/ui/ShareBar';
 import { useLockBodyScroll } from '@/lib/hooks/useLockBodyScroll';
 
@@ -107,10 +108,9 @@ export default function GallerySection({ items }: { items: GalleryItem[] }) {
                      ? '0 32px 80px rgba(10,22,40,0.35), 0 0 0 3px rgba(212,160,23,0.4)'
                      : '0 16px 40px rgba(10,22,40,0.2)',
                  }}>
-              <img src={item.url} alt={item.alt || 'Evento J&M'}
-                   style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:fp,
-                             transition:'transform .6s', transform:isCenter?'scale(1.05)':'scale(1)' }}
-                   loading="lazy"/>
+              <Image src={item.url} alt={item.alt || 'Evento J&M'} fill sizes={`${dims.cardW}px`}
+                   style={{ objectFit:'cover', objectPosition:fp,
+                             transition:'transform .6s', transform:isCenter?'scale(1.05)':'scale(1)' }}/>
               {isCenter && (
                 <div style={{ position:'absolute', inset:0,
                                background:'linear-gradient(to top,rgba(10,22,40,0.6) 0%,transparent 50%)' }}>
@@ -181,8 +181,8 @@ export default function GallerySection({ items }: { items: GalleryItem[] }) {
                style={{ maxWidth:'clamp(900px, 60vw, 1400px)', width:'100%', borderRadius:16, overflow:'hidden',
                          boxShadow:'0 40px 100px rgba(0,0,0,0.6)', cursor:'default',
                          animation:'lbIn .3s cubic-bezier(0.34,1.56,0.64,1)' }}>
-            <img src={items[activeIdx].url} alt={items[activeIdx].alt}
-                 style={{ width:'100%', maxHeight:'80vh', objectFit:'contain', display:'block', background:'#0a1628' }}/>
+            <Image src={items[activeIdx].url} alt={items[activeIdx].alt} width={1400} height={900} sizes="(max-width: 900px) 90vw, 60vw"
+                 style={{ width:'100%', height:'auto', maxHeight:'80vh', objectFit:'contain', display:'block', background:'#0a1628' }}/>
             <div style={{ padding:'12px 16px 16px' }}>
               <ShareBar
                 itemId={items[activeIdx].id}

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SITE_URL } from '@/lib/site';
@@ -78,6 +79,15 @@ export default async function Page(
         ...(album.coverUrl ? { image: cxOg(album.coverUrl) } : {}),
         ...(album.fecha ? { datePublished: album.fecha } : {}),
       }} />
+      <JsonLd data={{
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Inicio', item: SITE_URL },
+          { '@type': 'ListItem', position: 2, name: 'Álbumes', item: `${SITE_URL}/albumes` },
+          { '@type': 'ListItem', position: 3, name: album.titulo, item: canonical },
+        ],
+      }} />
 
       {/* Hero */}
       <section style={{
@@ -86,12 +96,14 @@ export default async function Page(
         position: 'relative', overflow: 'hidden',
       }}>
         {album.coverUrl && (
-          <img
+          <Image
             src={cxHero(album.coverUrl)}
             alt=""
             aria-hidden
+            fill
+            priority
+            sizes="100vw"
             style={{
-              position: 'absolute', inset: 0, width: '100%', height: '100%',
               objectFit: 'cover', opacity: 0.55,
               objectPosition: `${(album.coverFocalX ?? 0.5) * 100}% ${(album.coverFocalY ?? 0.5) * 100}%`,
             }}

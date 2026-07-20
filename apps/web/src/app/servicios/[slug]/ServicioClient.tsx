@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { collection, getDocs, where, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -343,20 +344,32 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
     if (!rawSlug) return;
     const load = async () => {
       try {
+        // El servicio actual ya llegó por SSR (initialData) en el primer render;
+        // solo lo volvemos a pedir si por algún motivo no vino (p. ej. Firestore
+        // no respondió a tiempo durante el build/SSR).
+        let match: any = null;
+        let matchId = initialData?.id;
+        if (initialData) {
+          setServicio(initialData);
+        } else {
+          const snapMatch = await getDocs(query(collection(db, 'services'), where('visible', '==', true)));
+          match = snapMatch.docs.find(d => {
+            const link = d.data().link || '';
+            const docSlug = link.replace('servicios/', '').replace('.html', '');
+            return docSlug === rawSlug || d.id === rawSlug;
+          });
+          matchId = match?.id;
+          if (match) setServicio(toPlain({ id: match.id, ...match.data() }));
+          else setServicio(null);
+        }
+
         const snap = await getDocs(query(collection(db, 'services'), where('visible', '==', true)));
-        const match = snap.docs.find(d => {
-          const link = d.data().link || '';
-          const docSlug = link.replace('servicios/', '').replace('.html', '');
-          return docSlug === rawSlug || d.id === rawSlug;
-        });
-        if (match) setServicio(toPlain({ id: match.id, ...match.data() }));
-        else setServicio(null);
 
         /* Otros servicios — imágenes reales de Firestore, orden aleatorio */
         const pool = snap.docs
           .filter(d => {
             const dLink = (d.data().link || '').replace('servicios/', '').replace('.html', '');
-            return dLink !== rawSlug && d.id !== match?.id;
+            return dLink !== rawSlug && d.id !== matchId;
           })
           .map(d => {
             const dt = d.data();
@@ -398,7 +411,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
 
         /* Mini-galería del servicio — 8 fotos reales filtradas por categoría */
         const norm = (s: string) => (s || '').trim().toLowerCase();
-        const tituloServicio = match?.data()?.title || SERVICIOS_DATA[rawSlug]?.title || '';
+        const tituloServicio = initialData?.title || match?.data()?.title || SERVICIOS_DATA[rawSlug]?.title || '';
         if (tituloServicio) {
           const gSnap = await getDocs(query(collection(db, 'gallery_items'), orderBy('order', 'asc')));
           const fotos = gSnap.docs
@@ -690,10 +703,10 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
               <source src={cxVideo(mediaSrc)} type="video/webm" />
             </video>
           ) : mediaSrc ? (
-            <img src={cxHero(mediaSrc)} alt={title}
+            <Image src={cxHero(mediaSrc)} alt={title}
+              fill priority sizes="(max-width: 900px) 100vw, 520px"
               onError={() => setMediaError(true)}
-              decoding="async"
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 10s ease', animation: 'imgZoom 10s ease forwards' }} />
+              style={{ objectFit: 'cover', transition: 'transform 10s ease', animation: 'imgZoom 10s ease forwards' }} />
           ) : (
             /* Placeholder when no media */
             <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, #0c1e30, ${accentColor}30)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -963,8 +976,9 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
               <source src={cxVideo(includesMediaSrc)} type="video/mp4" />
             </video>
           ) : includesMediaSrc ? (
-            <img src={cxHero(includesMediaSrc)} alt="" aria-hidden="true"
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+            <Image src={cxHero(includesMediaSrc)} alt="" aria-hidden="true"
+              fill sizes="100vw"
+              style={{ objectFit: 'cover' }} />
           ) : null}
           <div style={{
             position: 'absolute', inset: 0,
@@ -1166,8 +1180,8 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                       transform: isVisible(rid) ? 'none' : 'translateY(24px)',
                       transition: `all .55s ${i * 0.06}s ease`,
                     }}>
-                    <img src={cxCard(f.url)} alt={f.alt || title} loading="lazy" decoding="async"
-                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .5s ease' }}
+                    <Image src={cxCard(f.url)} alt={f.alt || title} fill sizes="(max-width: 900px) 50vw, 25vw"
+                      style={{ objectFit: 'cover', transition: 'transform .5s ease' }}
                       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.06)'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }} />
                   </div>
@@ -1290,8 +1304,8 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                           autoPlay muted loop playsInline preload="metadata"
                           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .6s cubic-bezier(.25,.46,.45,.94)' }} />
                       ) : relImg ? (
-                        <img className="rel-img" src={cxCard(relImg)} alt={r.title} loading="lazy" decoding="async"
-                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .6s cubic-bezier(.25,.46,.45,.94)' }} />
+                        <Image className="rel-img" src={cxCard(relImg)} alt={r.title} fill sizes="(max-width: 900px) 100vw, 33vw"
+                          style={{ objectFit: 'cover', transition: 'transform .6s cubic-bezier(.25,.46,.45,.94)' }} />
                       ) : (
                         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,#0c1e30,${relColor}30)` }} />
                       )}

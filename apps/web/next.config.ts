@@ -4,6 +4,11 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'res.cloudinary.com' },
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
+      // Fallback estático de SERVICIOS_DATA en ServicioClient.tsx usa fotos de
+      // Unsplash cuando Firestore no trae media propia — mismo bloque JSX que
+      // renderiza las URLs de Cloudinary, así que ambos hosts deben poder
+      // pasar por next/image sin romper el build.
+      { protocol: 'https', hostname: 'images.unsplash.com' },
     ],
   },
 

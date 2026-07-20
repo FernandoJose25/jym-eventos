@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import Image from 'next/image';
 import VideoSoundControl from '@/components/ui/VideoSoundControl';
 
 interface HeroData {
@@ -102,12 +103,13 @@ export default function HeroSection({ data }: { data: HeroData }) {
               )}
             </>
           ) : (
-            <img
+            <Image
               src={data.bgImage}
               alt=""
+              fill
+              priority
+              sizes="100vw"
               style={{
-                width: '100%',
-                height: '100%',
                 objectFit: 'cover',
                 objectPosition: bgPos,
               }}
