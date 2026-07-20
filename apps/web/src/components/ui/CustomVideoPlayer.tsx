@@ -53,7 +53,15 @@ function fmtTime(s: number) {
 function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false }: { src: string; sonidoPermitido?: boolean; fullBleed?: boolean }) {
   const videoRef  = useRef<HTMLVideoElement>(null);
   const wrapRef   = useRef<HTMLDivElement>(null);
+  const mediaBoxRef = useRef<HTMLDivElement>(null);
   const timerRef  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // Aspect ratio real del archivo (ancho/alto) — se usa para que la caja que
+  // recibe el pinch-zoom calce EXACTO con el contenido visual del video, sin
+  // las barras negras que deja `object-fit:contain` cuando el elemento no
+  // comparte el aspect ratio del video. Sin esto, useZoomPan calcula pan/zoom
+  // sobre una caja que incluye esas barras negras: el usuario ve márgenes
+  // negros al hacer zoom y puede arrastrar hacia esas zonas vacías.
+  const [videoAspect, setVideoAspect] = useState<number | null>(null);
 
   const [playing,     setPlaying]     = useState(false);
   const [muted,       setMuted]       = useState(!sonidoPermitido);
@@ -74,7 +82,7 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false }: 
 
   // Gestos táctiles (solo mobile): pinch-zoom persistente + doble-tap lateral
   const isTouch = useIsTouchDevice();
-  const { scale, x: panX, y: panY, isZoomed, handlers: zoomHandlers } = useZoomPan(videoRef as React.RefObject<HTMLElement>);
+  const { scale, x: panX, y: panY, isZoomed, handlers: zoomHandlers } = useZoomPan(mediaBoxRef);
   const [skipFeedback, setSkipFeedback] = useState<{ side: 'left' | 'right'; key: number } | null>(null);
   const lastVideoTapRef = useRef<{ time: number; x: number } | null>(null);
   const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -136,7 +144,10 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false }: 
       setCur(v.currentTime);
       if (v.duration) setProgress((v.currentTime / v.duration) * 100);
     };
-    const onMeta  = () => setDur(v.duration);
+    const onMeta  = () => {
+      setDur(v.duration);
+      if (v.videoWidth && v.videoHeight) setVideoAspect(v.videoWidth / v.videoHeight);
+    };
     const onPlay  = () => setPlaying(true);
     const onPause = () => setPlaying(false);
     const onFs    = () => setIsFull(!!(document.fullscreenElement || (document as any).webkitFullscreenElement));
@@ -316,35 +327,54 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false }: 
         boxShadow: isFull || fullBleed ? 'none' : '0 32px 80px rgba(0,0,0,0.6)',
       }}
     >
-      {/* Video */}
-      <motion.video
-        ref={videoRef}
-        src={computedSrc}
-        autoPlay
-        playsInline
-        muted={!sonidoPermitido}
-        onClick={e => {
-          if (isTouch) return; // en touch, el gesto se resuelve en onTouchEnd
-          e.stopPropagation();
-          if (ctrlVisible) togglePlay(); else bump();
-        }}
+      {/* Caja de medio: en fullBleed, su tamaño calza EXACTO con el aspect
+          ratio real del video (via aspect-ratio) para que no queden barras
+          negras propias dentro de la caja que recibe el pinch-zoom — así
+          useZoomPan calcula pan/límites sobre el contenido visual real, no
+          sobre espacio vacío. */}
+      <motion.div
+        ref={mediaBoxRef}
         {...(isTouch ? {
           onTouchStart: (e: React.TouchEvent) => { sp(e); zoomHandlers.onTouchStart(e); },
           onTouchMove: (e: React.TouchEvent) => { sp(e); zoomHandlers.onTouchMove(e); },
           onTouchEnd: (e: React.TouchEvent) => { sp(e); zoomHandlers.onTouchEnd(e); handleVideoTouchEnd(e); },
         } : {})}
-        style={{
-          width: fullBleed ? 'auto' : '100%',
-          height: fullBleed ? '100%' : undefined,
+        style={fullBleed ? {
+          position: 'relative',
+          width: videoAspect ? 'auto' : '100%',
+          height: '100%',
           maxWidth: '100%',
-          maxHeight: fullBleed ? '100%' : isFull ? '100dvh' : '72vh',
-          display: 'block', background: '#000', cursor: 'pointer',
-          objectFit: 'contain',
-          borderRadius: isFull || fullBleed ? 0 : 16,
+          aspectRatio: videoAspect ?? undefined,
+          scale, x: panX, y: panY,
+          touchAction: isTouch ? 'none' : 'auto',
+        } : {
+          position: 'relative', width: '100%',
           scale, x: panX, y: panY,
           touchAction: isTouch ? 'none' : 'auto',
         }}
-      />
+      >
+        <video
+          ref={videoRef}
+          src={computedSrc}
+          autoPlay
+          playsInline
+          muted={!sonidoPermitido}
+          onClick={e => {
+            if (isTouch) return; // en touch, el gesto se resuelve en onTouchEnd
+            e.stopPropagation();
+            if (ctrlVisible) togglePlay(); else bump();
+          }}
+          style={fullBleed ? {
+            width: '100%', height: '100%', display: 'block',
+            background: '#000', cursor: 'pointer', objectFit: 'contain',
+          } : {
+            width: '100%', maxHeight: isFull ? '100dvh' : '72vh',
+            display: 'block', background: '#000', cursor: 'pointer',
+            objectFit: 'contain',
+            borderRadius: isFull ? 0 : 16,
+          }}
+        />
+      </motion.div>
 
       {/* Feedback de doble-tap: ⏩/⏪ 5s */}
       {isTouch && (
