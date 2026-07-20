@@ -1,15 +1,58 @@
 // Tipos que reflejan la estructura REAL de Firestore
 
+export interface ServicioIncludeItem {
+  icon:    string;
+  title:   string;
+  desc:    string;
+  visible: boolean;
+}
+
+export interface ServicioStat {
+  value: string;
+  label: string;
+}
+
+export interface ServicioDetail {
+  eyebrow?:             string;
+  hero_desc?:           string;
+  categoryLabel?:       string;
+  titleAccentWord?:     string;
+  longDescH2?:          string;
+  longDesc?:            string;
+  longDesc2?:           string;
+  includes?:            ServicioIncludeItem[];
+  stats?:                ServicioStat[];
+  testimonialName?:     string;
+  testimonialRating?:   string;
+  testimonialLocation?: string;
+  ctaH2?:               string;
+  ctaP?:                string;
+  btn1Text?:            string;
+}
+
 export interface Servicio {
-  id?:        string;
-  title:      string;   // campo real
-  icon:       string;   // campo real
-  desc:       string;   // campo real
-  link:       string;   // campo real (ej: "servicios/shows-infantiles.html")
-  order:      number;   // campo real
-  visible:    boolean;  // campo real
-  mediaSrc?:  string;
-  mediaType?: string;
+  id?:               string;
+  title:             string;   // campo real
+  icon:              string;   // campo real
+  desc:              string;   // campo real
+  link:              string;   // campo real (ej: "servicios/shows-infantiles.html")
+  order:             number;   // campo real
+  visible:           boolean;  // campo real
+  mediaSrc?:         string;
+  mediaType?:        string;
+  mediaFocalX?:      number;
+  mediaFocalY?:      number;
+  mediaSound?:       boolean;
+  heroMediaSrc?:     string;
+  heroMediaType?:    string;
+  heroFocalX?:       number;
+  heroFocalY?:       number;
+  includesMediaSrc?: string;
+  includesMediaType?:string;
+  includesFocalX?:   number;
+  includesFocalY?:   number;
+  aiInstrucciones?:  string;
+  detail?:           ServicioDetail;
 }
 
 export interface GaleriaItem {
