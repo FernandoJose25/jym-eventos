@@ -39,7 +39,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const snap = await getDoc(doc(db, COL.USUARIOS, u.uid));
           if (snap.exists()) {
             const data = snap.data() as Usuario;
-            if (data.activo === false) { await fbSignOut(auth); return; }
+            if (data.activo === false) {
+              await fbSignOut(auth);
+              await fetch('/api/session', { method: 'DELETE' }).catch(() => {});
+              return;
+            }
             setProfile(data);
           } else {
             setProfile({ uid:u.uid, email:u.email||'', nombre:u.email||'', rol:'lector', activo:true, creadoEn:new Date().toISOString() });
@@ -53,10 +57,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn  = async (email: string, pass: string) => {
-    await signInWithEmailAndPassword(auth, email, pass);
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    const idToken = await cred.user.getIdToken();
+    const res = await fetch('/api/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken, email }),
+    });
+    if (!res.ok) {
+      // La cuenta de Firebase Auth es válida, pero no se pudo emitir la
+      // cookie de sesión (ej. rate limit) — deshacemos el login para no
+      // dejar al usuario con sesión de Firebase pero sin acceso a /dashboard.
+      await fbSignOut(auth);
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'No se pudo iniciar sesión');
+    }
   };
   const signOut = async () => {
     await fbSignOut(auth);
+    await fetch('/api/session', { method: 'DELETE' }).catch(() => {});
     setProfile(null);
   };
 
