@@ -7,7 +7,7 @@ const DOC_ID = 'main';
 
 const DEFAULTS = {
   titulo: 'Luminex Studio & Events',
-  subtitulo: 'Iluminamos tus momentos más brillantes ✨',
+  subtitulo: 'Fotografía instantánea y photobooks para tu evento ✨',
   instagram: 'https://www.instagram.com/luminexstudioevents',
   facebook: 'https://www.facebook.com/profile.php?id=61582260265344',
   tiktok: 'https://www.tiktok.com/@luminex_studio_ev',
@@ -171,7 +171,7 @@ export default function RedesPage() {
           <p className="subtitle">
             {d.subtitulo}
             <br />
-            Producción · Eventos · Experiencias
+            Fotografía Instantánea · Photobook · Fotografía Profesional
           </p>
 
           <div className="link-list">
