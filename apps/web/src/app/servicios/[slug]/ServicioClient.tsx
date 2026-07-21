@@ -1280,41 +1280,73 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                 const relImg = r.img ?? '';
                 const relColor = accentColor;
                 return (
-                  <a key={i} href={`/servicios/${relSlug}`} style={{ textDecoration: 'none', display: 'block' }} data-reveal={rid}>
-                    <div style={{
+                  <a key={i} href={`/servicios/${relSlug}`} data-reveal={rid}
+                    style={{ textDecoration: 'none', display: 'block', perspective: 1000 }}>
+                    <div className="rel-card" style={{
                       borderRadius: 22, overflow: 'hidden', position: 'relative',
                       height: 300,
                       border: `1px solid rgba(255,255,255,0.08)`,
                       opacity: isVisible(rid) ? 1 : 0,
                       transform: isVisible(rid) ? 'none' : 'translateY(32px)',
+                      transformStyle: 'preserve-3d',
                       transition: `opacity .65s ${i * 0.12}s ease, transform .65s ${i * 0.12}s ease, box-shadow .3s ease`,
                       boxShadow: `0 4px 24px rgba(0,0,0,0.35)`,
                       cursor: 'pointer',
                     }}
+                      /* Tilt 3D: el cursor inclina la tarjeta hacia sí y un brillo
+                         sigue el puntero. Se desactiva en táctil vía onMouseMove. */
+                      onMouseMove={e => {
+                        if (typeof window !== 'undefined' &&
+                          (!window.matchMedia('(hover: hover)').matches ||
+                            window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+                        const el = e.currentTarget as HTMLElement;
+                        const r = el.getBoundingClientRect();
+                        const px = (e.clientX - r.left) / r.width;
+                        const py = (e.clientY - r.top) / r.height;
+                        const rotY = (px - 0.5) * 14;
+                        const rotX = (0.5 - py) * 12;
+                        el.style.transform = `perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateY(-8px) scale(1.02)`;
+                        const glare = el.querySelector('.rel-glare') as HTMLElement | null;
+                        if (glare) {
+                          glare.style.opacity = '1';
+                          glare.style.background = `radial-gradient(420px circle at ${px * 100}% ${py * 100}%,rgba(245,200,66,0.20),transparent 55%)`;
+                        }
+                      }}
                       onMouseEnter={e => {
                         const el = e.currentTarget as HTMLElement;
-                        el.style.boxShadow = `0 20px 56px rgba(0,0,0,0.5), 0 0 0 1px ${relColor}50`;
+                        el.style.transition = 'transform .18s ease-out, box-shadow .3s ease';
+                        el.style.boxShadow = `0 28px 64px rgba(0,0,0,0.55), 0 0 0 1px ${relColor}50`;
                         const img = el.querySelector('.rel-img') as HTMLElement | null;
                         if (img) img.style.transform = 'scale(1.08)';
                         const overlay = el.querySelector('.rel-overlay') as HTMLElement | null;
                         if (overlay) overlay.style.opacity = '1';
                         const cta = el.querySelector('.rel-cta') as HTMLElement | null;
-                        if (cta) { cta.style.opacity = '1'; cta.style.transform = 'translateY(0)'; }
+                        if (cta) { cta.style.opacity = '1'; cta.style.transform = 'translateY(0) translateZ(45px)'; }
                         const line = el.querySelector('.rel-topline') as HTMLElement | null;
                         if (line) line.style.transform = 'scaleX(1)';
                       }}
                       onMouseLeave={e => {
                         const el = e.currentTarget as HTMLElement;
+                        el.style.transition = 'transform .6s cubic-bezier(.22,1,.36,1), box-shadow .3s ease';
+                        el.style.transform = 'none';
                         el.style.boxShadow = '0 4px 24px rgba(0,0,0,0.35)';
                         const img = el.querySelector('.rel-img') as HTMLElement | null;
                         if (img) img.style.transform = 'scale(1)';
                         const overlay = el.querySelector('.rel-overlay') as HTMLElement | null;
                         if (overlay) overlay.style.opacity = '0';
+                        const glare = el.querySelector('.rel-glare') as HTMLElement | null;
+                        if (glare) glare.style.opacity = '0';
                         const cta = el.querySelector('.rel-cta') as HTMLElement | null;
                         if (cta) { cta.style.opacity = '0'; cta.style.transform = 'translateY(8px)'; }
                         const line = el.querySelector('.rel-topline') as HTMLElement | null;
                         if (line) line.style.transform = 'scaleX(0)';
                       }}>
+
+                      {/* Brillo que sigue al cursor */}
+                      <div className="rel-glare" style={{
+                        position: 'absolute', inset: 0, zIndex: 6, opacity: 0,
+                        transition: 'opacity .3s ease', pointerEvents: 'none', mixBlendMode: 'screen',
+                      }} />
 
                       {/* Gold top accent line */}
                       <div className="rel-topline" style={{
@@ -1354,6 +1386,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                         border: `1.5px solid ${relColor}40`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         boxShadow: `0 4px 16px rgba(0,0,0,0.4), 0 0 0 4px ${relColor}15`,
+                        transform: 'translateZ(55px)',
                       }}>
                         {isIconKey(r.icon)
                           ? (() => { const Icon = SERVICE_ICONS[r.icon]; return <Icon size={22} strokeWidth={1.75} color="#f5c842" />; })()
@@ -1361,7 +1394,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                       </div>
 
                       {/* Content — bottom */}
-                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1.5rem 1.5rem 1.25rem', zIndex: 5 }}>
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1.5rem 1.5rem 1.25rem', zIndex: 5, transform: 'translateZ(30px)' }}>
                         <h3 style={{
                           fontFamily: 'var(--font-playfair)', color: '#fff',
                           fontSize: '1.1rem', fontWeight: 700,
@@ -1393,6 +1426,10 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           </div>
 
           <style>{`
+            /* Sin brillo de cursor donde no hay puntero fino */
+            @media (hover: none), (prefers-reduced-motion: reduce) {
+              .rel-glare { display: none !important; }
+            }
             @media (max-width: 768px) {
               .srv-rel-grid { grid-template-columns: 1fr !important; }
             }
@@ -1414,38 +1451,78 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           { pregunta: '¿Tienen cobertura fuera de Sechura?', respuesta: 'Sí, atendemos eventos en toda la región Piura. Consulta disponibilidad y costo de movilización según la zona.' },
         ];
         return (
-          <section style={{ padding: 'clamp(4rem,8vw,6rem) 0', background: '#0c1e30' }}>
-            <div className="container" style={{ maxWidth: 760 }}>
+          <section style={{ padding: 'clamp(4rem,8vw,6rem) 0', background: '#0c1e30', position: 'relative', overflow: 'hidden' }}>
+            {/* Resplandor decorativo — mismo lenguaje visual que el FAQ del inicio */}
+            <div style={{
+              position: 'absolute', top: -180, left: '50%', transform: 'translateX(-50%)',
+              width: 700, height: 400, borderRadius: '50%',
+              background: 'radial-gradient(ellipse,rgba(212,160,23,0.07) 0%,transparent 65%)', pointerEvents: 'none',
+            }} />
+
+            <div className="container" style={{ position: 'relative', maxWidth: 860 }}>
               <div data-reveal="faq-header" style={{ textAlign: 'center', marginBottom: 'clamp(2rem,4vw,3rem)', opacity: isVisible('faq-header') ? 1 : 0, transform: isVisible('faq-header') ? 'none' : 'translateY(24px)', transition: 'all .7s ease' }}>
-                <p style={{ color: accentColor, fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Antes de cotizar</p>
-                <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#fff', margin: 0, letterSpacing: '-.03em' }}>Preguntas Frecuentes</h2>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: '1rem',
+                  padding: '0.4rem 1.5rem', borderRadius: 9999,
+                  background: 'rgba(212,160,23,0.08)', border: '1px solid rgba(212,160,23,0.25)',
+                  color: '#f5c842', fontSize: '0.75rem', fontWeight: 700,
+                  textTransform: 'uppercase', letterSpacing: '.12em', fontFamily: 'var(--font-jakarta)',
+                }}>
+                  💬 Antes de cotizar
+                </span>
+                <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.8rem,3.5vw,2.6rem)', color: '#fff', margin: 0, letterSpacing: '-.03em' }}>
+                  Resolvemos tus <em style={{ color: '#f5c842', fontStyle: 'italic' }}>dudas</em>
+                </h2>
               </div>
 
-              <div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                 {faqList.map((f: any, i: number) => {
                   const isOpen = openFaqIndex === i;
                   return (
-                    <div key={i} className="srv-faq-item"
-                      style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '1.1rem 0' }}>
-                      <div role="button" tabIndex={0}
+                    <div key={i} className="srv-faq-item" style={{
+                      borderRadius: 16,
+                      background: isOpen ? 'rgba(212,160,23,0.06)' : 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${isOpen ? 'rgba(212,160,23,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                      transition: 'background .35s, border-color .35s',
+                      overflow: 'hidden',
+                    }}>
+                      <button
                         onClick={() => setOpenFaqIndex(prev => prev === i ? null : i)}
-                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenFaqIndex(prev => prev === i ? null : i); } }}
+                        aria-expanded={isOpen}
                         style={{
-                          cursor: 'pointer', userSelect: 'none',
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem',
-                          color: '#fff', fontFamily: 'var(--font-playfair)', fontSize: '1.02rem',
+                          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          gap: 14, padding: '1.15rem 1.4rem', background: 'none', border: 'none',
+                          cursor: 'pointer', textAlign: 'left',
+                          color: isOpen ? '#f5c842' : 'rgba(255,255,255,0.88)',
+                          fontFamily: 'var(--font-jakarta)', fontWeight: 600, fontSize: '0.98rem',
+                          transition: 'color .3s',
                         }}>
                         {f.pregunta}
-                        <span className="srv-faq-plus" style={{ color: '#f5c842', fontSize: '1.3rem', flexShrink: 0, transition: 'transform .3s ease', transform: isOpen ? 'rotate(45deg)' : 'none' }}>+</span>
-                      </div>
+                        <span aria-hidden="true" style={{
+                          flexShrink: 0, width: 26, height: 26, borderRadius: '50%',
+                          border: '1px solid rgba(212,160,23,0.45)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#f5c842', fontSize: '1rem', lineHeight: 1,
+                          transform: isOpen ? 'rotate(45deg)' : 'rotate(0)',
+                          transition: 'transform .35s cubic-bezier(.16,1,.3,1)',
+                        }}>+</span>
+                      </button>
                       <div style={{
                         display: 'grid',
                         gridTemplateRows: isOpen ? '1fr' : '0fr',
-                        opacity: isOpen ? 1 : 0,
-                        transition: 'grid-template-rows .35s ease, opacity .3s ease',
+                        transition: 'grid-template-rows .55s cubic-bezier(.22,1,.36,1)',
                       }}>
                         <div style={{ overflow: 'hidden' }}>
-                          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.88rem', lineHeight: 1.7, margin: '0.85rem 0 0', fontFamily: 'var(--font-jakarta)' }}>
+                          <p style={{
+                            padding: '0 1.4rem 1.25rem', margin: 0,
+                            color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem', lineHeight: 1.75,
+                            fontFamily: 'var(--font-jakarta)',
+                            opacity: isOpen ? 1 : 0,
+                            transform: isOpen ? 'translateY(0)' : 'translateY(-6px)',
+                            transition: isOpen
+                              ? 'opacity .5s cubic-bezier(.22,1,.36,1) .12s, transform .5s cubic-bezier(.22,1,.36,1) .12s'
+                              : 'opacity .25s ease, transform .25s ease',
+                          }}>
                             {f.respuesta}
                           </p>
                         </div>
@@ -1453,6 +1530,27 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Toda duda que no esté aquí termina en WhatsApp — es el embudo del negocio */}
+              <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', marginBottom: '1rem', fontFamily: 'var(--font-jakarta)' }}>
+                  ¿Tienes otra pregunta?
+                </p>
+                <a href={`https://wa.me/51945203708?text=${encodeURIComponent(waText)}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0.9rem 2rem',
+                    borderRadius: 9999, background: 'linear-gradient(135deg,#b8860b,#f5c842)',
+                    color: '#0a1628', fontWeight: 700, fontSize: '0.92rem', textDecoration: 'none',
+                    fontFamily: 'var(--font-jakarta)',
+                    boxShadow: '0 6px 22px rgba(212,160,23,0.35)',
+                    transition: 'transform .25s cubic-bezier(.16,1,.3,1), box-shadow .25s',
+                  }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-3px)'; el.style.boxShadow = '0 14px 36px rgba(212,160,23,0.5)'; }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 6px 22px rgba(212,160,23,0.35)'; }}>
+                  💬 Escríbenos por WhatsApp
+                </a>
               </div>
             </div>
           </section>
