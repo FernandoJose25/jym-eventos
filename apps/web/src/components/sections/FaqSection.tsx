@@ -36,7 +36,7 @@ const DEFAULT_ITEMS: FaqItem[] = [
 
 export default function FaqSection({ data }: { data?: Record<string, any> | null }) {
   const items: FaqItem[] = (data?.items?.length ? data.items : DEFAULT_ITEMS)
-    .filter((it: any) => it?.q && it?.a);
+    .filter((it: any) => it?.q && it?.a && it?.visible !== false);
   const [open, setOpen] = useState<number | null>(0);
 
   if (!items.length) return null;
