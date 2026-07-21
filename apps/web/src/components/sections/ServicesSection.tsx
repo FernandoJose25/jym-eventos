@@ -106,7 +106,7 @@ function AtvCard({ s, idx }: { s: Service; idx: number }) {
         }}/>
 
         {/* Container — el que rota */}
-        <div ref={containerRef} style={{
+        <div ref={containerRef} className="srv-card-container" style={{
           position:'relative', width:'100%', aspectRatio:'4/5', borderRadius:18,
           border:'1px solid rgba(212,160,23,0.16)',
           transition:'transform 0.2s ease-out, box-shadow 0.2s ease-out, border-color 0.3s ease',
@@ -255,12 +255,13 @@ export default function ServicesSection({ services }: { services: Service[] }) {
         @media(max-width:1200px){ .srv-grid{ grid-template-columns:repeat(3,1fr) !important; } }
         @media(max-width:900px){ .srv-grid{ grid-template-columns:1fr 1fr !important; gap:1.25rem !important; } }
         @media(max-width:600px){
-          .srv-grid{ grid-template-columns:1fr 1fr !important; gap:0.875rem !important; }
-          .srv-card-fg{ padding:0.9rem 0.85rem !important; gap:4px !important; }
-          .srv-card-fg h3{ font-size:1rem !important; }
-          .srv-card-fg p{ font-size:0.7rem !important; }
-          .srv-card-fg > span{ font-size:0.75rem !important; }
-          .srv-card-fg > div span{ font-size:1.6rem !important; }
+          .srv-grid{ grid-template-columns:1fr !important; gap:1rem !important; }
+          .srv-card-container{ aspect-ratio:16/10 !important; }
+          .srv-card-fg{ padding:1.1rem 1.2rem !important; gap:5px !important; }
+          .srv-card-fg h3{ font-size:1.15rem !important; }
+          .srv-card-fg p{ font-size:0.78rem !important; }
+          .srv-card-fg > span{ font-size:0.8rem !important; }
+          .srv-card-fg > div span{ font-size:1.8rem !important; }
         }
         @media(max-width:480px){
           .services-section{ padding:4rem 0 !important; }
