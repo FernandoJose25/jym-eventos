@@ -32,6 +32,18 @@ const DEFAULT_WHY_ITEMS = [
   { icon: '🤝', title: 'Atención Personalizada', desc: 'Equipo dedicado disponible antes, durante y después de tu evento.', visible: true },
 ];
 
+// Preguntas frecuentes de la home. Deben coincidir con DEFAULT_ITEMS de
+// apps/web/src/components/sections/FaqSection.tsx (campos q/a) para que el
+// editor arranque con el mismo contenido que hoy muestra la web por defecto.
+const DEFAULT_FAQ_ITEMS = [
+  { q: '¿Con cuánta anticipación debo reservar?', a: 'Lo ideal es reservar con al menos 3 semanas de anticipación. Para fechas de temporada alta (diciembre, día de la madre, fiestas patrias), bodas y quinceaños te recomendamos escribirnos con 1 a 2 meses: esas fechas se llenan rápido.', visible: true },
+  { q: '¿La cotización tiene algún costo?', a: 'No, es totalmente gratis y sin compromiso. Cuéntanos por WhatsApp qué evento tienes en mente y te preparamos una propuesta personalizada según lo que necesitas y tu presupuesto.', visible: true },
+  { q: '¿Piden adelanto para asegurar la fecha?', a: 'Sí. Con el 50% de adelanto separamos tu fecha en exclusiva y el saldo se cancela el día del evento. Así garantizamos que ese día nuestro equipo esté reservado solo para ti.', visible: true },
+  { q: '¿Atienden fuera de Sechura?', a: 'Sí, atendemos Sechura, Piura y alrededores. Escríbenos por WhatsApp con tu distrito y te confirmamos la cobertura de inmediato.', visible: true },
+  { q: '¿Puedo combinar varios servicios?', a: 'Claro, es lo más común: show + decoración + catering + fotografía en un solo evento con un solo equipo coordinando todo. Cuéntanos tu idea y armamos la combinación perfecta para tu celebración.', visible: true },
+  { q: '¿Qué necesitan saber para cotizar?', a: 'Solo tres cosas: tipo de evento, fecha tentativa y cantidad aproximada de invitados. Con eso te respondemos en menos de 2 horas en horario de atención.', visible: true },
+];
+
 const DEFAULT_SEO = {
   homeTitle: 'J&M Decoraciones y Eventos — Eventos de Lujo en Sechura, Piura',
   homeDesc: 'Especialistas en decoración, ambientación y producción integral de eventos. Convertimos cada celebración en una experiencia elegante y memorable. Cotiza tu evento hoy.',
@@ -302,19 +314,19 @@ function ItemCard({ item, onEdit, onToggle, onDelete }: {
         }}>
           {/* cuando hay imagen Y emoji, muestra el emoji dentro del título */}
           {mediaUrl && emoji ? <span style={{ marginRight: 5 }}>{emoji}</span> : null}
-          {item.title || item.label || item.name ||
+          {item.title || item.label || item.name || item.q ||
             <span style={{ color: '#94a3b8', fontWeight: 400 }}>Sin título</span>}
           {item.year &&
             <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: '0.78rem', marginLeft: 6 }}>
               {item.year}
             </span>}
         </p>
-        {(item.desc || item.text) && (
+        {(item.desc || item.text || item.a) && (
           <p style={{
             fontSize: '0.75rem', color: '#64748b', margin: 0,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
           }}>
-            {item.desc || item.text}
+            {item.desc || item.text || item.a}
           </p>
         )}
       </div>
@@ -380,7 +392,7 @@ function StatCard({ num, label, secondary, index, onEdit }: {
 /* ─────────────────────────────────────────────────────
    Section types
 ───────────────────────────────────────────────────── */
-type Section = 'hero' | 'stats' | 'about' | 'nosotros' | 'why-us' | 'brands' | 'contacto' | 'navbar' | 'testimonios' | 'footer' | 'whatsapp' | 'anuncia' | 'legal' | 'seo';
+type Section = 'hero' | 'stats' | 'about' | 'nosotros' | 'why-us' | 'brands' | 'faq' | 'contacto' | 'navbar' | 'testimonios' | 'footer' | 'whatsapp' | 'anuncia' | 'legal' | 'seo';
 
 const SECTIONS: { id: Section; icon: string; label: string; group?: string }[] = [
   /* ── Página principal ── */
@@ -389,6 +401,7 @@ const SECTIONS: { id: Section; icon: string; label: string; group?: string }[] =
   { id: 'why-us', icon: '✨', label: '¿Por qué elegirnos?', group: 'Inicio' },
   { id: 'brands', icon: '🏢', label: 'Empresas / Marcas', group: 'Inicio' },
   { id: 'about', icon: '👥', label: 'Quiénes Somos', group: 'Inicio' },
+  { id: 'faq', icon: '❓', label: 'Preguntas Frecuentes', group: 'Inicio' },
   /* ── Páginas ── */
   { id: 'nosotros', icon: '🏠', label: 'Sobre Nosotros', group: 'Páginas' },
   { id: 'anuncia', icon: '📢', label: 'Anuncia con Nosotros', group: 'Páginas' },
@@ -476,6 +489,7 @@ export default function ConfiguracionPage() {
           'about': DEFAULT_ABOUT,
           'why-us': { h2: '¿Por qué <em>elegirnos</em>?', desc: 'Más de una década transformando celebraciones en Sechura, Piura.', items: DEFAULT_WHY_ITEMS },
           'brands': { h2: 'Empresas que confían en nosotros', brands: DEFAULT_BRANDS },
+          'faq': { items: DEFAULT_FAQ_ITEMS },
           'navbar': DEFAULT_NAVBAR,
           'footer': DEFAULT_FOOTER,
           'contacto': DEFAULT_CONTACTO,
@@ -496,6 +510,9 @@ export default function ConfiguracionPage() {
         }
         if (section === 'brands' && (!loaded.brands || loaded.brands.length === 0)) {
           loaded.brands = DEFAULT_BRANDS;
+        }
+        if (section === 'faq' && (!loaded.items || loaded.items.length === 0)) {
+          loaded.items = DEFAULT_FAQ_ITEMS;
         }
       }
 
@@ -644,6 +661,15 @@ export default function ConfiguracionPage() {
 
     switch (listKey) {
       case 'items':
+        // La clave 'items' la comparten "¿Por qué elegirnos?" y "Preguntas
+        // frecuentes"; se distinguen por la sección activa.
+        if (section === 'faq') {
+          return (<>
+            {mi('Pregunta', 'q', '¿Con cuánta anticipación debo reservar?')}
+            {mt('Respuesta', 'a', 'Lo ideal es reservar con al menos 3 semanas de anticipación...', 4)}
+            {mv()}
+          </>);
+        }
         return (<>
           <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
             {mi('Ícono', 'icon', '🏆', true)}
@@ -1218,6 +1244,34 @@ export default function ConfiguracionPage() {
                 </div>
               )}
 
+              {/* ══════════ FAQ (Preguntas frecuentes de la home) ══════════ */}
+              {section === 'faq' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                  {isDefaults && (
+                    <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '0.75rem 1rem', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>💡</span>
+                      <p style={{ fontSize: '0.82rem', color: '#92400e', margin: 0 }}>
+                        Estas son las <strong>preguntas de ejemplo</strong> que hoy muestra la web. Edítalas a tu gusto y haz clic en <strong>Guardar sección</strong> para que queden bajo tu control.
+                      </p>
+                    </div>
+                  )}
+                  <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '0.75rem 1rem' }}>
+                    <p style={{ fontSize: '0.8rem', color: '#1e40af', margin: 0 }}>❓ Estas preguntas aparecen en la sección <strong>Preguntas Frecuentes</strong> de la página de inicio. Al menos una debe estar visible para que la sección se muestre.</p>
+                  </div>
+                  <div>
+                    <ListHeader lb="Preguntas y respuestas" count={(data.items || []).length} listKey="items" def={{ q: '', a: '', visible: true }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {(data.items || []).map((item: any, i: number) => (
+                        <ItemCard key={i} item={item}
+                          onEdit={() => openEdit('items', i)}
+                          onToggle={() => toggleVisible('items', i)}
+                          onDelete={() => deleteItem('items', i)} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* ══════════ CONTACTO ══════════ */}
               {section === 'contacto' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -1632,7 +1686,8 @@ export default function ConfiguracionPage() {
       <EditModal
         open={!!editModal}
         title={
-          editModal?.index === null ? 'Agregar elemento'
+          section === 'faq' ? (editModal?.index === null ? 'Agregar pregunta' : 'Editar pregunta')
+            : editModal?.index === null ? 'Agregar elemento'
             : editModal?.listKey === 'items' ? 'Editar tarjeta'
               : editModal?.listKey === 'hitos' ? 'Editar hito'
                 : editModal?.listKey === 'valores' ? 'Editar valor'
