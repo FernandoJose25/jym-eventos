@@ -484,6 +484,9 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
   const includesMediaSrc = servicio?.includesMediaSrc || mediaSrc;
   const includesMediaType = servicio?.includesMediaSrc ? (servicio?.includesMediaType || 'image') : firestoreType;
   const isIncludesVideo = includesMediaSrc && includesMediaType === 'video';
+  const includesMediaFit: 'cover' | 'contain' = servicio?.includesMediaSrc
+    ? (servicio?.includesMediaFit === 'contain' ? 'contain' : 'cover')
+    : heroMediaFit;
 
   // Rich content — Firestore detail map first, then static fallback
   const h2content = dt.longDescH2 || sd.h2 || '';
@@ -977,13 +980,13 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           {/* Fondo real — imagen o video, independiente del hero (includesMediaSrc) */}
           {isIncludesVideo ? (
             <video key={includesMediaSrc} autoPlay muted loop playsInline aria-hidden="true"
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}>
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: includesMediaFit }}>
               <source src={cxVideo(includesMediaSrc)} type="video/mp4" />
             </video>
           ) : includesMediaSrc ? (
             <Image src={cxHero(includesMediaSrc)} alt="" aria-hidden="true"
               fill sizes="100vw"
-              style={{ objectFit: 'cover' }} />
+              style={{ objectFit: includesMediaFit, background: includesMediaFit === 'contain' ? '#0c1e30' : undefined }} />
           ) : null}
           <div style={{
             position: 'absolute', inset: 0,

@@ -487,6 +487,11 @@ export default function ServiceContentPage() {
             acceptVideo={true} soundEnabled={!!srvData.mediaSound} onSound={v=>set('mediaSound',v)}
             previewAspect={4/3} previewLabel="Tarjeta de servicio (paisaje)"
             onComplete={(url,fp,type)=>{ set('mediaSrc',url); set('mediaFocalX',fp.x); set('mediaFocalY',fp.y); set('mediaType',type||'image'); }}/>
+          <label style={{ display:'flex', alignItems:'center', gap:8, marginTop:12, fontSize:'0.8rem', color:'#334155', fontWeight:600, cursor:'pointer' }}>
+            <input type="checkbox" checked={srvData.mediaFit === 'contain'}
+              onChange={e => set('mediaFit', e.target.checked ? 'contain' : 'cover')} />
+            🖼️ Ajustar sin recortar (usar para logos o diseños que no deben cortarse en la tarjeta)
+          </label>
         </fieldset>
 
         {/* Media — hero página de detalle */}
@@ -518,6 +523,11 @@ export default function ServiceContentPage() {
             acceptVideo={true} soundEnabled={false}
             previewAspect={16/9} previewLabel="Fondo de sección (panorámico)"
             onComplete={(url,fp,type)=>{ set('includesMediaSrc',url); set('includesFocalX',fp.x); set('includesFocalY',fp.y); set('includesMediaType',type||'image'); }}/>
+          <label style={{ display:'flex', alignItems:'center', gap:8, marginTop:12, fontSize:'0.8rem', color:'#334155', fontWeight:600, cursor:'pointer' }}>
+            <input type="checkbox" checked={srvData.includesMediaFit === 'contain'}
+              onChange={e => set('includesMediaFit', e.target.checked ? 'contain' : 'cover')} />
+            🖼️ Ajustar sin recortar (usar para logos o diseños que no deben cortarse en el fondo panorámico)
+          </label>
         </fieldset>
 
       </div>

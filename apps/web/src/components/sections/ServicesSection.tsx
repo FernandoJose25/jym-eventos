@@ -7,7 +7,7 @@ import { SERVICE_ICONS, isIconKey } from '@/lib/serviceIcons';
 
 interface Service {
   id:string; title:string; icon:string; desc:string;
-  link:string; mediaSrc?:string; mediaType?:string; mediaSound?:boolean; order?:number;
+  link:string; mediaSrc?:string; mediaType?:string; mediaSound?:boolean; mediaFit?:string; order?:number;
 }
 
 const toSlug = (link:string) => link?.replace('servicios/','').replace('.html','') || '';
@@ -80,6 +80,9 @@ function AtvCard({ s, idx }: { s: Service; idx: number }) {
 
   const isVideo  = s.mediaType === 'video' || !!s.mediaSrc?.match(/\.(mp4|webm|mov)/i);
   const bgColor  = BG_COLORS[idx % BG_COLORS.length];
+  // 'contain' evita recortar logos/diseños con texto pegado al borde en la
+  // tarjeta 4:3 — por defecto 'cover' (mejor para fotos de eventos).
+  const mediaFit: 'cover' | 'contain' = s.mediaFit === 'contain' ? 'contain' : 'cover';
 
   return (
     <Link href={`/servicios/${toSlug(s.link)}`} style={{ textDecoration:'none', display:'block' }}>
@@ -120,7 +123,7 @@ function AtvCard({ s, idx }: { s: Service; idx: number }) {
               isVideo ? (
                 <>
                   <video key={s.mediaSrc} ref={vidRef} autoPlay muted loop playsInline
-                         style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}>
+                         style={{ width:'100%', height:'100%', objectFit:mediaFit, display:'block' }}>
                     <source src={s.mediaSrc} type="video/mp4"/>
                   </video>
                   {s.mediaSound && (
@@ -129,7 +132,7 @@ function AtvCard({ s, idx }: { s: Service; idx: number }) {
                 </>
               ) : (
                 <Image src={s.mediaSrc} alt={s.title} fill sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
-                     style={{ objectFit:'cover' }}/>
+                     style={{ objectFit:mediaFit, background: mediaFit === 'contain' ? bgColor : undefined }}/>
               )
             ) : (
               <div style={{ width:'100%', height:'100%', background:bgColor }}/>
