@@ -85,7 +85,15 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
     return () => window.removeEventListener('pointerup', onUp);
   }, []);
 
-  const process = useCallback(async () => {
+  // Bitrate a partir del cual un video se considera "crudo de celular":
+  // subirlo tal cual solo hace lenta la página, no se ve mejor en la web.
+  const HEAVY_MBPS = 8;
+  const esPesado = !!srcInfo && srcInfo.mbps > HEAVY_MBPS;
+
+  // neutral = true: comprime sin aplicar filtros ni marca de agua (es el
+  // camino de "Subir sin editar" cuando el video viene pesado — el admin
+  // comprime solo, sin que el usuario tenga que decidir nada).
+  const process = useCallback(async (neutral = false) => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas || processing) return;
@@ -145,9 +153,9 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
 
       let raf = 0;
       const drawFrame = () => {
-        ctx.filter = cssFilter;
+        ctx.filter = neutral ? 'none' : cssFilter;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        if (watermark.enabled && logoImgRef.current) {
+        if (!neutral && watermark.enabled && logoImgRef.current) {
           ctx.filter = 'none';
           const logo = logoImgRef.current;
           const wmW = canvas.width * watermark.scale;
@@ -322,17 +330,23 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
 
         {/* Aviso de video pesado: grabaciones directas de celular vienen a
             20+ Mbps — en la web eso solo hace lenta la página, no se ve
-            mejor. "Procesar y subir" (aunque no toques ningún filtro) lo
-            comprime a un bitrate web sin pérdida visible. */}
-        {!processing && srcInfo && srcInfo.mbps > 8 && (
+            mejor. Con cualquiera de los dos botones se comprime solo; el
+            enlace pequeño es la única vía para subir el original crudo. */}
+        {!processing && esPesado && (
           <p style={{
             margin: '0.5rem 1.5rem 0', fontSize: '0.78rem', color: '#92400e', background: '#fffbeb',
             border: '1px solid #fde68a', borderRadius: 8, padding: '6px 10px',
           }}>
-            ⚠️ Este video pesa <strong>{srcInfo.mb.toFixed(0)} MB</strong> ({srcInfo.mbps.toFixed(0)} Mbps
-            — típico de grabación directa de celular). Subirlo así hará lenta la página y no se
-            verá mejor. Usa <strong>“✓ Procesar y subir”</strong> (sin tocar nada más) para
-            comprimirlo sin pérdida visible de calidad.
+            ⚠️ Este video pesa <strong>{srcInfo!.mb.toFixed(0)} MB</strong> (grabación directa de
+            celular). Se <strong>comprimirá automáticamente</strong> al subirlo — misma calidad
+            visual, ~5× menos peso, la web carga rápido.{' '}
+            <button type="button" onClick={onSkip} style={{
+              background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+              color: '#92400e', fontSize: 'inherit', fontFamily: 'inherit',
+              textDecoration: 'underline', opacity: 0.75,
+            }}>
+              Subir original sin comprimir
+            </button>
           </p>
         )}
 
@@ -340,14 +354,16 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
           padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10,
           alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0, flexWrap: 'wrap',
         }}>
-          <button onClick={onSkip} type="button" disabled={processing} style={{
+          <button
+            onClick={() => (esPesado ? process(true) : onSkip())}
+            type="button" disabled={processing} style={{
             padding: '0.6rem 1.2rem', borderRadius: 10, border: '1.5px solid #e2e8f0',
             background: '#fff', cursor: processing ? 'not-allowed' : 'pointer',
             fontSize: '0.85rem', color: '#475569', fontFamily: 'inherit', fontWeight: 600,
           }}>
-            Subir sin editar
+            {esPesado ? 'Subir sin editar (se comprime solo)' : 'Subir sin editar'}
           </button>
-          <button onClick={process} type="button" disabled={processing || !videoLoaded} style={{
+          <button onClick={() => process(false)} type="button" disabled={processing || !videoLoaded} style={{
             padding: '0.6rem 1.4rem', borderRadius: 10, border: 'none',
             background: processing
               ? 'linear-gradient(135deg,#4b6a8f,#6b93d6)'

@@ -2,6 +2,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { validateFile } from '@/lib/file-validation';
 import { uploadFile } from '@/lib/upload';
+import { compressVideoIfHeavy } from '@/lib/videoCompress';
 import {
   CropModal, normalizeExifOrientation, applyCropToFile, loadWatermarkImg,
   resolveFileKind, compressImageIfNeeded, WATERMARK_LOGO_URL,
@@ -112,8 +113,12 @@ export default function BulkGalleryUpload({ cats, albumesDisponibles, subcatsDeC
     updateItem(item.qid, { status: 'uploading', progress: 0 });
     try {
       const raw = fileOverride ?? item.file;
-      const fileToUpload = item.kind === 'video' ? raw : await compressImageIfNeeded(raw);
-      const url = await uploadFile(fileToUpload, 'galeria', pct => updateItem(item.qid, { progress: pct }));
+      // Los videos crudos de celular (20+ Mbps) se comprimen solos antes de
+      // subir — la primera mitad de la barra es compresión, la segunda subida.
+      const fileToUpload = item.kind === 'video'
+        ? await compressVideoIfHeavy(raw, pct => updateItem(item.qid, { progress: Math.round(pct / 2) }))
+        : await compressImageIfNeeded(raw);
+      const url = await uploadFile(fileToUpload, 'galeria', pct => updateItem(item.qid, { progress: 50 + Math.round(pct / 2) }));
       await onUploaded({
         url, tipo: item.kind === 'video' ? 'video' : 'imagen',
         categoria: item.categoria, subcategoria: item.subcategoria, albumId: item.albumId,
