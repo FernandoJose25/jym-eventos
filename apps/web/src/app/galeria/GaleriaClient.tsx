@@ -364,12 +364,12 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
   // Swipe vertical (solo mobile, solo si el medio activo no está en zoom).
   //
   // El eje del gesto (vertical vs horizontal) se decide en touchMOVE, no en
-  // touchEND: antes se esperaba a que el usuario soltara el dedo para recién
-  // ahí mirar dx/dy, así que durante todo el arrastre el navegador seguía
-  // scrolleando la página de fondo en paralelo — de ahí el choque entre
-  // swipe y scroll. Ahora, apenas el gesto se confirma vertical (superado un
-  // pequeño umbral), se llama preventDefault() de inmediato para tomar el
-  // control del gesto ahí mismo, igual que ya hace useZoomPan con el pan.
+  // touchEND, apenas se supera un pequeño umbral. Quien impide que la página
+  // de fondo scrollee durante el arrastre es useLockBodyScroll (body con
+  // touch-action: none mientras el lightbox está abierto) — NO preventDefault:
+  // React ata touchmove como listener pasivo, así que llamarlo aquí se ignora
+  // y solo genera el warning "Unable to preventDefault inside passive event
+  // listener" en consola.
   const AXIS_LOCK_THRESHOLD = 10; // px antes de decidir el eje del gesto
 
   const onLightboxTouchStart = (e: React.TouchEvent) => {
@@ -382,16 +382,12 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
   const onLightboxTouchMove = (e: React.TouchEvent) => {
     const start = touchStartRef.current;
     if (!start || mediaZoomedRef.current || e.touches.length !== 1) return;
-    if (swipeAxisRef.current) {
-      if (swipeAxisRef.current === 'vertical') e.preventDefault();
-      return;
-    }
+    if (swipeAxisRef.current) return;
     const t = e.touches[0];
     const dx = t.clientX - start.x;
     const dy = t.clientY - start.y;
     if (Math.hypot(dx, dy) < AXIS_LOCK_THRESHOLD) return; // aún muy corto para decidir
     swipeAxisRef.current = Math.abs(dy) > Math.abs(dx) ? 'vertical' : 'horizontal';
-    if (swipeAxisRef.current === 'vertical') e.preventDefault();
   };
   const onLightboxTouchEnd = (e: React.TouchEvent) => {
     const start = touchStartRef.current;
@@ -631,6 +627,11 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                         transition: 'transform .3s, box-shadow .3s',
                         background: '#0a1628', display: 'block', textDecoration: 'none',
                         willChange: 'transform',
+                        // Tras varios "Cargar más" el grid acumula cientos de
+                        // tarjetas; esto deja que el navegador se salte el
+                        // render de las que están fuera de pantalla.
+                        contentVisibility: 'auto',
+                        containIntrinsicSize: 'auto 300px',
                       }}
                       onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
                         const el = e.currentTarget as HTMLElement;

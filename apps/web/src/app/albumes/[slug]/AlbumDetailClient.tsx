@@ -65,6 +65,12 @@ export default function AlbumDetailClient({ fotos }: { fotos: AlbumFoto[] }) {
                 breakInside: 'avoid', marginBottom: '1.25rem', borderRadius: 16,
                 overflow: 'hidden', cursor: 'pointer', position: 'relative',
                 boxShadow: '0 4px 16px rgba(10,22,40,0.1)', background: '#0a1628',
+                // Un álbum de boda puede traer 200+ fotos renderizadas de una
+                // vez; esto deja que el navegador se salte el render de las
+                // que están fuera de pantalla ("auto" recuerda la altura real
+                // tras el primer paint, así las columnas no saltan).
+                contentVisibility: 'auto',
+                containIntrinsicSize: 'auto 300px',
               }}
             >
               {vid ? (

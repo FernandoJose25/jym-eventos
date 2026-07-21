@@ -1034,7 +1034,10 @@ export default function ImageUploader({
         const path = `${folder}/${Date.now()}.${ext}`;
         const storageRef = ref(storage, path);
         url = await new Promise<string>((resolve, reject) => {
-          const task = uploadBytesResumable(storageRef, fileToUpload);
+          // El nombre incluye Date.now(), nunca se reutiliza: caché inmutable de 1 año
+          const task = uploadBytesResumable(storageRef, fileToUpload, {
+            cacheControl: 'public, max-age=31536000, immutable',
+          });
           task.on('state_changed',
             snap => setProgress(Math.round(snap.bytesTransferred / snap.totalBytes * 95)),
             reject,
