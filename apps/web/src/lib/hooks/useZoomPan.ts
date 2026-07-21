@@ -31,6 +31,12 @@ function mid(a: Point, b: Point): Point {
  * doble-tap (reset). Mientras `isZoomed` es true, el consumidor debe
  * desactivar el swipe de navegación (o el doble-tap-seek en video) para
  * que no compitan con el pan/reset de este hook.
+ *
+ * El elemento que recibe `handlers` DEBE tener `touch-action: none` (CSS):
+ * es lo que impide el scroll/zoom nativo durante el gesto. No se llama
+ * preventDefault() aquí — React ata touchmove como listener pasivo, así que
+ * la llamada se ignora y solo genera el warning "Unable to preventDefault
+ * inside passive event listener" en consola.
  */
 export function useZoomPan(containerRef: React.RefObject<HTMLElement | null>) {
   const scale = useMotionValue(1);
@@ -145,7 +151,6 @@ export function useZoomPan(containerRef: React.RefObject<HTMLElement | null>) {
         y.set(Math.min(Math.max(ny, -maxY), maxY));
       }
       scale.set(targetScale);
-      e.preventDefault();
       return;
     }
 
@@ -158,7 +163,6 @@ export function useZoomPan(containerRef: React.RefObject<HTMLElement | null>) {
       const clamped = clampPan(originStart.current.x + dx, originStart.current.y + dy, scale.get());
       x.set(clamped.x);
       y.set(clamped.y);
-      e.preventDefault();
     }
   }, [scale, x, y, clampPan, containerRef]);
 

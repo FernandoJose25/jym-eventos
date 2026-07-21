@@ -57,7 +57,10 @@ export async function uploadFile(
   const path = `${folder}/${Date.now()}.${ext}`;
   const storageRef = ref(storage, path);
   return new Promise<string>((resolve, reject) => {
-    const task = uploadBytesResumable(storageRef, file);
+    // El nombre incluye Date.now(), nunca se reutiliza: caché inmutable de 1 año
+    const task = uploadBytesResumable(storageRef, file, {
+      cacheControl: 'public, max-age=31536000, immutable',
+    });
     task.on('state_changed',
       snap => onProgress?.(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
       reject,
