@@ -4,6 +4,7 @@ import { SITE_URL } from '@/lib/site';
 import { BUSINESS_ADDRESS, metaDescription, getOgLogo, pageOpenGraph } from '@/lib/seo';
 import JsonLd from '@/components/ui/JsonLd';
 import ServicioClient, { SERVICIOS_DATA } from './ServicioClient';
+import { getFaqServicio } from '@/lib/faqServicios';
 
 // ISR: cada servicio se sirve pre-generado y se revalida como máximo cada
 // hora — sin esto, la página queda estática desde el último build y los
@@ -11,13 +12,6 @@ import ServicioClient, { SERVICIOS_DATA } from './ServicioClient';
 // reflejan en producción hasta el próximo deploy.
 export const revalidate = 3600;
 export const dynamicParams = true;
-
-const FAQ_DEFAULT = [
-  { pregunta: '¿Con cuánta anticipación debo reservar?', respuesta: 'Recomendamos al menos 15 días antes. En temporada alta (julio-diciembre) conviene reservar con 1-2 meses de anticipación para asegurar fecha y disponibilidad.' },
-  { pregunta: '¿Puedo personalizar el paquete según mi presupuesto?', respuesta: 'Sí, armamos una propuesta a medida: puedes agregar o quitar elementos del paquete base según lo que necesites.' },
-  { pregunta: '¿El precio incluye montaje y desmontaje?', respuesta: 'Sí, todo servicio incluye instalación previa y desmontaje al finalizar el evento, sin costo adicional.' },
-  { pregunta: '¿Tienen cobertura fuera de Sechura?', respuesta: 'Sí, atendemos eventos en toda la región Piura. Consulta disponibilidad y costo de movilización según la zona.' },
-];
 
 async function findServicio(slug: string) {
   const snap = await adminDb.collection('services').where('visible', '==', true).get();
@@ -138,9 +132,9 @@ export default async function Page(
     },
   } : null;
 
-  const faqList = (initialData?.detail?.faq && initialData.detail.faq.length > 0)
-    ? initialData.detail.faq
-    : FAQ_DEFAULT;
+  // Misma fuente que el acordeón visible (lib/faqServicios) — si divergieran,
+  // Google indexaría preguntas que el usuario no ve en la página.
+  const faqList = getFaqServicio(slug, initialData?.detail?.faq);
   const faqSchema = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
