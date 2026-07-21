@@ -249,8 +249,9 @@ export default function ServicesSection({ services }: { services: Service[] }) {
       </div>
 
       <style>{`
-        .atvImg-container.over {
+        .srv-card-container.over {
           box-shadow: 0 45px 100px rgba(14,21,47,0.4), 0 16px 40px rgba(14,21,47,0.4);
+          border-color: rgba(212,160,23,0.5) !important;
         }
         @media(max-width:1200px){ .srv-grid{ grid-template-columns:repeat(3,1fr) !important; } }
         @media(max-width:900px){ .srv-grid{ grid-template-columns:1fr 1fr !important; gap:1.25rem !important; } }

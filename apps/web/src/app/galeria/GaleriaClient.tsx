@@ -506,10 +506,10 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                     display: 'flex', alignItems: 'center', gap: 8, padding: '0.6rem 1.25rem',
                     borderRadius: 9999, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
                     fontFamily: 'var(--font-jakarta)', fontWeight: active ? 700 : 500, fontSize: '0.88rem',
-                    transition: 'all .25s',
-                    background: active ? 'linear-gradient(135deg,#0a1628,#1e3a5f)' : '#fff',
-                    color: active ? '#fff' : '#475569',
-                    boxShadow: active ? '0 4px 16px rgba(10,22,40,0.25)' : '0 1px 4px rgba(10,22,40,0.08)',
+                    transition: 'all .35s cubic-bezier(.16,1,.3,1)',
+                    background: active ? 'linear-gradient(135deg,#b8860b,#d4a017 55%,#f5c842)' : '#fff',
+                    color: active ? '#0a1628' : '#475569',
+                    boxShadow: active ? '0 6px 20px rgba(212,160,23,0.4)' : '0 1px 4px rgba(10,22,40,0.08)',
                     transform: active ? 'translateY(-2px)' : 'translateY(0)',
                   }}>
                   <span>{cat.icon}</span>
@@ -517,8 +517,8 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                   {count > 0 && (
                     <span style={{
                       fontSize: '0.75rem', padding: '1px 7px', borderRadius: 999,
-                      background: active ? 'rgba(212,160,23,0.3)' : 'rgba(10,22,40,0.08)',
-                      color: active ? '#f5c842' : '#94a3b8', fontWeight: 700
+                      background: active ? 'rgba(10,22,40,0.16)' : 'rgba(10,22,40,0.08)',
+                      color: active ? '#0a1628' : '#94a3b8', fontWeight: 700
                     }}>
                       {count}
                     </span>
@@ -609,8 +609,10 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                 {searchQ && ` · búsqueda: "${searchQ}"`}
               </p>
 
-              {/* Grid de cuadrados — 4 columnas con tilt 3D al cursor */}
-              <div className="gal-grid">
+              {/* Grid de cuadrados — 4 columnas con tilt 3D al cursor.
+                  La key por filtro remonta el grid al cambiar de categoría/búsqueda,
+                  disparando la entrada escalonada de las tarjetas. */}
+              <div className="gal-grid" key={`${catActiva}|${subActiva}|${searchQ}`}>
                 {visibles.slice(0, visibleLimit).map((item, i) => {
                   const fp = `${(item.focalX ?? 0.5) * 100}% ${(item.focalY ?? 0.5) * 100}%`;
                   const vid = isVideo(item);
@@ -621,6 +623,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                   return (
                     <CardTag key={item.id}
                       {...cardProps}
+                      className="gal-item"
                       style={{
                         aspectRatio: '1 / 1', borderRadius: 16,
                         overflow: 'hidden', cursor: 'pointer', position: 'relative',
@@ -628,6 +631,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                         transition: 'transform .3s, box-shadow .3s',
                         background: '#0a1628', display: 'block', textDecoration: 'none',
                         willChange: 'transform',
+                        animationDelay: `${Math.min(i, 11) * 40}ms`,
                         // Tras varios "Cargar más" el grid acumula cientos de
                         // tarjetas; esto deja que el navegador se salte el
                         // render de las que están fuera de pantalla.
@@ -1014,6 +1018,10 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
       <style>{`
         .gal-overlay.visible { opacity: 1 !important; }
         @keyframes lbIn { from{opacity:0;transform:scale(0.92)} to{opacity:1;transform:scale(1)} }
+        /* Entrada escalonada al cambiar de filtro (el grid se remonta con nueva key) */
+        @keyframes galIn { from{opacity:0;transform:scale(.9)} to{opacity:1;transform:scale(1)} }
+        .gal-item { animation: galIn .45s cubic-bezier(.16,1,.3,1) both; }
+        @media (prefers-reduced-motion: reduce) { .gal-item { animation: none; } }
         /* Grid de cuadrados: 4 columnas → 3 → 2 según pantalla */
         .gal-grid {
           display: grid;

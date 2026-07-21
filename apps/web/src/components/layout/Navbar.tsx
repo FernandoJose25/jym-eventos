@@ -66,6 +66,23 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', h);
   }, []);
 
+  // Barra de progreso de lectura: se actualiza vía ref (sin re-render por scroll)
+  const progRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let raf = 0;
+    const h = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        if (progRef.current) progRef.current.style.width = max > 0 ? `${Math.min((window.scrollY / max) * 100, 100)}%` : '0%';
+      });
+    };
+    h();
+    window.addEventListener('scroll', h, { passive: true });
+    window.addEventListener('resize', h, { passive: true });
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('scroll', h); window.removeEventListener('resize', h); };
+  }, []);
+
   useEffect(() => { setMobileOpen(false); setServOpen(false); }, [pathname]);
 
   const openDrop = () => { if (closeTimer.current) clearTimeout(closeTimer.current); setServOpen(true); };
@@ -484,6 +501,14 @@ export default function Navbar() {
             {mobileOpen ? '✕' : '☰'}
           </button>
         </div>
+
+        {/* Progreso de lectura — línea dorada pegada al borde inferior del navbar */}
+        <div ref={progRef} aria-hidden="true" style={{
+          position: 'absolute', left: 0, bottom: -1, height: 2, width: '0%',
+          background: 'linear-gradient(90deg,#b8860b,#f5c842)',
+          boxShadow: '0 0 8px rgba(245,200,66,0.5)',
+          pointerEvents: 'none',
+        }} />
       </header>
 
       {/* Mobile menu — always rendered, CSS + state controls visibility */}

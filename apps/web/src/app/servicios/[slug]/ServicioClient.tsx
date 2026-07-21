@@ -434,6 +434,16 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
     return () => obs.disconnect();
   }, [loading]);
 
+  // Barra fija "Cotizar" en móvil: aparece tras pasar el hero para que el CTA
+  // quede siempre a un pulgar de distancia en páginas largas.
+  const [showStickyCta, setShowStickyCta] = useState(false);
+  useEffect(() => {
+    const h = () => setShowStickyCta(window.scrollY > 420);
+    h();
+    window.addEventListener('scroll', h, { passive: true });
+    return () => window.removeEventListener('scroll', h);
+  }, []);
+
   // Card reveal observer
   useEffect(() => {
     const cards = document.querySelectorAll('[data-reveal]');
@@ -530,10 +540,18 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
   const opcionesTitulo = dt.opcionesTitulo || (sd.tematicas ? 'Temáticas Más Populares' : '');
 
   // pasos: timeline "cómo trabajamos" propia del servicio.
-  // Firestore detail.pasos primero, luego fallback estático (hoy solo decoracion-tematica).
-  const pasosList: any[] = (dt.pasos?.length > 0) ? dt.pasos : (sd.pasos || []);
-  const pasosEyebrow = dt.pasosEyebrow || (sd.pasos ? 'Nuestro Proceso' : '');
-  const pasosTitulo = dt.pasosTitulo || (sd.pasos ? 'Tu Decoración en 4 Pasos' : '');
+  // Firestore detail.pasos primero, luego fallback estático, y si el servicio
+  // no define ninguno, el proceso genérico J&M — así toda página de servicio
+  // responde "¿cómo es contratar con ustedes?" (contenido textual indexable).
+  const DEFAULT_PASOS = [
+    { num: '1', title: 'Cuéntanos tu idea', desc: 'Fecha, tipo de evento y lo que imaginas para tu celebración.' },
+    { num: '2', title: 'Propuesta y cotización', desc: 'Diseño personalizado con precio claro, sin sorpresas.' },
+    { num: '3', title: 'Preparamos todo', desc: 'Montaje, decoración y coordinación completa del servicio.' },
+    { num: '4', title: 'Tú solo celebra', desc: 'El día del evento nuestro equipo se encarga de todo.' },
+  ];
+  const pasosList: any[] = (dt.pasos?.length > 0) ? dt.pasos : (sd.pasos || DEFAULT_PASOS);
+  const pasosEyebrow = dt.pasosEyebrow || 'Nuestro Proceso';
+  const pasosTitulo = dt.pasosTitulo || (sd.pasos ? 'Tu Decoración en 4 Pasos' : 'Cómo Trabajamos');
 
   const waText = sd.waText || `Hola, me interesa ${title}`;
   const accentColor = sd.color || '#d4a017';
@@ -1585,7 +1603,37 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           .srv-steps { grid-template-columns: repeat(2,1fr) !important; }
           .srv-timeline-line { display: none !important; }
         }
+
+        /* Barra fija "Cotizar" — solo móvil/tablet. Deja libre la esquina
+           derecha donde vive el botón flotante de WhatsApp. */
+        .srv-sticky-cta {
+          position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+          display: none; align-items: center;
+          padding: 10px 88px calc(10px + env(safe-area-inset-bottom)) 12px;
+          background: rgba(10,22,40,0.88);
+          backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+          border-top: 1px solid rgba(212,160,23,0.28);
+          transition: transform .45s cubic-bezier(.16,1,.3,1);
+        }
+        @media (max-width: 900px) { .srv-sticky-cta { display: flex; } }
+        @media (prefers-reduced-motion: reduce) { .srv-sticky-cta { transition: none; } }
       `}</style>
+
+      {/* ── Barra fija de cotización (móvil) ── */}
+      <div className="srv-sticky-cta" style={{ transform: showStickyCta ? 'translateY(0)' : 'translateY(120%)' }}>
+        <a href={`https://wa.me/51945203708?text=${encodeURIComponent(waText)}`}
+          target="_blank" rel="noopener noreferrer"
+          style={{
+            flex: 1, textAlign: 'center', textDecoration: 'none',
+            padding: '0.8rem 1rem', borderRadius: 9999,
+            background: 'linear-gradient(135deg,#b8860b,#f5c842)',
+            color: '#0a1628', fontWeight: 800, fontSize: '0.92rem',
+            fontFamily: 'var(--font-jakarta)', letterSpacing: '.01em',
+            boxShadow: '0 6px 20px rgba(212,160,23,0.4)',
+          }}>
+          ✨ {ctaLabel}
+        </a>
+      </div>
     </>
   );
 }

@@ -21,6 +21,8 @@ interface HeroData {
 export default function HeroSection({ data }: { data: HeroData }) {
   const ref    = useRef<HTMLDivElement>(null);
   const vidRef = useRef<HTMLVideoElement>(null);
+  const h1Ref  = useRef<HTMLHeadingElement>(null);
+  const dustRef = useRef<HTMLCanvasElement>(null);
 
   const isVideo = data.bgMediaType === 'video';
 
@@ -54,6 +56,77 @@ export default function HeroSection({ data }: { data: HeroData }) {
     }, 100);
 
     return () => clearTimeout(t);
+  }, []);
+
+  // Titular palabra por palabra: el h1 llega del admin como HTML (puede traer
+  // <em> con su propio gradiente). Se envuelve cada palabra suelta en un span
+  // animable y los elementos (em) se animan enteros para no romper su
+  // background-clip:text. El texto completo ya está en el HTML del servidor,
+  // así que Google lo lee igual.
+  useEffect(() => {
+    const el = h1Ref.current;
+    if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    Array.from(el.childNodes).forEach((node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const frag = document.createDocumentFragment();
+        (node.textContent || '').split(/(\s+)/).forEach((w) => {
+          if (!w) return;
+          if (/^\s+$/.test(w)) { frag.appendChild(document.createTextNode(w)); return; }
+          const s = document.createElement('span');
+          s.className = 'hero-word';
+          s.textContent = w;
+          frag.appendChild(s);
+        });
+        node.parentNode?.replaceChild(frag, node);
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        (node as HTMLElement).classList.add('hero-word');
+      }
+    });
+    el.querySelectorAll<HTMLElement>('.hero-word').forEach((s, i) => {
+      s.style.animationDelay = `${0.15 + i * 0.1}s`;
+    });
+    el.classList.add('hero-words-ready');
+  }, []);
+
+  // Partículas doradas: solo desktop, sin reduced-motion, y arrancan tras
+  // window.load para no competir con el LCP.
+  useEffect(() => {
+    const cv = dustRef.current;
+    if (!cv) return;
+    if (window.innerWidth < 768 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let raf = 0;
+    let stopped = false;
+    const start = () => {
+      if (stopped) return;
+      const ctx = cv.getContext('2d');
+      if (!ctx) return;
+      let W = 0, H = 0;
+      const size = () => { W = cv.width = cv.offsetWidth; H = cv.height = cv.offsetHeight; };
+      size();
+      window.addEventListener('resize', size);
+      const P = Array.from({ length: 36 }, () => ({
+        x: Math.random(), y: Math.random(), r: 0.8 + Math.random() * 1.8,
+        s: 0.0002 + Math.random() * 0.0005, ph: Math.random() * 6.28, a: 0.2 + Math.random() * 0.45,
+      }));
+      const tick = (t: number) => {
+        ctx.clearRect(0, 0, W, H);
+        for (const p of P) {
+          p.y -= p.s;
+          if (p.y < -0.02) { p.y = 1.02; p.x = Math.random(); }
+          const tw = 0.5 + 0.5 * Math.sin(t * 0.001 + p.ph);
+          ctx.beginPath();
+          ctx.arc(p.x * W + Math.sin(t * 0.0004 + p.ph) * 12, p.y * H, p.r, 0, 6.28);
+          ctx.fillStyle = `rgba(245,200,66,${(p.a * tw).toFixed(3)})`;
+          ctx.fill();
+        }
+        raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    };
+    if (document.readyState === 'complete') start();
+    else window.addEventListener('load', start, { once: true });
+    return () => { stopped = true; cancelAnimationFrame(raf); window.removeEventListener('load', start); };
   }, []);
 
   const h1 =
@@ -97,6 +170,7 @@ export default function HeroSection({ data }: { data: HeroData }) {
       {/* BACKGROUND */}
       {data.bgImage && (
         <div
+          className="hero-kb"
           style={{
             position: 'absolute',
             inset: 0,
@@ -171,6 +245,13 @@ export default function HeroSection({ data }: { data: HeroData }) {
             )
           `,
         }}
+      />
+
+      {/* PARTÍCULAS DORADAS (solo desktop, tras window.load) */}
+      <canvas
+        ref={dustRef}
+        aria-hidden="true"
+        style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }}
       />
 
       {/* DECORATIVE CIRCLES */}
@@ -251,6 +332,7 @@ export default function HeroSection({ data }: { data: HeroData }) {
 
         {/* TITLE */}
         <h1
+          ref={h1Ref}
           style={{
             fontFamily: 'var(--font-playfair)',
 
@@ -428,6 +510,25 @@ export default function HeroSection({ data }: { data: HeroData }) {
       </div>
       <style>{`
         @keyframes heroShimmer { from { background-position: 0% center; } to { background-position: 200% center; } }
+        /* Ken Burns: zoom lentísimo del fondo (solo transform, no afecta LCP ni CLS) */
+        @keyframes heroKenBurns {
+          from { transform: scale(1); }
+          to   { transform: scale(1.1) translate(-1.2%, 1.2%); }
+        }
+        @media (prefers-reduced-motion: no-preference) {
+          .hero-kb { animation: heroKenBurns 18s cubic-bezier(.16,1,.3,1) infinite alternate; will-change: transform; }
+        }
+        /* Titular palabra por palabra */
+        .hero-words-ready .hero-word {
+          display: inline-block;
+          opacity: 0;
+          transform: translateY(.55em) rotate(1.5deg);
+          animation: heroWordIn .8s cubic-bezier(.16,1,.3,1) forwards;
+        }
+        @keyframes heroWordIn { to { opacity: 1; transform: none; } }
+        @media (prefers-reduced-motion: reduce) {
+          .hero-words-ready .hero-word { animation: none; opacity: 1; transform: none; }
+        }
         @media (max-width: 640px) {
           .hero-content { padding-top: 5.5rem !important; padding-bottom: 3rem !important; }
           .hero-btns { gap: 0.75rem !important; flex-direction: column !important; align-items: stretch !important; padding: 0 0.5rem; }

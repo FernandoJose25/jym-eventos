@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { adminDb } from '@/lib/firebase-admin';
 import { SITE_URL } from '@/lib/site';
 import JsonLd from '@/components/ui/JsonLd';
@@ -14,6 +15,7 @@ async function getServices() {
     const snap = await adminDb.collection('services').where('visible', '==', true).orderBy('order', 'asc').get();
     return snap.docs.map(d => ({ id: d.id, ...d.data() })) as {
       id: string; title: string; icon: string; desc?: string; link: string;
+      mediaSrc?: string; mediaType?: string;
     }[];
   } catch {
     return [];
@@ -98,19 +100,36 @@ export default async function ServiciosPage() {
             </p>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.75rem' }} className="srv-list-grid">
-              {services.map(s => (
+              {services.map(s => {
+                const isVideo = s.mediaType === 'video' || !!s.mediaSrc?.match(/\.(mp4|webm|mov)/i);
+                const photo = !isVideo ? s.mediaSrc : undefined;
+                return (
                 <Link key={s.id} href={toSlugUrl(s.link)} style={{
                   textDecoration: 'none', display: 'block', borderRadius: 20, padding: '1.75rem',
                   background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                   backdropFilter: 'blur(12px)', transition: 'all .3s cubic-bezier(0.23,1,0.32,1)',
+                  position: 'relative', overflow: 'hidden', isolation: 'isolate',
                 }}
                   className="srv-list-card"
                 >
-                  <div style={{
+                  {/* Foto real del servicio: emerge al hover (desktop) con velo navy para
+                      mantener legible el texto. Lazy: solo se descarga al acercarse al viewport. */}
+                  {photo && (
+                    <div className="srv-list-photo" aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: -1 }}>
+                      <Image src={photo} alt="" fill sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
+                        style={{ objectFit: 'cover' }} />
+                      <div style={{
+                        position: 'absolute', inset: 0,
+                        background: 'linear-gradient(to top, rgba(10,22,40,0.94) 25%, rgba(10,22,40,0.55) 70%, rgba(10,22,40,0.35))',
+                      }} />
+                    </div>
+                  )}
+                  <div className="srv-list-med" style={{
                     width: 56, height: 56, borderRadius: 14, marginBottom: '1.1rem',
                     background: 'linear-gradient(135deg,rgba(212,160,23,0.2),rgba(212,160,23,0.06))',
                     border: '1px solid rgba(212,160,23,0.25)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem',
+                    transition: 'transform .4s cubic-bezier(.16,1,.3,1)',
                   }}>
                     {s.icon}
                   </div>
@@ -120,26 +139,39 @@ export default async function ServiciosPage() {
                       {s.desc.slice(0, 100)}{s.desc.length > 100 ? '…' : ''}
                     </p>
                   )}
-                  <span style={{
+                  <span className="srv-list-more" style={{
                     display: 'inline-flex', alignItems: 'center', gap: 6,
                     color: '#f5c842', fontSize: '0.82rem', fontWeight: 700,
                   }}>
-                    Ver más →
+                    Ver más <span className="srv-list-arrow" style={{ transition: 'transform .3s cubic-bezier(.16,1,.3,1)', display: 'inline-block' }}>→</span>
                   </span>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
         <style>{`
           .srv-list-card:hover {
-            border-color: rgba(212,160,23,0.35) !important;
+            border-color: rgba(212,160,23,0.45) !important;
             background: rgba(212,160,23,0.06) !important;
             transform: translateY(-4px);
           }
+          /* Foto del servicio: oculta en reposo, emerge con zoom suave al hover */
+          .srv-list-photo { opacity: 0; transform: scale(1.08); transition: opacity .5s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1); }
+          .srv-list-card:hover .srv-list-photo { opacity: 1; transform: scale(1); }
+          .srv-list-card:hover .srv-list-med { transform: rotate(-8deg) scale(1.08); }
+          .srv-list-card:hover .srv-list-arrow { transform: translateX(5px); }
           @media(max-width:900px){ .srv-list-grid{ grid-template-columns:1fr 1fr !important; } }
-          @media(max-width:600px){ .srv-list-grid{ grid-template-columns:1fr !important; } }
+          @media(max-width:600px){
+            .srv-list-grid{ grid-template-columns:1fr !important; }
+            /* En móvil no hay hover: la foto se muestra siempre, tenue bajo el velo */
+            .srv-list-photo { opacity: 1; transform: scale(1); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .srv-list-photo, .srv-list-med, .srv-list-arrow { transition: none !important; }
+          }
         `}</style>
       </section>
     </>
