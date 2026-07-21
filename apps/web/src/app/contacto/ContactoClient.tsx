@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import confetti from 'canvas-confetti';
 
 function toPlain(d: Record<string, any>): Record<string, any> {
   const r: Record<string, any> = {};
@@ -63,6 +64,13 @@ export default function ContactoClient({ initialContacto }: { initialContacto?: 
         return;
       }
       setStatus('success');
+      // Celebración dorada: es el momento clave de conversión del sitio
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        confetti({
+          particleCount: 90, spread: 75, origin: { y: 0.6 },
+          colors: ['#d4a017', '#f5c842', '#b8860b', '#ffffff'],
+        });
+      }
       setForm({ nombre: '', telefono: '', correo: '', distrito: '', tipoEvento: '', fechaEvento: '', invitados: '', presupuesto: '', mensaje: '' });
     } catch {
       setStatus('error');
@@ -99,6 +107,22 @@ export default function ContactoClient({ initialContacto }: { initialContacto?: 
     display: 'block', fontSize: '0.63rem', fontWeight: 700, textTransform: 'uppercase',
     letterSpacing: '.12em', color: 'rgba(255,255,255,0.32)', marginBottom: 6,
   };
+
+  // Check dorado que confirma cada campo obligatorio válido — feedback
+  // inmediato que reduce el abandono del formulario.
+  const valids = {
+    nombre: form.nombre.trim().length >= 2,
+    telefono: form.telefono.replace(/\D/g, '').length >= 6,
+    correo: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo),
+  };
+  const validMark = (ok: boolean) => ok ? (
+    <span aria-hidden="true" style={{
+      position: 'absolute', right: 12, bottom: 13, color: '#f5c842',
+      fontSize: '0.85rem', lineHeight: 1, pointerEvents: 'none',
+      animation: 'cpPop .35s cubic-bezier(0.34,1.56,0.64,1)',
+      textShadow: '0 0 10px rgba(245,200,66,0.6)',
+    }}>✦</span>
+  ) : null;
 
   return (
     <>
@@ -423,20 +447,23 @@ export default function ContactoClient({ initialContacto }: { initialContacto?: 
                       tabIndex={-1} autoComplete="off" aria-hidden="true"
                       style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
                     <div className="cp-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                      <div>
+                      <div style={{ position: 'relative' }}>
                         <label style={lbl} htmlFor="nombre">Nombre *</label>
-                        <input type="text" placeholder="Tu nombre completo" style={inp} required
+                        <input type="text" placeholder="Tu nombre completo" style={{ ...inp, paddingRight: '2.2rem' }} required
                           {...field('nombre')} onFocus={onF} onBlur={onB} />
+                        {validMark(valids.nombre)}
                       </div>
-                      <div>
+                      <div style={{ position: 'relative' }}>
                         <label style={lbl} htmlFor="telefono">Teléfono *</label>
-                        <input type="tel" placeholder="+51 945 000 000" style={inp} required
+                        <input type="tel" placeholder="+51 945 000 000" style={{ ...inp, paddingRight: '2.2rem' }} required
                           {...field('telefono')} onFocus={onF} onBlur={onB} />
+                        {validMark(valids.telefono)}
                       </div>
-                      <div>
+                      <div style={{ position: 'relative' }}>
                         <label style={lbl} htmlFor="correo">Correo electrónico *</label>
-                        <input type="email" placeholder="tu@correo.com" style={inp} required suppressHydrationWarning
+                        <input type="email" placeholder="tu@correo.com" style={{ ...inp, paddingRight: '2.2rem' }} required suppressHydrationWarning
                           {...field('correo')} onFocus={onF} onBlur={onB} />
+                        {validMark(valids.correo)}
                       </div>
                       <div>
                         <label style={lbl} htmlFor="distrito">Distrito</label>
@@ -532,6 +559,7 @@ export default function ContactoClient({ initialContacto }: { initialContacto?: 
           .cp-form-row > [style*="span 2"]{ grid-column: span 1 !important; }
         }
         @keyframes cpSpin  { to{ transform:rotate(360deg) } }
+        @keyframes cpPop   { from{ transform:scale(0); opacity:0 } to{ transform:scale(1); opacity:1 } }
         @keyframes ringRot { from{transform:translate(-50%,-50%) rotate(0deg)} to{transform:translate(-50%,-50%) rotate(360deg)} }
         @keyframes shimmer { from{background-position:0% center} to{background-position:200% center} }
         @keyframes successPop { 0%{transform:scale(0.5);opacity:0} 100%{transform:scale(1);opacity:1} }

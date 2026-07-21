@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import VideoSoundControl from '@/components/ui/VideoSoundControl';
+import DividerJM from '@/components/ui/DividerJM';
 
 interface AboutProps { data: Record<string,any>; }
 
@@ -67,6 +68,8 @@ export default function AboutSection({ data }: AboutProps) {
     <section ref={sectionRef} id="nosotros"
       style={{ padding:'7rem 0', background:'#fff', position:'relative', overflow:'hidden' }}
       className="about-section">
+
+      <DividerJM tone="light" />
 
       {/* ── Fondo atmosférico ── */}
       <div style={{ position:'absolute', inset:0, pointerEvents:'none', overflow:'hidden' }}>

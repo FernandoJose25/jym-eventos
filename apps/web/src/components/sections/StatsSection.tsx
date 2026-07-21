@@ -30,7 +30,8 @@ function Stat({ prefix, num, suffix, label, sub, started, idx }:
     <div className={`reveal stagger-${idx+1}`} style={{ textAlign:'center' }}>
       <p className="stat-number"
          style={{ fontFamily:'var(--font-playfair)', fontSize:'clamp(2.25rem,4vw,3.25rem)',
-                   fontWeight:700, color:'#f5c842', margin:'0 0 6px', lineHeight:1 }}>
+                   fontWeight:700, color:'#f5c842', margin:'0 0 6px', lineHeight:1,
+                   textShadow:'0 0 28px rgba(245,200,66,0.35)' }}>
         {prefix}{started ? displayed : 0}{suffix}
       </p>
       <p style={{ color:'#fff', fontWeight:600, fontSize:'0.95rem', margin:'0 0 4px' }}>{label}</p>

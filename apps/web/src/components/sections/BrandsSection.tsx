@@ -1,5 +1,6 @@
 'use client';
 import Image from 'next/image';
+import DividerJM from '@/components/ui/DividerJM';
 
 const DEFAULT_BRANDS = [
   { name:'Telecable Smart',   logo:'📡' },
@@ -21,6 +22,7 @@ export default function BrandsSection({ data }: { data: any }) {
     <section style={{ padding:'5.5rem 0 4rem', background:'linear-gradient(180deg,#0a1628 0%,#050d1a 100%)',
                        borderBottom:'1px solid rgba(212,160,23,0.12)',
                        position:'relative', overflow:'hidden' }}>
+      <DividerJM tone="dark" />
       <div style={{ textAlign:'center', marginBottom:'2.5rem', padding:'0 1rem' }}>
         <p style={{ fontSize:'0.75rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.22em', color:'rgba(255,255,255,0.45)' }}>
           {h2}
