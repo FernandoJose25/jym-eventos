@@ -174,6 +174,10 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
   const [bounce, setBounce] = useState<'top' | 'bottom' | null>(null); // rebote en los extremos
   const mediaBoxRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  // Una vez el gesto en curso se decide como swipe vertical (en touchmove),
+  // se marca aquí para no volver a evaluar dx/dy en touchend — decidir una
+  // sola vez evita que el mismo gesto se re-interprete a mitad de camino.
+  const swipeAxisRef = useRef<'vertical' | 'horizontal' | null>(null);
   const { scale: imgScale, x: imgX, y: imgY, isZoomed: imgZoomed, handlers: imgZoomHandlers } = useZoomPan(mediaBoxRef);
   // Zoom del VIDEO activo: vive en un useZoomPan distinto dentro de
   // CustomVideoPlayer (cada video tiene su propia caja/aspect-ratio), así
@@ -181,7 +185,14 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
   // Sin esto, el guard de swipe de abajo solo miraba imgZoomed y dejaba
   // navegar de slide en medio de un pan sobre un video ampliado.
   const [videoZoomed, setVideoZoomed] = useState(false);
+  // Ref espejo del estado de arriba: el guard de touchend necesita leer el
+  // valor MÁS RECIENTE de forma síncrona. Si dependiera del useState directo,
+  // un usuario que suelta el pinch y de inmediato hace swipe podía colarse
+  // antes de que React re-renderizara con isZoomed=true, dejando pasar un
+  // swipe de navegación en medio de lo que debía seguir siendo zoom.
+  const mediaZoomedRef = useRef(false);
   const mediaZoomed = imgZoomed || videoZoomed;
+  useEffect(() => { mediaZoomedRef.current = mediaZoomed; }, [mediaZoomed]);
 
   useEffect(() => {
     const CACHE_KEY = 'jym_gallery_cache_v1';
@@ -350,25 +361,58 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
     return () => clearTimeout(t);
   }, [bounce]);
 
-  // Swipe vertical (solo mobile, solo si el medio activo no está en zoom)
+  // Swipe vertical (solo mobile, solo si el medio activo no está en zoom).
+  //
+  // El eje del gesto (vertical vs horizontal) se decide en touchMOVE, no en
+  // touchEND: antes se esperaba a que el usuario soltara el dedo para recién
+  // ahí mirar dx/dy, así que durante todo el arrastre el navegador seguía
+  // scrolleando la página de fondo en paralelo — de ahí el choque entre
+  // swipe y scroll. Ahora, apenas el gesto se confirma vertical (superado un
+  // pequeño umbral), se llama preventDefault() de inmediato para tomar el
+  // control del gesto ahí mismo, igual que ya hace useZoomPan con el pan.
+  const AXIS_LOCK_THRESHOLD = 10; // px antes de decidir el eje del gesto
+
   const onLightboxTouchStart = (e: React.TouchEvent) => {
-    if (mediaZoomed || e.touches.length !== 1) return;
+    swipeAxisRef.current = null;
+    if (mediaZoomedRef.current || e.touches.length !== 1) return;
     const t = e.touches[0];
     touchStartRef.current = { x: t.clientX, y: t.clientY, time: Date.now() };
     if (showHint) dismissHint();
   };
+  const onLightboxTouchMove = (e: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    if (!start || mediaZoomedRef.current || e.touches.length !== 1) return;
+    if (swipeAxisRef.current) {
+      if (swipeAxisRef.current === 'vertical') e.preventDefault();
+      return;
+    }
+    const t = e.touches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.hypot(dx, dy) < AXIS_LOCK_THRESHOLD) return; // aún muy corto para decidir
+    swipeAxisRef.current = Math.abs(dy) > Math.abs(dx) ? 'vertical' : 'horizontal';
+    if (swipeAxisRef.current === 'vertical') e.preventDefault();
+  };
   const onLightboxTouchEnd = (e: React.TouchEvent) => {
     const start = touchStartRef.current;
+    const axis = swipeAxisRef.current;
     touchStartRef.current = null;
-    if (!start || mediaZoomed) return;
+    swipeAxisRef.current = null;
+    if (!start || mediaZoomedRef.current) return;
+    if (axis === 'horizontal') return; // se decidió horizontal en el move: no navegar
     const t = e.changedTouches[0]; if (!t) return;
     const dx = t.clientX - start.x;
     const dy = t.clientY - start.y;
     const dt = Date.now() - start.time;
-    if (Math.abs(dx) > Math.abs(dy)) return; // gesto más horizontal que vertical: ignorar
+    if (Math.abs(dx) > Math.abs(dy)) return; // salvaguarda: gesto corto que nunca cruzó el umbral de eje
     const dist = Math.abs(dy);
     const speed = dist / Math.max(dt, 1);
-    const isSwipe = dist > 60 || (dist > 30 && speed > 0.5);
+    // En video el dedo compite con más gestos propios (seek, play/pausa) que
+    // en una imagen estática, así que exigimos un swipe más claro antes de
+    // navegar — evita que un intento de pausar/seek se lea como cambio de
+    // slide por error.
+    const threshold = isVideo(visibles[lightbox!]) ? { min: 90, fast: 45 } : { min: 60, fast: 30 };
+    const isSwipe = dist > threshold.min || (dist > threshold.fast && speed > 0.5);
     if (!isSwipe) return;
     goToSlide(dy < 0 ? 1 : -1); // arriba = siguiente, abajo = anterior
   };
@@ -772,6 +816,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
         }}
           onClick={() => setLightbox(null)}
           onTouchStart={isTouch ? onLightboxTouchStart : undefined}
+          onTouchMove={isTouch ? onLightboxTouchMove : undefined}
           onTouchEnd={isTouch ? onLightboxTouchEnd : undefined}>
 
           {/* Botón cerrar — siempre arriba a la derecha */}

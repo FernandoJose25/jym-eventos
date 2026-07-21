@@ -8,6 +8,12 @@ const RESET_THRESHOLD = 1.05;
 const DOUBLE_TAP_MS = 300;
 const DOUBLE_TAP_DIST = 30;
 const PAN_START_THRESHOLD = 10; // px de movimiento antes de considerarlo pan y no un tap
+// Franja central de la caja donde un doble-tap hace zoom. Fuera de esta
+// franja (los bordes izq/der) el doble-tap se reserva para otro gesto (ej.
+// adelantar/retroceder video) — así el doble-tap de zoom y el doble-tap
+// lateral nunca compiten por el mismo toque, sin depender de quién gane la
+// carrera de temporizadores.
+const ZOOM_TAP_ZONE = 0.6;
 
 interface Point { x: number; y: number }
 
@@ -183,10 +189,21 @@ export function useZoomPan(containerRef: React.RefObject<HTMLElement | null>) {
 
       if (isDoubleTap) {
         lastTap.current = null;
+        // Si ya está en zoom, el doble-tap SIEMPRE resetea sin importar dónde
+        // caiga — necesitas poder salir del zoom tocando cualquier parte.
+        // Si NO está en zoom, solo hace zoom-in cuando el toque cae en la
+        // franja central: en los bordes, dejamos el gesto libre para que el
+        // consumidor (ej. seek de video) lo use sin que compitamos por él.
         if (isZoomed || scale.get() > RESET_THRESHOLD) {
           reset();
         } else {
-          zoomAt({ x: t.clientX, y: t.clientY }, 2);
+          const el = containerRef.current;
+          const rect = el?.getBoundingClientRect();
+          const inZoomZone = !rect || (
+            t.clientX > rect.left + rect.width * (1 - ZOOM_TAP_ZONE) / 2 &&
+            t.clientX < rect.right - rect.width * (1 - ZOOM_TAP_ZONE) / 2
+          );
+          if (inZoomZone) zoomAt({ x: t.clientX, y: t.clientY }, 2);
         }
       } else {
         lastTap.current = { time: now, x: t.clientX, y: t.clientY };

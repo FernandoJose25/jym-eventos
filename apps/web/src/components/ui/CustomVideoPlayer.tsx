@@ -252,6 +252,13 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
   // = +5s, tap izquierdo = -5s. Un solo tap conserva el comportamiento
   // original (togglePlay/bump), con un pequeño delay para poder distinguirlo
   // de un doble-tap.
+  //
+  // Solo dispara en el 20% más externo de cada lado — el 60% central es la
+  // "zona de zoom" que useZoomPan reclama para su propio doble-tap (ver
+  // ZOOM_TAP_ZONE). Antes ambos hooks escuchaban el mismo touchend y corrían
+  // en paralelo: un doble-tap a la derecha hacía zoom Y adelantaba 5s a la
+  // vez porque nada los excluía mutuamente. Repartir el gesto por zona fija
+  // el conflicto en el origen, sin depender de quién "gane" el timing.
   const handleVideoTouchEnd = (e: React.TouchEvent) => {
     if (isZoomed) return; // en zoom, el doble-tap lo maneja useZoomPan (reset)
     const t = e.changedTouches[0]; if (!t) return;
@@ -264,7 +271,9 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
       lastVideoTapRef.current = null;
       const rect = wrapRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const isRight = (t.clientX - rect.left) > rect.width / 2;
+      const relX = (t.clientX - rect.left) / rect.width;
+      if (relX >= 0.2 && relX <= 0.8) return; // zona central: es doble-tap de zoom, no de seek
+      const isRight = relX > 0.5;
       skip(isRight ? 5 : -5, isRight ? 'right' : 'left');
     } else {
       lastVideoTapRef.current = { time: now, x: t.clientX };
@@ -350,11 +359,29 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
       <motion.div
         ref={mediaBoxRef}
         {...(isTouch && gestosListos ? {
-          onTouchStart: (e: React.TouchEvent) => { sp(e); zoomHandlers.onTouchStart(e); },
-          onTouchMove: (e: React.TouchEvent) => { sp(e); zoomHandlers.onTouchMove(e); },
-          onTouchEnd: (e: React.TouchEvent) => { sp(e); zoomHandlers.onTouchEnd(e); handleVideoTouchEnd(e); },
+          // `sp()` (stopPropagation) SOLO se aplica mientras hay zoom activo o
+          // el gesto es un pinch de 2 dedos — ahí el video se queda con el
+          // gesto por completo (pan/pinch). Un swipe vertical de 1 dedo para
+          // cambiar de slide, en cambio, debe seguir subiendo al lightbox
+          // padre sin cortar: antes `sp()` se llamaba incondicionalmente en
+          // todo touchmove/touchend, así que el padre nunca se enteraba de
+          // que había un swipe en curso sobre un video — el gesto de
+          // "avanzar/retroceder" simplemente no llegaba a dispararse.
+          onTouchStart: (e: React.TouchEvent) => {
+            if (isZoomed || e.touches.length === 2) sp(e);
+            zoomHandlers.onTouchStart(e);
+          },
+          onTouchMove: (e: React.TouchEvent) => {
+            if (isZoomed || e.touches.length === 2) sp(e);
+            zoomHandlers.onTouchMove(e);
+          },
+          onTouchEnd: (e: React.TouchEvent) => {
+            if (isZoomed) sp(e);
+            zoomHandlers.onTouchEnd(e);
+            handleVideoTouchEnd(e);
+          },
         } : isTouch ? {
-          onTouchEnd: (e: React.TouchEvent) => { sp(e); handleVideoTouchEnd(e); },
+          onTouchEnd: (e: React.TouchEvent) => { handleVideoTouchEnd(e); },
         } : {})}
         style={fullBleed ? {
           position: 'relative',
@@ -362,6 +389,12 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
           height: '100%',
           maxWidth: '100%',
           aspectRatio: videoAspect ?? undefined,
+          // Sin metadata aún no hay un ratio correcto que reservar (uno por
+          // defecto igual "saltaría" si el video real es distinto) — en vez
+          // de eso, se transiciona el cambio de tamaño una vez llega la
+          // metadata real, para que se sienta como un ajuste suave y no un
+          // salto instantáneo del contenido.
+          transition: 'aspect-ratio 0.25s ease-out',
           scale, x: panX, y: panY,
           touchAction: isTouch && gestosListos ? 'none' : 'auto',
         } : {
