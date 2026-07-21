@@ -110,7 +110,17 @@ export default function WatermarkBatchModal({ items, onApplyOne, onClose }: Prop
 
     const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
       ? 'video/webm;codecs=vp9,opus' : 'video/webm';
-    const recorder = new MediaRecorder(canvasStream, { mimeType, videoBitsPerSecond: 5_000_000 });
+    // Mismo tope que en VideoEditorModal: regrabar por encima del bitrate del
+    // original solo infla el peso sin ganar calidad. Piso de 1 Mbps.
+    let sourceBps = Infinity;
+    try {
+      const srcBlob = await (await fetch(video.currentSrc)).blob();
+      if (video.duration > 0) sourceBps = (srcBlob.size * 8) / video.duration;
+    } catch { /* sin medida de la fuente, se queda el tope fijo de 5 Mbps */ }
+    const recorder = new MediaRecorder(canvasStream, {
+      mimeType,
+      videoBitsPerSecond: Math.round(Math.min(5_000_000, Math.max(sourceBps, 1_000_000))),
+    });
     const chunks: Blob[] = [];
     recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
     const recordingDone = new Promise<Blob>(resolve => {

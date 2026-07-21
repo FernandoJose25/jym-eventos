@@ -38,6 +38,9 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
   const [processing, setProcessing] = useState(false);
   const [progressPct, setProgressPct] = useState(0);
   const [error, setError] = useState('');
+  // Peso y bitrate del archivo fuente, para avisar cuando viene crudo del
+  // celular (graban a 20+ Mbps priorizando no perder nada, no el peso web).
+  const [srcInfo, setSrcInfo] = useState<{ mb: number; mbps: number } | null>(null);
 
   useEffect(() => {
     const img = new Image();
@@ -49,6 +52,15 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
     const v = videoRef.current!;
     setDims({ w: v.videoWidth, h: v.videoHeight });
     setVideoLoaded(true);
+    if (v.duration > 0) {
+      fetch(src)
+        .then(r => r.blob())
+        .then(b => setSrcInfo({
+          mb: b.size / 1024 / 1024,
+          mbps: (b.size * 8) / v.duration / 1_000_000,
+        }))
+        .catch(() => {});
+    }
   };
 
   const cssFilter = `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturate}%)`;
@@ -101,9 +113,24 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
       const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
         ? 'video/webm;codecs=vp9,opus'
         : 'video/webm';
+
+      // El bitrate objetivo se limita al bitrate del archivo ORIGINAL: regrabar
+      // por encima de él solo infla el peso sin ganar calidad (la información
+      // que no está en la fuente no se puede inventar — un video de 15 MB a
+      // "calidad 100%" terminaba pesando 73 MB idéntico a la vista). Piso de
+      // 1 Mbps para no destrozar fuentes ya muy comprimidas.
+      let sourceBps = Infinity;
+      try {
+        const blob = await (await fetch(src)).blob();
+        if (video.duration > 0) sourceBps = (blob.size * 8) / video.duration;
+      } catch { /* si no se puede medir, se usa solo la fórmula del slider */ }
+      const targetBps = Math.round(
+        Math.min(2_000_000 + quality * 6_000_000, Math.max(sourceBps, 1_000_000)),
+      );
+
       const recorder = new MediaRecorder(canvasStream, {
         mimeType,
-        videoBitsPerSecond: Math.round(2_000_000 + quality * 6_000_000),
+        videoBitsPerSecond: targetBps,
       });
       const chunks: Blob[] = [];
       recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
@@ -290,6 +317,22 @@ export default function VideoEditorModal({ src, onApply, onSkip }: Props) {
             border: '1px solid #fecaca', borderRadius: 8, padding: '6px 10px',
           }}>
             ❌ {error}
+          </p>
+        )}
+
+        {/* Aviso de video pesado: grabaciones directas de celular vienen a
+            20+ Mbps — en la web eso solo hace lenta la página, no se ve
+            mejor. "Procesar y subir" (aunque no toques ningún filtro) lo
+            comprime a un bitrate web sin pérdida visible. */}
+        {!processing && srcInfo && srcInfo.mbps > 8 && (
+          <p style={{
+            margin: '0.5rem 1.5rem 0', fontSize: '0.78rem', color: '#92400e', background: '#fffbeb',
+            border: '1px solid #fde68a', borderRadius: 8, padding: '6px 10px',
+          }}>
+            ⚠️ Este video pesa <strong>{srcInfo.mb.toFixed(0)} MB</strong> ({srcInfo.mbps.toFixed(0)} Mbps
+            — típico de grabación directa de celular). Subirlo así hará lenta la página y no se
+            verá mejor. Usa <strong>“✓ Procesar y subir”</strong> (sin tocar nada más) para
+            comprimirlo sin pérdida visible de calidad.
           </p>
         )}
 

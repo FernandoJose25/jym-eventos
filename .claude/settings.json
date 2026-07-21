@@ -17,7 +17,10 @@
       "Bash(node -e ' *)",
       "Bash(powershell -Command \"Stop-Process -Id 13280 -Force\")",
       "Bash(powershell -Command \"Start-Process 'http://localhost:3010/servicios/hora-loca'\")",
-      "Bash(curl -s http://localhost:3010/servicios/hora-loca -o /tmp/hora-loca.html)"
+      "Bash(curl -s http://localhost:3010/servicios/hora-loca -o /tmp/hora-loca.html)",
+      "Bash(ffmpeg -version)",
+      "Bash(npm init *)",
+      "Bash(curl -sL -o \"C:/Users/FERNAN~1/AppData/Local/Temp/claude/c--Users-Fernando-Jose-Documents-proyectos-jose-jym-eventos-v2-completo/fe118465-4f12-4bfb-946a-4f8ab10f0d42/scratchpad/hero-original.mov\" \"https://storage.googleapis.com/jym-eventos.firebasestorage.app/migrado-cloudinary/servicios/bv-vogue/qtpahovx0rfzijiybckx.mov\")"
     ]
   }
 }
