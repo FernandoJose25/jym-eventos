@@ -1,18 +1,26 @@
 'use client';
 import { motion } from 'framer-motion';
+import dynamic from 'next/dynamic';
+// Cargadas de inmediato: son lo primero que se ve al abrir la home, así que
+// deben estar en el bundle inicial (arriba del pliegue).
 import HeroSection         from '@/components/sections/HeroSection';
 import StatsSection        from '@/components/sections/StatsSection';
-import ServicesSection     from '@/components/sections/ServicesSection';
-import WhyUsSection        from '@/components/sections/WhyUsSection';
-import GallerySection      from '@/components/sections/GallerySection';
-import AboutSection        from '@/components/sections/AboutSection';
-import TestimonialsSection from '@/components/sections/TestimonialsSection';
-import FaqSection          from '@/components/sections/FaqSection';
-import CotizadorSection     from '@/components/sections/CotizadorSection';
-import StoriesSection        from '@/components/sections/StoriesSection';
-import TransformacionesSection from '@/components/sections/TransformacionesSection';
-import BrandsSection       from '@/components/sections/BrandsSection';
-import ContactSection      from '@/components/sections/ContactSection';
+import StoriesSection      from '@/components/sections/StoriesSection';
+// El resto se difiere con next/dynamic: no descargan ni ejecutan su JS hasta
+// que hacen falta, lo que aligera muchísimo la carga inicial en móviles de
+// gama media (era la causa de la lentitud percibida en celular, no las
+// imágenes ni el caché). Todas se renderizan igual al hacer scroll gracias
+// al wrapper <Section> con whileInView.
+const ServicesSection        = dynamic(() => import('@/components/sections/ServicesSection'));
+const WhyUsSection           = dynamic(() => import('@/components/sections/WhyUsSection'));
+const GallerySection         = dynamic(() => import('@/components/sections/GallerySection'));
+const AboutSection           = dynamic(() => import('@/components/sections/AboutSection'));
+const TestimonialsSection    = dynamic(() => import('@/components/sections/TestimonialsSection'));
+const FaqSection             = dynamic(() => import('@/components/sections/FaqSection'));
+const CotizadorSection       = dynamic(() => import('@/components/sections/CotizadorSection'));
+const TransformacionesSection = dynamic(() => import('@/components/sections/TransformacionesSection'));
+const BrandsSection          = dynamic(() => import('@/components/sections/BrandsSection'));
+const ContactSection         = dynamic(() => import('@/components/sections/ContactSection'));
 import type { HomeData }   from '@/lib/homeData';
 
 // Wrapper con animación de entrada al scroll (fade + slide suave, sin rebote)
