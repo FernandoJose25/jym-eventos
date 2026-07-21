@@ -45,7 +45,7 @@ export default function WhatsAppFloat({ phone }: { phone: string }) {
       </a>
 
       {/* Ping exterior */}
-      <div style={{
+      <div className="float-y-ping" style={{
         position:'fixed', bottom:'calc(2rem - 4px)', right:'calc(2rem - 4px)',
         zIndex:998, width:66, height:66, borderRadius:'50%',
         border:'2px solid rgba(37,211,102,0.4)',
@@ -58,6 +58,13 @@ export default function WhatsAppFloat({ phone }: { phone: string }) {
           0%   { transform: scale(1); opacity: .6; }
           70%  { transform: scale(1.4); opacity: 0; }
           100% { transform: scale(1.4); opacity: 0; }
+        }
+        /* Ocultar la burbuja (y su ping) mientras hay un lightbox/visor abierto
+           — galería, Stories, álbumes: todos ponen .lightbox-open en <html> vía
+           useLockBodyScroll. Antes tapaba el botón "Compartir" del lightbox. */
+        html.lightbox-open .float-y,
+        html.lightbox-open .float-y-ping {
+          display: none !important;
         }
       `}</style>
     </>

@@ -191,13 +191,14 @@ export default function UsuariosPage() {
         </div>
       )}
 
-      <div className="admin-card" style={{ overflow:'hidden' }}>
+      <div className="admin-card">
         {loading ? (
           <div style={{ padding:'1rem', display:'flex', flexDirection:'column', gap:10 }}>
             {[...Array(3)].map((_,i)=><div key={i} className="skeleton" style={{ height:64, borderRadius:8 }}/>)}
           </div>
         ) : (
-          <table className="admin-table">
+          <div className="admin-table-wrapper">
+          <table className="admin-table" style={{ minWidth: 640 }}>
             <thead><tr><th>Usuario</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Creado</th><th></th></tr></thead>
             <tbody>
               {usuarios.map(u => {
@@ -287,6 +288,7 @@ export default function UsuariosPage() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

@@ -257,11 +257,16 @@ h1 em, h2 em {
    la esquina; encima de una foto/video del lightbox estorba la vista. La clase
    `lightbox-open` la pone/quita useLockBodyScroll en <html>. Los selectores
    cubren las variantes que usa el widget (id/clase con prefijo wbwacw/wacw). */
-html.lightbox-open [id^="wbwacw"],
-html.lightbox-open [class^="wbwacw"],
-html.lightbox-open [class*=" wbwacw"],
-html.lightbox-open [id^="wacw"],
-html.lightbox-open [class^="wacw"],
-html.lightbox-open [class*=" wacw"] {
+html.lightbox-open [id*="wbwacw"],
+html.lightbox-open [class*="wbwacw"],
+html.lightbox-open [id*="wacw"],
+html.lightbox-open [class*="wacw"],
+html.lightbox-open [id*="whatsbox"],
+html.lightbox-open [class*="whatsbox"],
+html.lightbox-open iframe[src*="whatsbox"],
+/* Último recurso: cualquier elemento fijo del widget en la esquina inferior
+   derecha que no cayó en los selectores de arriba (el widget de terceros a
+   veces cambia sus nombres de clase entre versiones). */
+html.lightbox-open iframe[src*="wacw"] {
   display: none !important;
 }
