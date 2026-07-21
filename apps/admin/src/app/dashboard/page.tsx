@@ -174,7 +174,7 @@ export default function DashboardPage() {
         {[
           { label: 'Gestionar servicios', icon: '🎉', href: '/dashboard/servicios' },
           { label: 'Galería de fotos',    icon: '🖼️', href: '/dashboard/galeria' },
-          { label: 'Testimonios',         icon: '⭐', href: '/dashboard/testimonios' },
+          { label: 'Testimonios',         icon: '⭐', href: '/dashboard/configuracion?s=testimonios' },
           { label: 'Configuración web',   icon: '⚙️', href: '/dashboard/configuracion' },
         ].map(item => (
           <Link key={item.href} href={item.href} style={{ textDecoration: 'none' }}>

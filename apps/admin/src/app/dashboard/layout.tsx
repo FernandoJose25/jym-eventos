@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Image, MessageSquare,
   Palette, Users, LogOut, Menu, X,
   ChevronRight, Briefcase, Bell, ChevronDown, Layers, Globe, BarChart2, Camera, Share2,
-  PartyPopper,
+  PartyPopper, Star,
 } from 'lucide-react';
 import { SERVICE_ICONS } from '@/lib/serviceIcons';
 
@@ -18,6 +18,7 @@ const NAV = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', group: 'principal' },
   { href: '/dashboard/servicios', icon: Briefcase, label: 'Servicios', group: 'contenido' },
   { href: '/dashboard/galeria', icon: Image, label: 'Galería', group: 'contenido' },
+  { href: '/dashboard/configuracion?s=testimonios', icon: Star, label: 'Testimonios', group: 'contenido' },
   { href: '/dashboard/camara-invitado', icon: Camera, label: 'Cámara Invitado', group: 'contenido' },
   { href: '/dashboard/redes-sociales', icon: Share2, label: 'Redes Sociales', group: 'contenido' },
   { href: '/dashboard/analiticas', icon: BarChart2, label: 'Métricas', group: 'contenido' },
@@ -36,6 +37,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [sideOpen, setSideOpen] = useState(false);
+  // Sección activa dentro de /configuracion (?s=…). Se lee del window en lugar
+  // de useSearchParams porque este último obliga a envolver el layout en
+  // <Suspense> o rompe el build estático (páginas del dashboard prerenderadas).
+  // Cosmético (solo el highlight/label del sidebar), así que basta con
+  // recalcularlo en cada navegación vía pathname.
+  const [sectionParam, setSectionParam] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setSectionParam(new URLSearchParams(window.location.search).get('s'));
+    }
+  }, [pathname]);
 
   useEffect(() => {
     document.body.style.overflow = sideOpen ? 'hidden' : '';
@@ -104,7 +116,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {label}
               </p>
               {items.map(({ href, icon: Icon, label: lbl, badge }) => {
-                const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+                // Separar la ruta base del query string: el highlight tiene que
+                // distinguir "Configuración" (…/configuracion) de "Testimonios"
+                // (…/configuracion?s=testimonios), que comparten pathname.
+                const [hrefPath, hrefQuery] = href.split('?');
+                const hrefSection = hrefQuery ? new URLSearchParams(hrefQuery).get('s') : null;
+                const pathMatch = pathname === hrefPath || (hrefPath !== '/dashboard' && pathname.startsWith(hrefPath));
+                const active = hrefSection
+                  ? pathMatch && sectionParam === hrefSection            // item con ?s= → exige esa sección
+                  : hrefPath === '/dashboard/configuracion'
+                    ? pathMatch && sectionParam !== 'testimonios'        // Configuración → activo salvo cuando es Testimonios
+                    : pathMatch;
                 return (
                   <Link key={href} href={href} onClick={() => setSideOpen(false)}
                     style={{
@@ -260,7 +282,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Menu size={20} />
           </button>
           <p className="topbar-label" style={{ flex: 1, fontSize: '0.82rem', color: '#64748b', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {NAV.find(n => n.href === pathname || (n.href !== '/dashboard' && pathname.startsWith(n.href)))?.label || 'Dashboard'}
+            {(() => {
+              // Testimonios comparte pathname con Configuración; se distingue por ?s=
+              if (pathname.startsWith('/dashboard/configuracion') && sectionParam === 'testimonios') return 'Testimonios';
+              return NAV.find(n => {
+                const base = n.href.split('?')[0];
+                return base === pathname || (base !== '/dashboard' && pathname.startsWith(base));
+              })?.label || 'Dashboard';
+            })()}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             {unread > 0 && (
