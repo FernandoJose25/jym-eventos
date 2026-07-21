@@ -105,7 +105,7 @@ export default function VideoSoundControl({ videoRef, position = 'bottom-right' 
                 height: 4, appearance: 'auto',
               }}
             />
-            <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.7)', minWidth: 26, textAlign: 'right' }}>
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', minWidth: 26, textAlign: 'right' }}>
               {muted ? '0%' : `${Math.round(volume * 100)}%`}
             </span>
           </div>

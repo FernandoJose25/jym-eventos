@@ -1,11 +1,17 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/site';
+import { pageOpenGraph } from '@/lib/seo';
 import LegalPageClient from '@/components/ui/LegalPageClient';
 
 export const metadata: Metadata = {
   title: 'Política de Privacidad',
   description: 'Política de privacidad de J&M Decoraciones y Eventos. Cómo recopilamos, usamos y protegemos tu información personal.',
   alternates: { canonical: `${SITE_URL}/privacidad` },
+  openGraph: pageOpenGraph({
+    title: 'Política de Privacidad',
+    description: 'Política de privacidad de J&M Decoraciones y Eventos. Cómo recopilamos, usamos y protegemos tu información personal.',
+    url: `${SITE_URL}/privacidad`,
+  }),
 };
 
 const DEFAULT_SECTIONS = [

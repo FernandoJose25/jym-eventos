@@ -69,7 +69,7 @@ export default function GallerySection({ items }: { items: GalleryItem[] }) {
         <div style={{ display:'inline-flex', alignItems:'center', gap:8, marginBottom:'1rem',
                        padding:'0.35rem 1.25rem', borderRadius:9999,
                        background:'rgba(30,58,95,0.08)', border:'1px solid rgba(30,58,95,0.2)',
-                       color:'#1e3a5f', fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.12em' }}>
+                       color:'#1e3a5f', fontSize:'0.75rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.12em' }}>
           📸 Nuestra Galería
         </div>
         <h2 style={{ color:'#0a1628', fontSize:'clamp(2rem,4vw,3rem)' }}>
@@ -115,7 +115,7 @@ export default function GallerySection({ items }: { items: GalleryItem[] }) {
                 <div style={{ position:'absolute', inset:0,
                                background:'linear-gradient(to top,rgba(10,22,40,0.6) 0%,transparent 50%)' }}>
                   <div style={{ position:'absolute', bottom:16, left:16, right:16 }}>
-                    <span style={{ background:'rgba(212,160,23,0.9)', color:'#0a1628', fontSize:'0.65rem',
+                    <span style={{ background:'rgba(212,160,23,0.9)', color:'#0a1628', fontSize:'0.75rem',
                                     fontWeight:700, padding:'3px 10px', borderRadius:999, textTransform:'uppercase',
                                     letterSpacing:'.08em' }}>
                       {item.categoria || 'Evento J&M'}

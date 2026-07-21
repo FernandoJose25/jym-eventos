@@ -26,7 +26,7 @@ export default function CapybaraLoader({ label = 'Cargando J&M Decoraciones y Ev
           </div>
         </div>
         {label && (
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', letterSpacing: '.1em', textTransform: 'uppercase', fontFamily: 'var(--font-jakarta)', margin: 0 }}>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', letterSpacing: '.1em', textTransform: 'uppercase', fontFamily: 'var(--font-jakarta)', margin: 0 }}>
             {label}
           </p>
         )}

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { adminDb } from '@/lib/firebase-admin';
 import { SITE_URL } from '@/lib/site';
+import { BUSINESS_ADDRESS, metaDescription, getOgLogo, pageOpenGraph } from '@/lib/seo';
 import JsonLd from '@/components/ui/JsonLd';
 import ServicioClient, { SERVICIOS_DATA } from './ServicioClient';
 
@@ -67,22 +68,27 @@ export async function generateMetadata(
   }
 
   const title = data.title;
-  const desc = data.desc || data.detail?.hero_desc || data.hero
-    || `${title} para tu evento en Sechura, Piura. Cotiza gratis con J&M Decoraciones y Eventos.`;
+  const desc = metaDescription(
+    data.desc || data.detail?.hero_desc || data.hero,
+    `${title} para tu evento en Sechura, Piura. Cotiza gratis con J&M Decoraciones y Eventos.`,
+  );
   const img = (data.mediaType === 'image' && data.mediaSrc) ? data.mediaSrc
     : (data.heroMediaType === 'image' && data.heroMediaSrc) ? data.heroMediaSrc
       : data.img;
+  // Servicios cuyo hero es video no tienen imagen propia: cae al logo para
+  // que la tarjeta de WhatsApp/Facebook nunca salga sin foto.
+  const ogImg = img || (await getOgLogo());
 
   return {
     title: `${title} en Sechura, Piura`,
     description: desc,
     alternates: { canonical },
-    openGraph: {
+    openGraph: pageOpenGraph({
       title: `${title} | J&M Decoraciones y Eventos`,
       description: desc,
       url: canonical,
-      images: img ? [{ url: img }] : undefined,
-    },
+      images: ogImg ? [{ url: ogImg }] : undefined,
+    }),
   };
 }
 
@@ -127,6 +133,8 @@ export default async function Page(
       name: 'J&M Decoraciones y Eventos',
       url: SITE_URL,
       telephone: '+51945203708',
+      // Solo ciudad/región a propósito — nunca calle ni coordenadas (ver lib/seo.ts)
+      address: BUSINESS_ADDRESS,
     },
   } : null;
 

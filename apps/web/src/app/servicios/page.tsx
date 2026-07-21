@@ -78,7 +78,7 @@ export default async function ServiciosPage() {
               display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: '1rem',
               padding: '0.4rem 1.5rem', borderRadius: 9999,
               background: 'rgba(212,160,23,0.08)', border: '1px solid rgba(212,160,23,0.25)',
-              color: '#f5c842', fontSize: '0.72rem', fontWeight: 700,
+              color: '#f5c842', fontSize: '0.75rem', fontWeight: 700,
               textTransform: 'uppercase', letterSpacing: '.12em',
             }}>
               🎭 Nuestros Servicios

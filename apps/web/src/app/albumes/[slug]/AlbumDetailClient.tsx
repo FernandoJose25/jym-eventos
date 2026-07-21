@@ -86,7 +86,7 @@ export default function AlbumDetailClient({ fotos }: { fotos: AlbumFoto[] }) {
               {vid && (
                 <div style={{
                   position: 'absolute', top: 10, left: 10, background: 'rgba(10,22,40,0.82)',
-                  color: '#fff', fontSize: '0.7rem', fontWeight: 700,
+                  color: '#fff', fontSize: '0.75rem', fontWeight: 700,
                   padding: '3px 9px', borderRadius: 999, pointerEvents: 'none',
                 }}>
                   🎬 Video
@@ -180,7 +180,7 @@ export default function AlbumDetailClient({ fotos }: { fotos: AlbumFoto[] }) {
                       {fotos[lightbox].alt}
                     </p>
                   )}
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.68rem', margin: '2px 0 0' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: '2px 0 0' }}>
                     {lightbox + 1} / {fotos.length}
                   </p>
                 </div>
@@ -217,7 +217,7 @@ export default function AlbumDetailClient({ fotos }: { fotos: AlbumFoto[] }) {
                         {fotos[lightbox].alt}
                       </p>
                     )}
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.68rem', margin: '2px 0 0' }}>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: '2px 0 0' }}>
                       {lightbox + 1} / {fotos.length}
                     </p>
                   </div>

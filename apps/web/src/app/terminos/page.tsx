@@ -1,11 +1,17 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/site';
+import { pageOpenGraph } from '@/lib/seo';
 import LegalPageClient from '@/components/ui/LegalPageClient';
 
 export const metadata: Metadata = {
   title: 'Términos del Servicio',
   description: 'Términos y condiciones del servicio de J&M Decoraciones y Eventos. Conoce los derechos y obligaciones al contratar nuestros servicios.',
   alternates: { canonical: `${SITE_URL}/terminos` },
+  openGraph: pageOpenGraph({
+    title: 'Términos del Servicio',
+    description: 'Términos y condiciones del servicio de J&M Decoraciones y Eventos. Conoce los derechos y obligaciones al contratar nuestros servicios.',
+    url: `${SITE_URL}/terminos`,
+  }),
 };
 
 const DEFAULT_SECTIONS = [

@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 import { adminDb } from '@/lib/firebase-admin';
 import { SITE_URL } from '@/lib/site';
+import { metaDescription, getOgLogo, pageOpenGraph } from '@/lib/seo';
 import { getAlbumesVisibles } from '@/lib/albums';
 import { cxCard } from '@/lib/cloudinary';
 import GaleriaClient, { type GItem } from './GaleriaClient';
@@ -51,19 +52,27 @@ async function getInitialGalleryItems(): Promise<GItem[]> {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
+  const canonical = `${SITE_URL}/galeria`;
   try {
     const snap = await adminDb.collection('site_config').doc('seo').get();
     const data = snap.exists ? snap.data() ?? {} : {};
+    const title = data.galeriaTitle || DEFAULT_TITLE;
+    const description = metaDescription(data.galeriaDesc, DEFAULT_DESC);
+    const logo = await getOgLogo();
     return {
-      title: data.galeriaTitle || DEFAULT_TITLE,
-      description: data.galeriaDesc || DEFAULT_DESC,
-      alternates: { canonical: `${SITE_URL}/galeria` },
+      title,
+      description,
+      alternates: { canonical },
+      openGraph: pageOpenGraph({
+        title, description, url: canonical,
+        images: logo ? [{ url: logo }] : undefined,
+      }),
     };
   } catch {
     return {
       title: DEFAULT_TITLE,
       description: DEFAULT_DESC,
-      alternates: { canonical: `${SITE_URL}/galeria` },
+      alternates: { canonical },
     };
   }
 }
@@ -125,7 +134,7 @@ export default async function Page() {
                       {album.titulo}
                     </p>
                     {album.tipoEvento && (
-                      <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7rem', margin: '2px 0 0' }}>
+                      <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', margin: '2px 0 0' }}>
                         {album.tipoEvento}
                       </p>
                     )}

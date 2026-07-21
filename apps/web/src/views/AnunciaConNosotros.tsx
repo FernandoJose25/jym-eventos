@@ -233,7 +233,7 @@ function TierCard({ tier, inView, delay }: {
                 ? 'linear-gradient(135deg,#b8860b,#f5c842)'
                 : 'rgba(212,160,23,0.15)',
               color: tier.popular ? '#0a1628' : '#f5c842',
-              fontSize: '0.65rem', fontWeight: 800,
+              fontSize: '0.75rem', fontWeight: 800,
               padding: '0.22rem 0.65rem', borderRadius: 999,
               letterSpacing: '.08em', textTransform: 'uppercase',
               border: tier.popular ? 'none' : '1px solid rgba(212,160,23,0.3)',

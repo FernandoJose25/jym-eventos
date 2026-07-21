@@ -64,7 +64,7 @@ export default function Footer() {
                 <p style={{ color: '#fff', fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: '1.1rem', margin: 0, lineHeight: 1.2 }}>
                   {footer.legalName || 'J&M Decoraciones y Eventos'}
                 </p>
-                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', margin: 0, textTransform: 'uppercase', letterSpacing: '.1em' }}>
+                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: 0, textTransform: 'uppercase', letterSpacing: '.1em' }}>
                   {footer.tagline || 'Sechura'}
                 </p>
               </div>
@@ -80,7 +80,7 @@ export default function Footer() {
           {/* Columna 2 — Servicios */}
           <div>
             <h4 style={{
-              color: '#fff', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase',
+              color: '#fff', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
               letterSpacing: '.12em', marginBottom: 20, paddingBottom: 12,
               borderBottom: '1px solid rgba(255,255,255,0.08)'
             }}>
@@ -96,7 +96,7 @@ export default function Footer() {
                     }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#f5c842'}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.55)'}>
-                    <span style={{ color: '#d4a017', fontSize: '0.6rem' }}>▶</span> {s.title}
+                    <span style={{ color: '#d4a017', fontSize: '0.75rem' }}>▶</span> {s.title}
                   </a>
                 </li>
               ))}
@@ -106,7 +106,7 @@ export default function Footer() {
           {/* Columna 3 — Otros links */}
           <div>
             <h4 style={{
-              color: '#fff', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase',
+              color: '#fff', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
               letterSpacing: '.12em', marginBottom: 20, paddingBottom: 12,
               borderBottom: '1px solid rgba(255,255,255,0.08)'
             }}>
@@ -129,7 +129,7 @@ export default function Footer() {
                     }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#f5c842'}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.55)'}>
-                    <span style={{ color: '#d4a017', fontSize: '0.6rem' }}>▶</span> {label}
+                    <span style={{ color: '#d4a017', fontSize: '0.75rem' }}>▶</span> {label}
                   </a>
                 </li>
               ))}
@@ -139,7 +139,7 @@ export default function Footer() {
           {/* Columna 4 — Contacto */}
           <div>
             <h4 style={{
-              color: '#fff', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase',
+              color: '#fff', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
               letterSpacing: '.12em', marginBottom: 20, paddingBottom: 12,
               borderBottom: '1px solid rgba(255,255,255,0.08)'
             }}>
@@ -160,7 +160,7 @@ export default function Footer() {
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.7)'}>{label}</a>
                       : <p className="footer-contact-value" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.82rem', margin: 0, wordBreak: 'break-word' }}>{label}</p>
                     }
-                    {sub && <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.72rem', margin: '2px 0 0' }}>{sub}</p>}
+                    {sub && <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.75rem', margin: '2px 0 0' }}>{sub}</p>}
                   </div>
                 </div>
               ))}

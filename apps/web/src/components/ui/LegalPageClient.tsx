@@ -46,7 +46,7 @@ export default function LegalPageClient({
       }}>
         <div style={{ position:'absolute', inset:0, backgroundImage:'linear-gradient(rgba(255,255,255,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.015) 1px,transparent 1px)', backgroundSize:'80px 80px', pointerEvents:'none' }}/>
         <div className="container" style={{ position:'relative', zIndex:2, textAlign:'center', padding:'4rem 1.5rem' }}>
-          <span style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'0.4rem 1.25rem', borderRadius:9999, background:'rgba(212,160,23,0.1)', border:'1px solid rgba(212,160,23,0.3)', color:'#d4a017', fontSize:'0.68rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.22em', marginBottom:'1.25rem' }}>
+          <span style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'0.4rem 1.25rem', borderRadius:9999, background:'rgba(212,160,23,0.1)', border:'1px solid rgba(212,160,23,0.3)', color:'#d4a017', fontSize:'0.75rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.22em', marginBottom:'1.25rem' }}>
             {heroBadge}
           </span>
           <h1 style={{ fontFamily:'var(--font-playfair)', fontSize:'clamp(2.5rem,5vw,4rem)', color:'#fff', lineHeight:1.1, fontWeight:700, margin:'0 0 1rem' }}>

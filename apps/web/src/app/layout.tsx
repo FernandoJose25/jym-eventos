@@ -8,9 +8,8 @@ import WhatsAppWidget from '@/components/ui/WhatsAppWidget';
 import JsonLd from '@/components/ui/JsonLd';
 import { Analytics } from '@vercel/analytics/next';
 import { GoogleAnalytics } from '@next/third-parties/google';
-import { adminDb } from '@/lib/firebase-admin';
-import { unstable_cache } from 'next/cache';
 import { SITE_URL } from '@/lib/site';
+import { getOgLogo, BUSINESS_ADDRESS } from '@/lib/seo';
 import './globals.css';
 import '../styles/animations.css';
 
@@ -22,26 +21,12 @@ const jakarta = Plus_Jakarta_Sans({
   weight: ['400', '500', '600', '700'],
 });
 
-async function fetchNavbarLogo(): Promise<string | undefined> {
-  const snap = await adminDb.collection('site_config').doc('navbar').get();
-  return snap.exists ? (snap.data()?.logo || undefined) : undefined;
-}
-
-// Se cachea 1 hora: si Firestore falla momentáneamente en una request puntual,
-// se sigue sirviendo el último logo bueno en vez de quedarse sin ícono (el "mundo" del navegador).
-const getNavbarLogo = unstable_cache(
-  async () => {
-    try { return (await fetchNavbarLogo()) ?? null; } catch { return null; }
-  },
-  ['navbar-logo'],
-  { revalidate: 3600 }
-);
-
 const DEFAULT_TITLE = 'J&M Decoraciones y Eventos — Eventos de Lujo en Sechura, Piura';
-const DEFAULT_DESCRIPTION = 'Especialistas en decoración, ambientación y producción integral de eventos. Convertimos cada celebración en una experiencia elegante y memorable. Cotiza tu evento hoy.';
+// Máx ~150 caracteres: Google trunca descripciones más largas en los resultados
+const DEFAULT_DESCRIPTION = 'Decoración, ambientación y producción integral de eventos en Sechura, Piura. Bodas, quinceaños y fiestas temáticas. Cotiza tu evento hoy.';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const iconUrl = await getNavbarLogo();
+  const iconUrl = await getOgLogo();
 
   // Open Graph por defecto: sin esto, páginas que no definen su propio
   // `openGraph` (home, galería, sobre-nosotros, contacto, etc.) no muestran
@@ -59,7 +44,9 @@ export async function generateMetadata(): Promise<Metadata> {
       template: '%s | J&M Decoraciones y Eventos',
     },
     description: DEFAULT_DESCRIPTION,
-    alternates: { canonical: SITE_URL },
+    // Sin canonical global: cada página define el suyo. Un canonical heredado
+    // apuntando a la home hace que og:url y canonical se contradigan en las
+    // páginas internas (lo detectó la auditoría SEO en 7 páginas).
     verification: {
       google: [
         'MRy0O_zkW6ZNsC_CnEB5krGekfmnAjcB3dKlhxeKwUA',
@@ -89,7 +76,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const logoUrl = await getNavbarLogo();
+  const logoUrl = await getOgLogo();
 
   const localBusinessSchema = {
     '@context': 'https://schema.org',
@@ -98,12 +85,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ...(logoUrl && { image: logoUrl, logo: logoUrl }),
     url: SITE_URL,
     telephone: '+51945203708',
-    address: {
-      '@type': 'PostalAddress',
-      addressLocality: 'Sechura',
-      addressRegion: 'Piura',
-      addressCountry: 'PE',
-    },
+    // Solo ciudad/región a propósito — nunca publicar calle ni coordenadas (ver lib/seo.ts)
+    address: BUSINESS_ADDRESS,
     areaServed: {
       '@type': 'City',
       name: 'Sechura, Piura, Perú',

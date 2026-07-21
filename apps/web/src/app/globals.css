@@ -83,6 +83,17 @@ p { margin: 0; }
   border-radius: 4px;
 }
 
+/* Varios inputs del sitio llevan `outline: none` como estilo inline (para el
+   estado normal), lo que también mata el anillo de foco del teclado. El
+   !important devuelve el indicador SOLO en :focus-visible (navegación por
+   teclado) sin afectar el foco por clic/tap. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-accent) !important;
+  outline-offset: 2px;
+}
+
 /* ── LINKS ──────────────────────────────────────────────────── */
 a { transition: color .2s ease; }
 

@@ -230,7 +230,7 @@ export function ShareBar({ itemId, title, imageUrl, videoUrl }: ShareBarProps) {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
               <div>
-                <p style={{ fontSize: '0.72rem', color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', margin: 0 }}>
+                <p style={{ fontSize: '0.75rem', color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.08em', margin: 0 }}>
                   Compartir
                 </p>
                 <h3 style={{ margin: '4px 0 0', fontSize: '1.1rem', fontWeight: 800, color: '#0a1628', lineHeight: 1.3 }}>
@@ -262,7 +262,7 @@ export function ShareBar({ itemId, title, imageUrl, videoUrl }: ShareBarProps) {
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
               </svg>
               <span style={{
-                flex: 1, fontSize: '0.72rem', color: '#444', overflow: 'hidden',
+                flex: 1, fontSize: '0.75rem', color: '#444', overflow: 'hidden',
                 textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {getShareUrl()}
@@ -271,7 +271,7 @@ export function ShareBar({ itemId, title, imageUrl, videoUrl }: ShareBarProps) {
                 onClick={copyLink}
                 style={{
                   flexShrink: 0, padding: '5px 12px', borderRadius: 8,
-                  border: 'none', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 700,
+                  border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700,
                   background: copied ? '#22c55e' : '#0a1628',
                   color: '#fff', transition: 'all .2s',
                 }}
@@ -304,7 +304,7 @@ export function ShareBar({ itemId, title, imageUrl, videoUrl }: ShareBarProps) {
             {prefetching && shareMedia && (
               <div style={{
                 textAlign: 'center', marginBottom: 10,
-                fontSize: '0.72rem', color: '#888', display: 'flex',
+                fontSize: '0.75rem', color: '#888', display: 'flex',
                 alignItems: 'center', justifyContent: 'center', gap: 6,
               }}>
                 <Spinner color="#888" size={14} />
@@ -345,7 +345,7 @@ export function ShareBar({ itemId, title, imageUrl, videoUrl }: ShareBarProps) {
                     >
                       {isLoading ? <Spinner /> : isPrefetch ? <PrefetchRing>{p.icon}</PrefetchRing> : p.icon}
                     </button>
-                    <span style={{ fontSize: '0.65rem', color: '#666', fontWeight: 600 }}>{p.label}</span>
+                    <span style={{ fontSize: '0.75rem', color: '#666', fontWeight: 600 }}>{p.label}</span>
                   </div>
                 );
               })}
