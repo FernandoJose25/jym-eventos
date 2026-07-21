@@ -6,6 +6,7 @@ import { collection, getDocs, where, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cxHero, cxCard, cxVideo, cxVideoThumb } from '@/lib/cloudinary';
 import { SERVICE_ICONS, isIconKey } from '@/lib/serviceIcons';
+import { getFaqServicio } from '@/lib/faqServicios';
 
 export const SERVICIOS_DATA: Record<string, any> = {
   'shows-infantiles': {
@@ -1293,60 +1294,66 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                       boxShadow: `0 4px 24px rgba(0,0,0,0.35)`,
                       cursor: 'pointer',
                     }}
-                      /* Tilt 3D: el cursor inclina la tarjeta hacia sí y un brillo
-                         sigue el puntero. Se desactiva en táctil vía onMouseMove. */
+                      /* Mismo tilt 3D con parallax por capas y brillo direccional
+                         que las tarjetas de servicios del inicio (ServicesSection). */
                       onMouseMove={e => {
                         if (typeof window !== 'undefined' &&
                           (!window.matchMedia('(hover: hover)').matches ||
                             window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
                         const el = e.currentTarget as HTMLElement;
-                        const r = el.getBoundingClientRect();
-                        const px = (e.clientX - r.left) / r.width;
-                        const py = (e.clientY - r.top) / r.height;
-                        const rotY = (px - 0.5) * 14;
-                        const rotX = (0.5 - py) * 12;
-                        el.style.transform = `perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg) translateY(-8px) scale(1.02)`;
-                        const glare = el.querySelector('.rel-glare') as HTMLElement | null;
-                        if (glare) {
-                          glare.style.opacity = '1';
-                          glare.style.background = `radial-gradient(420px circle at ${px * 100}% ${py * 100}%,rgba(245,200,66,0.20),transparent 55%)`;
+                        const rect = el.getBoundingClientRect();
+                        const w = rect.width, h = rect.height;
+                        const offsetX = 0.52 - (e.clientX - rect.left) / w;
+                        const offsetY = 0.52 - (e.clientY - rect.top) / h;
+                        const dx = (e.clientX - rect.left) - w / 2;
+                        const dy = (e.clientY - rect.top) - h / 2;
+                        const wMultiple = 320 / w;
+                        const yRotate = (offsetX - dx) * (0.07 * wMultiple);
+                        const xRotate = (dy - offsetY) * (0.1 * wMultiple);
+                        const angle = (Math.atan2(dy, dx) * 180 / Math.PI - 90 + 360) % 360;
+                        const opShine = (e.clientY - rect.top) / h * 0.4;
+
+                        el.style.transition = 'transform .2s ease-out, box-shadow .3s ease';
+                        el.style.transform = `rotateX(${xRotate}deg) rotateY(${yRotate}deg) scale3d(1.05,1.05,1.05)`;
+
+                        const shine = el.querySelector('.rel-shine') as HTMLElement | null;
+                        if (shine) {
+                          shine.style.background = `linear-gradient(${angle}deg, rgba(255,255,255,${opShine}) 0%, rgba(255,255,255,0) 80%)`;
+                          shine.style.transform = `translateX(${offsetX * 2 - 0.1}px) translateY(${offsetY * 2 - 0.1}px)`;
                         }
+                        const bg = el.querySelector('.rel-img') as HTMLElement | null;
+                        if (bg) bg.style.transform = `scale(1.08) translateX(${offsetX * 2 * (2.5 / wMultiple)}px) translateY(${offsetY * 2 * (2.5 / wMultiple)}px)`;
+                        const fg = el.querySelector('.rel-fg') as HTMLElement | null;
+                        if (fg) fg.style.transform = `translateZ(30px) translateX(${offsetX * (5 / wMultiple)}px) translateY(${offsetY * 2 * (5 / wMultiple)}px)`;
                       }}
                       onMouseEnter={e => {
                         const el = e.currentTarget as HTMLElement;
-                        el.style.transition = 'transform .18s ease-out, box-shadow .3s ease';
                         el.style.boxShadow = `0 28px 64px rgba(0,0,0,0.55), 0 0 0 1px ${relColor}50`;
-                        const img = el.querySelector('.rel-img') as HTMLElement | null;
-                        if (img) img.style.transform = 'scale(1.08)';
                         const overlay = el.querySelector('.rel-overlay') as HTMLElement | null;
                         if (overlay) overlay.style.opacity = '1';
                         const cta = el.querySelector('.rel-cta') as HTMLElement | null;
-                        if (cta) { cta.style.opacity = '1'; cta.style.transform = 'translateY(0) translateZ(45px)'; }
+                        if (cta) { cta.style.opacity = '1'; cta.style.transform = 'translateY(0)'; }
                         const line = el.querySelector('.rel-topline') as HTMLElement | null;
                         if (line) line.style.transform = 'scaleX(1)';
                       }}
                       onMouseLeave={e => {
                         const el = e.currentTarget as HTMLElement;
-                        el.style.transition = 'transform .6s cubic-bezier(.22,1,.36,1), box-shadow .3s ease';
-                        el.style.transform = 'none';
+                        el.style.transition = 'transform .5s cubic-bezier(.22,1,.36,1), box-shadow .3s ease';
+                        el.style.transform = '';
                         el.style.boxShadow = '0 4px 24px rgba(0,0,0,0.35)';
-                        const img = el.querySelector('.rel-img') as HTMLElement | null;
-                        if (img) img.style.transform = 'scale(1)';
+                        const bg = el.querySelector('.rel-img') as HTMLElement | null;
+                        if (bg) bg.style.transform = '';
+                        const fg = el.querySelector('.rel-fg') as HTMLElement | null;
+                        if (fg) fg.style.transform = '';
+                        const shine = el.querySelector('.rel-shine') as HTMLElement | null;
+                        if (shine) { shine.style.background = ''; shine.style.transform = ''; }
                         const overlay = el.querySelector('.rel-overlay') as HTMLElement | null;
                         if (overlay) overlay.style.opacity = '0';
-                        const glare = el.querySelector('.rel-glare') as HTMLElement | null;
-                        if (glare) glare.style.opacity = '0';
                         const cta = el.querySelector('.rel-cta') as HTMLElement | null;
                         if (cta) { cta.style.opacity = '0'; cta.style.transform = 'translateY(8px)'; }
                         const line = el.querySelector('.rel-topline') as HTMLElement | null;
                         if (line) line.style.transform = 'scaleX(0)';
                       }}>
-
-                      {/* Brillo que sigue al cursor */}
-                      <div className="rel-glare" style={{
-                        position: 'absolute', inset: 0, zIndex: 6, opacity: 0,
-                        transition: 'opacity .3s ease', pointerEvents: 'none', mixBlendMode: 'screen',
-                      }} />
 
                       {/* Gold top accent line */}
                       <div className="rel-topline" style={{
@@ -1360,10 +1367,10 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                       {r.video ? (
                         <video key={r.video} className="rel-img" src={cxVideo(r.video)} poster={relImg ? cxCard(relImg) : undefined}
                           autoPlay muted loop playsInline preload="metadata"
-                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .6s cubic-bezier(.25,.46,.45,.94)' }} />
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform .15s ease-out' }} />
                       ) : relImg ? (
                         <Image className="rel-img" src={cxCard(relImg)} alt={r.title} fill sizes="(max-width: 900px) 100vw, 33vw"
-                          style={{ objectFit: 'cover', transition: 'transform .6s cubic-bezier(.25,.46,.45,.94)' }} />
+                          style={{ objectFit: 'cover', transition: 'transform .15s ease-out' }} />
                       ) : (
                         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,#0c1e30,${relColor}30)` }} />
                       )}
@@ -1393,8 +1400,18 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                           : <span style={{ fontSize: '1.6rem' }}>{r.icon}</span>}
                       </div>
 
-                      {/* Content — bottom */}
-                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1.5rem 1.5rem 1.25rem', zIndex: 5, transform: 'translateZ(30px)' }}>
+                      {/* Brillo direccional que sigue al cursor */}
+                      <div className="rel-shine" style={{
+                        position: 'absolute', inset: 0, zIndex: 6, borderRadius: 22,
+                        pointerEvents: 'none',
+                      }} />
+
+                      {/* Content — bottom (flota con parallax) */}
+                      <div className="rel-fg" style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        padding: '1.5rem 1.5rem 1.25rem', zIndex: 5,
+                        transition: 'transform .1s ease-out', transformStyle: 'preserve-3d',
+                      }}>
                         <h3 style={{
                           fontFamily: 'var(--font-playfair)', color: '#fff',
                           fontSize: '1.1rem', fontWeight: 700,
@@ -1428,7 +1445,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           <style>{`
             /* Sin brillo de cursor donde no hay puntero fino */
             @media (hover: none), (prefers-reduced-motion: reduce) {
-              .rel-glare { display: none !important; }
+              .rel-shine { display: none !important; }
             }
             @media (max-width: 768px) {
               .srv-rel-grid { grid-template-columns: 1fr !important; }
@@ -1444,12 +1461,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           PREGUNTAS FRECUENTES
       ═══════════════════════════════════════════ */}
       {(() => {
-        const faqList = (dt.faq && dt.faq.length > 0) ? dt.faq : [
-          { pregunta: '¿Con cuánta anticipación debo reservar?', respuesta: 'Recomendamos al menos 15 días antes. En temporada alta (julio-diciembre) conviene reservar con 1-2 meses de anticipación para asegurar fecha y disponibilidad.' },
-          { pregunta: '¿Puedo personalizar el paquete según mi presupuesto?', respuesta: 'Sí, armamos una propuesta a medida: puedes agregar o quitar elementos del paquete base según lo que necesites.' },
-          { pregunta: '¿El precio incluye montaje y desmontaje?', respuesta: 'Sí, todo servicio incluye instalación previa y desmontaje al finalizar el evento, sin costo adicional.' },
-          { pregunta: '¿Tienen cobertura fuera de Sechura?', respuesta: 'Sí, atendemos eventos en toda la región Piura. Consulta disponibilidad y costo de movilización según la zona.' },
-        ];
+        const faqList = getFaqServicio(rawSlug, dt.faq);
         return (
           <section style={{ padding: 'clamp(4rem,8vw,6rem) 0', background: '#0c1e30', position: 'relative', overflow: 'hidden' }}>
             {/* Resplandor decorativo — mismo lenguaje visual que el FAQ del inicio */}
