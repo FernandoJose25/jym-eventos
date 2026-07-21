@@ -10,7 +10,7 @@ interface FaqItem { q: string; a: string }
 const DEFAULT_ITEMS: FaqItem[] = [
   {
     q: '¿Con cuánta anticipación debo reservar?',
-    a: 'Lo ideal es 3 a 4 semanas antes de tu evento. Para fechas de temporada alta (diciembre, día de la madre, fiestas patrias) y quinceaños te recomendamos escribirnos con 2 meses de anticipación: esas fechas se llenan rápido.',
+    a: 'Lo ideal es reservar con al menos 3 semanas de anticipación. Para fechas de temporada alta (diciembre, día de la madre, fiestas patrias), bodas y quinceaños te recomendamos escribirnos con 1 a 2 meses: esas fechas se llenan rápido.',
   },
   {
     q: '¿La cotización tiene algún costo?',
@@ -18,7 +18,7 @@ const DEFAULT_ITEMS: FaqItem[] = [
   },
   {
     q: '¿Piden adelanto para asegurar la fecha?',
-    a: 'Sí, con un adelanto separamos tu fecha en exclusiva; el saldo se cancela el día del evento. Así garantizamos que ese día nuestro equipo esté completo para ti.',
+    a: 'Sí. Con el 50% de adelanto separamos tu fecha en exclusiva y el saldo se cancela el día del evento. Así garantizamos que ese día nuestro equipo esté reservado solo para ti.',
   },
   {
     q: '¿Atienden fuera de Sechura?',
