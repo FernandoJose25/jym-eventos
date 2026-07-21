@@ -1,6 +1,11 @@
 import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   images: {
+    // AVIF primero (mejor compresión que WebP a igual calidad), WebP como
+    // fallback para navegadores sin soporte AVIF. Sustituye la conversión
+    // automática que hacía Cloudinary (f_auto) ahora que Storage sirve los
+    // archivos originales sin transformar.
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       { protocol: 'https', hostname: 'res.cloudinary.com' },
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },

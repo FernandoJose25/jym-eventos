@@ -74,25 +74,28 @@ export async function normalizeExifOrientation(file: File): Promise<File> {
 }
 
 /**
- * Cloudinary (plan free) rechaza imágenes de más de 10 MB con un error
- * críptico ("Maximum is 10485760"). Los iPhone modernos capturan fotos
- * HEIC de 15-25 MB con facilidad, así que cualquier imagen que supere el
- * umbral se recomprime a WebP en el cliente — reduciendo calidad y, si
- * hace falta, dimensiones — hasta quedar por debajo del límite real de
- * Cloudinary, con margen de seguridad.
+ * Toda imagen subida desde el admin (recortada o "sin recortar") se
+ * convierte a WebP en el cliente antes de subir — el usuario ya no
+ * necesita convertir JPG/PNG a mano. Además, Cloudinary (plan free)
+ * rechaza imágenes de más de 10 MB con un error críptico ("Maximum is
+ * 10485760"), y los iPhone modernos capturan fotos HEIC de 15-25 MB con
+ * facilidad, así que si el WebP a calidad normal sigue pesando de más se
+ * recomprime en un loop — bajando calidad y, si hace falta, dimensiones —
+ * hasta quedar por debajo del límite real, con margen de seguridad.
  */
 const CLOUDINARY_IMAGE_LIMIT = 10 * 1024 * 1024;
 const COMPRESSION_TARGET = 8 * 1024 * 1024; // margen bajo el límite real de Cloudinary
+const DEFAULT_WEBP_QUALITY = 0.9;
 
 export async function compressImageIfNeeded(file: File): Promise<File> {
-  if (file.size <= CLOUDINARY_IMAGE_LIMIT) return file;
+  if (file.type === 'image/webp' && file.size <= CLOUDINARY_IMAGE_LIMIT) return file;
 
   try {
     const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
     let { width, height } = bitmap;
-    let quality = 0.85;
+    let quality = DEFAULT_WEBP_QUALITY;
 
-    for (let attempt = 0; attempt < 6; attempt++) {
+    for (let attempt = 0; attempt < 7; attempt++) {
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
@@ -100,7 +103,10 @@ export async function compressImageIfNeeded(file: File): Promise<File> {
       ctx.drawImage(bitmap, 0, 0, width, height);
 
       const blob: Blob | null = await new Promise(res => canvas.toBlob(res, 'image/webp', quality));
-      if (blob && blob.size <= COMPRESSION_TARGET) {
+      // primer intento (calidad normal): se acepta si ya queda por debajo
+      // del límite real de Cloudinary, aunque no llegue al margen ideal
+      const target = attempt === 0 ? CLOUDINARY_IMAGE_LIMIT : COMPRESSION_TARGET;
+      if (blob && blob.size <= target) {
         bitmap.close();
         return new File([blob], file.name.replace(/\.\w+$/, '.webp'), { type: 'image/webp' });
       }
