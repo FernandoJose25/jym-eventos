@@ -20,7 +20,7 @@ export function toPlain(data: Record<string, any>): Record<string, any> {
 export type HomeData = {
   hero: any; stats: any; about: any; contacto: any;
   services: any[]; gallery: any[]; testimonials: any[];
-  whyUs: any; brands: any; loaded: true;
+  whyUs: any; brands: any; faq: any; loaded: true;
 };
 
 /**
@@ -30,7 +30,7 @@ export type HomeData = {
  */
 export async function getHomeData(): Promise<HomeData> {
   try {
-    const [heroS, statsS, aboutS, contactoS, whyUsS, brandsS, servicesS, galleryS, testimonialsS] =
+    const [heroS, statsS, aboutS, contactoS, whyUsS, brandsS, faqS, servicesS, galleryS, testimonialsS] =
       await Promise.allSettled([
         getDoc(doc(db, 'site_config', 'hero')),
         getDoc(doc(db, 'site_config', 'stats')),
@@ -38,6 +38,7 @@ export async function getHomeData(): Promise<HomeData> {
         getDoc(doc(db, 'site_config', 'contacto')),
         getDoc(doc(db, 'site_config', 'why-us')),
         getDoc(doc(db, 'site_config', 'brands')),
+        getDoc(doc(db, 'site_config', 'faq')),
         getDocs(query(collection(db, 'services'), where('visible', '==', true), orderBy('order', 'asc'))),
         getDocs(query(collection(db, 'gallery_items'), where('visible', '==', true), orderBy('order', 'asc'))),
         getDocs(query(collection(db, 'testimonials'), where('visible', '==', true), orderBy('order', 'asc'))),
@@ -50,6 +51,7 @@ export async function getHomeData(): Promise<HomeData> {
       contacto: contactoS.status === 'fulfilled' && contactoS.value.exists() ? toPlain(contactoS.value.data()) : {},
       whyUs: whyUsS.status === 'fulfilled' && whyUsS.value.exists() ? toPlain(whyUsS.value.data()) : null,
       brands: brandsS.status === 'fulfilled' && brandsS.value.exists() ? toPlain(brandsS.value.data()) : null,
+      faq: faqS.status === 'fulfilled' && faqS.value.exists() ? toPlain(faqS.value.data()) : null,
       services: servicesS.status === 'fulfilled' ? servicesS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
       gallery: galleryS.status === 'fulfilled' ? galleryS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
       testimonials: testimonialsS.status === 'fulfilled' ? testimonialsS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
@@ -60,7 +62,7 @@ export async function getHomeData(): Promise<HomeData> {
     return {
       hero: {}, stats: {}, about: {}, contacto: {},
       services: [], gallery: [], testimonials: [],
-      whyUs: null, brands: null, loaded: true,
+      whyUs: null, brands: null, faq: null, loaded: true,
     };
   }
 }
