@@ -7,6 +7,7 @@ import { SITE_URL } from '@/lib/site';
 import { metaDescription, getOgLogo, pageOpenGraph } from '@/lib/seo';
 import { getAlbumesVisibles } from '@/lib/albums';
 import { cxCard } from '@/lib/cloudinary';
+import JsonLd from '@/components/ui/JsonLd';
 import GaleriaClient, { type GItem } from './GaleriaClient';
 
 export const dynamic = 'force-dynamic';
@@ -86,8 +87,18 @@ export default async function Page() {
     getInitialGalleryItems(),
   ]);
 
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Inicio', item: SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'Galería', item: `${SITE_URL}/galeria` },
+    ],
+  };
+
   return (
     <>
+      <JsonLd data={breadcrumbSchema} />
       {albumes.length > 0 && (
         <section style={{ background: '#0a1628', padding: '2.5rem 0 0' }}>
           <div className="container">

@@ -5,6 +5,7 @@ import Footer from '@/components/layout/Footer';
 import MotionProvider from '@/components/ui/MotionProvider';
 import CookieBanner from '@/components/ui/CookieBanner';
 import WhatsAppWidget from '@/components/ui/WhatsAppWidget';
+import BackToTop from '@/components/ui/BackToTop';
 import JsonLd from '@/components/ui/JsonLd';
 import { Analytics } from '@vercel/analytics/next';
 import { GoogleAnalytics } from '@next/third-parties/google';
@@ -109,6 +110,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <CookieBanner />
           <Analytics />
           <WhatsAppWidget />
+          <BackToTop />
         </MotionProvider>
         {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />

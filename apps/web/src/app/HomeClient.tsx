@@ -7,6 +7,7 @@ import WhyUsSection        from '@/components/sections/WhyUsSection';
 import GallerySection      from '@/components/sections/GallerySection';
 import AboutSection        from '@/components/sections/AboutSection';
 import TestimonialsSection from '@/components/sections/TestimonialsSection';
+import FaqSection          from '@/components/sections/FaqSection';
 import BrandsSection       from '@/components/sections/BrandsSection';
 import ContactSection      from '@/components/sections/ContactSection';
 import type { HomeData }   from '@/lib/homeData';
@@ -65,6 +66,11 @@ export default function HomeClient({ data }: { data: HomeData }) {
       {/* Testimonios */}
       <Section>
         <TestimonialsSection items={data.testimonials} />
+      </Section>
+
+      {/* Preguntas frecuentes — resuelve dudas antes del contacto y empuja a WhatsApp */}
+      <Section>
+        <FaqSection data={data.faq} />
       </Section>
 
       {/* Contacto */}
