@@ -692,8 +692,19 @@ select.admin-input {
   gap: 14px;
 }
 
+/* Fila ícono + nombre + CTA de los tiers de "Anuncia con nosotros": tres
+   columnas en escritorio, apiladas en móvil para que los inputs no queden
+   ilegibles en un celular. */
+.cfg-3col {
+  display: grid;
+  grid-template-columns: 60px 1fr 1fr;
+  gap: 12px;
+  align-items: end;
+}
+
 @media(max-width:640px) {
-  .cfg-2col {
+  .cfg-2col,
+  .cfg-3col {
     grid-template-columns: 1fr !important;
   }
 }

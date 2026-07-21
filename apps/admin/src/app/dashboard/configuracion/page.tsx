@@ -717,7 +717,7 @@ export default function ConfiguracionPage() {
         </>);
       case 'anunciaTiers':
         return (<>
-          <div style={{ display: 'grid', gridTemplateColumns: '60px 1fr 1fr', gap: 12, alignItems: 'end' }}>
+          <div className="cfg-3col">
             {mi('Ícono', 'icon', '⭐', true)}
             {mi('Nombre', 'name', 'Destacado')}
             {mi('CTA botón', 'cta', 'Elegir')}

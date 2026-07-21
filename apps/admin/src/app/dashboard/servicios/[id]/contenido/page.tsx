@@ -322,7 +322,7 @@ export default function ServiceContentPage() {
             <F label="Características (una por línea)" field="longDesc2"
                value={srvData.detail?.longDesc2||''} onChange={(k,v)=>setDetail(k,v)} type="textarea" rows={5}
                placeholder={"Personajes temáticos: Superhéroes, princesas...\nMúsica en vivo / DJ\nLluvia de serpentinas"}/>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+            <div className="cfg-2col">
               <F label="Categoría (badge superior)" field="categoryLabel"
                  value={srvData.detail?.categoryLabel||''} onChange={(k,v)=>setDetail(k,v)}
                  placeholder="Celebraciones · Bodas"/>
@@ -340,7 +340,7 @@ export default function ServiceContentPage() {
             Si se completa, reemplaza la tarjeta genérica sobre la imagen/video del hero por una tarjeta de testimonio con rating.
           </p>
           <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+            <div className="cfg-2col">
               <F label="Nombre / lugar del cliente" field="testimonialName"
                  value={srvData.detail?.testimonialName||''} onChange={(k,v)=>setDetail(k,v)}
                  placeholder="Salón Los Almendros"/>
@@ -405,7 +405,7 @@ export default function ServiceContentPage() {
             Opcional. Solo si este servicio tiene variantes reales para elegir (ej. temáticas, personajes, tipos de animación). Si lo dejas vacío, esta sección no se muestra en la web.
           </p>
           <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+            <div className="cfg-2col">
               <F label="Texto pequeño (eyebrow)" field="opcionesEyebrow"
                  value={srvData.detail?.opcionesEyebrow||''} onChange={(k,v)=>setDetail(k,v)}
                  placeholder="Estilos disponibles"/>
@@ -436,7 +436,7 @@ export default function ServiceContentPage() {
             Opcional. Si lo dejas vacío, esta sección no se muestra en la web.
           </p>
           <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+            <div className="cfg-2col">
               <F label="Texto pequeño (eyebrow)" field="pasosEyebrow"
                  value={srvData.detail?.pasosEyebrow||''} onChange={(k,v)=>setDetail(k,v)}
                  placeholder="Nuestro Proceso"/>
