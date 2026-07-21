@@ -47,8 +47,8 @@ export default function LightboxGestureHint({ visible, onDismiss }: { visible: b
         >
           {[
             { icon: '↕', text: 'Desliza para ver más' },
-            { icon: '🤏', text: 'Pellizca para acercar' },
-            { icon: '⏩', text: 'Toca los lados del video para avanzar/retroceder' },
+            { icon: '🤏', text: 'Pellizca o doble-toca al centro para acercar' },
+            { icon: '⏩', text: 'Doble-toca los bordes del video para avanzar/retroceder' },
           ].map((line, i) => (
             <motion.p
               key={line.text}
