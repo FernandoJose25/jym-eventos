@@ -1,6 +1,18 @@
 'use client';
 import { useState } from 'react';
 import DividerJM from '@/components/ui/DividerJM';
+import { SERVICE_ICONS, isIconKey } from '@/lib/serviceIcons';
+
+/* Renderiza el ícono de un servicio igual que el navbar: SVG dorado si `icon`
+   es una clave conocida del IconPicker (crown, heart, palette…), o el emoji
+   tal cual si es texto libre. Así el cotizador no muestra la clave cruda. */
+function OpcionIcono({ icon }: { icon?: string }) {
+  if (icon && isIconKey(icon)) {
+    const Icon = SERVICE_ICONS[icon];
+    return <Icon size={22} strokeWidth={1.9} style={{ color: '#f5c842', flexShrink: 0 }} />;
+  }
+  return <span style={{ fontSize: '1.35rem', flexShrink: 0 }}>{icon || '🎉'}</span>;
+}
 
 /* Cotizador guiado: el visitante elige tipo → fecha → invitados en 3 pasos y
    el botón final abre WhatsApp con el mensaje ya redactado. No muestra precios
@@ -37,9 +49,12 @@ export default function CotizadorSection({ services = [] }: { services?: Servici
   const [fecha, setFecha] = useState('');
   const [invitados, setInvitados] = useState('');
 
-  // Opciones del paso 1: los servicios reales visibles; si no hay, un set base.
+  // Opciones del paso 1: los servicios reales visibles (los mismos del navbar);
+  // si no hay, un set base. La frase para WhatsApp usa el título tal cual con
+  // "el servicio de …" para que se lea natural con cualquier nombre (Bodas,
+  // BMCABINAS, Activaciones Empresariales…).
   const tipos = services.length > 0
-    ? services.slice(0, 6).map(s => ({ label: s.title, frase: s.title.toLowerCase(), emoji: s.icon || FALLBACK_ICON }))
+    ? services.slice(0, 8).map(s => ({ label: s.title, frase: `el servicio de ${s.title}`, emoji: s.icon || FALLBACK_ICON }))
     : [
         { label: 'Cumpleaños', frase: 'un cumpleaños', emoji: '🎂' },
         { label: 'Quinceaños', frase: 'un quinceaños', emoji: '👑' },
@@ -148,7 +163,9 @@ export default function CotizadorSection({ services = [] }: { services?: Servici
                       el.style.background = 'rgba(255,255,255,0.05)';
                       el.style.transform = '';
                     }}>
-                    {op.emoji && <span style={{ fontSize: '1.35rem', flexShrink: 0 }}>{op.emoji}</span>}
+                    {step === 0
+                      ? <OpcionIcono icon={op.emoji} />
+                      : op.emoji && <span style={{ fontSize: '1.35rem', flexShrink: 0 }}>{op.emoji}</span>}
                     <span>{op.label}</span>
                   </button>
                 ))}
