@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import VideoSoundControl from '@/components/ui/VideoSoundControl';
+import { cxVideo, cxVideoThumb } from '@/lib/cloudinary';
 
 interface HeroData {
   h1?: string;
@@ -20,6 +21,24 @@ interface HeroData {
 export default function HeroSection({ data }: { data: HeroData }) {
   const ref    = useRef<HTMLDivElement>(null);
   const vidRef = useRef<HTMLVideoElement>(null);
+
+  const isVideo = data.bgMediaType === 'video';
+
+  // El video de fondo pesa varios MB: montarlo desde el primer render hace que
+  // compita con el LCP (título, imagen, fuentes). Se difiere hasta window.load
+  // (o 3.5s como tope) y mientras tanto se muestra el poster/gradiente.
+  const [videoReady, setVideoReady] = useState(false);
+  const [videoVisible, setVideoVisible] = useState(false);
+
+  useEffect(() => {
+    if (!isVideo) return;
+    let done = false;
+    const start = () => { if (!done) { done = true; setVideoReady(true); } };
+    if (document.readyState === 'complete') { start(); return; }
+    window.addEventListener('load', start, { once: true });
+    const t = setTimeout(start, 3500);
+    return () => { window.removeEventListener('load', start); clearTimeout(t); };
+  }, [isVideo]);
 
   useEffect(() => {
     const el = ref.current;
@@ -55,7 +74,12 @@ export default function HeroSection({ data }: { data: HeroData }) {
   const btn2url = data.btn2Link || '/#servicios';
 
   const bgPos = data.bgPos || 'center center';
-  const isVideo = data.bgMediaType === 'video';
+
+  // cxVideo/cxVideoThumb solo transforman URLs de Cloudinary; para Firebase
+  // Storage devuelven la URL intacta, así que el poster solo existe si cambió.
+  const videoSrc = isVideo && data.bgImage ? cxVideo(data.bgImage) : '';
+  const thumb = isVideo && data.bgImage ? cxVideoThumb(data.bgImage) : '';
+  const poster = thumb && thumb !== data.bgImage ? thumb : undefined;
 
   return (
     <section
@@ -82,22 +106,36 @@ export default function HeroSection({ data }: { data: HeroData }) {
         >
           {isVideo ? (
             <>
-              <video
-                key={data.bgImage}
-                ref={vidRef}
-                autoPlay
-                muted
-                loop
-                playsInline
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  objectPosition: bgPos,
-                }}
-              >
-                <source src={data.bgImage} type="video/mp4" />
-              </video>
+              {poster && !videoVisible && (
+                <Image
+                  src={poster}
+                  alt=""
+                  fill
+                  priority
+                  sizes="100vw"
+                  style={{ objectFit: 'cover', objectPosition: bgPos }}
+                />
+              )}
+              {videoReady && (
+                <video
+                  key={videoSrc}
+                  ref={vidRef}
+                  src={videoSrc}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  onPlaying={() => setVideoVisible(true)}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    objectPosition: bgPos,
+                    opacity: videoVisible ? 1 : 0,
+                    transition: 'opacity .6s ease',
+                  }}
+                />
+              )}
               {data.bgVideoSound && (
                 <VideoSoundControl videoRef={vidRef} position="bottom-right" />
               )}
