@@ -8,6 +8,9 @@ import GallerySection      from '@/components/sections/GallerySection';
 import AboutSection        from '@/components/sections/AboutSection';
 import TestimonialsSection from '@/components/sections/TestimonialsSection';
 import FaqSection          from '@/components/sections/FaqSection';
+import CotizadorSection     from '@/components/sections/CotizadorSection';
+import StoriesSection        from '@/components/sections/StoriesSection';
+import TransformacionesSection from '@/components/sections/TransformacionesSection';
 import BrandsSection       from '@/components/sections/BrandsSection';
 import ContactSection      from '@/components/sections/ContactSection';
 import type { HomeData }   from '@/lib/homeData';
@@ -38,6 +41,11 @@ export default function HomeClient({ data }: { data: HomeData }) {
         <StatsSection data={{ ...data.stats, s4num: String(data.services.length) }} />
       </Section>
 
+      {/* Historias tipo Instagram — enganche temprano, alimentado por la galería */}
+      <Section>
+        <StoriesSection items={data.gallery} />
+      </Section>
+
       {/* Marcas — carrusel justo después de las stats, como en el diseño */}
       <Section>
         <BrandsSection data={data.brands} />
@@ -56,6 +64,16 @@ export default function HomeClient({ data }: { data: HomeData }) {
       {/* Servicios */}
       <Section>
         <ServicesSection services={data.services} />
+      </Section>
+
+      {/* Cotizador guiado — 3 pasos que terminan en WhatsApp con el mensaje listo */}
+      <Section>
+        <CotizadorSection services={data.services} />
+      </Section>
+
+      {/* Antes / Después — prueba visual de la transformación (si hay pares cargados) */}
+      <Section>
+        <TransformacionesSection data={data.transformaciones} />
       </Section>
 
       {/* Galería */}
