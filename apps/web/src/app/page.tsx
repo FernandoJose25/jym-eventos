@@ -9,8 +9,8 @@ import HomeClient from './HomeClient';
 // de inmediato en cada visita, sin esperar un nuevo despliegue.
 export const dynamic = 'force-dynamic';
 
-const DEFAULT_TITLE = 'Shows, Decoración y Catering en Sechura, Piura';
-const DEFAULT_DESC = 'Organizamos shows infantiles, hora loca, decoración temática y catering en Sechura, Piura. +500 eventos realizados. Cotiza gratis por WhatsApp.';
+const DEFAULT_TITLE = 'J&M Decoraciones y Eventos — Eventos de Lujo en Sechura, Piura';
+const DEFAULT_DESC = 'Especialistas en decoración, ambientación y producción integral de eventos. Convertimos cada celebración en una experiencia elegante y memorable. Cotiza tu evento hoy.';
 
 export async function generateMetadata(): Promise<Metadata> {
   try {

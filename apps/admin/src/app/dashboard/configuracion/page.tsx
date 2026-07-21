@@ -33,8 +33,8 @@ const DEFAULT_WHY_ITEMS = [
 ];
 
 const DEFAULT_SEO = {
-  homeTitle: 'Shows, Decoración y Catering en Sechura, Piura',
-  homeDesc: 'Organizamos shows infantiles, hora loca, decoración temática y catering en Sechura, Piura. +500 eventos realizados. Cotiza gratis por WhatsApp.',
+  homeTitle: 'J&M Decoraciones y Eventos — Eventos de Lujo en Sechura, Piura',
+  homeDesc: 'Especialistas en decoración, ambientación y producción integral de eventos. Convertimos cada celebración en una experiencia elegante y memorable. Cotiza tu evento hoy.',
   contactoTitle: 'Contacto y Cotizaciones',
   contactoDesc: 'Cotiza tu evento en Sechura, Piura. Respuesta rápida por WhatsApp. Shows, decoración, catering, quinceaños y paquetes completos.',
   galeriaTitle: 'Galería de Eventos',

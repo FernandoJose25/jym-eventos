@@ -37,8 +37,8 @@ const getNavbarLogo = unstable_cache(
   { revalidate: 3600 }
 );
 
-const DEFAULT_TITLE = 'J&M Decoraciones y Eventos — Sechura, Piura';
-const DEFAULT_DESCRIPTION = 'Organizamos eventos únicos en Sechura, Piura. Shows infantiles, hora loca, decoración temática, catering y fotografía profesional.';
+const DEFAULT_TITLE = 'J&M Decoraciones y Eventos — Eventos de Lujo en Sechura, Piura';
+const DEFAULT_DESCRIPTION = 'Especialistas en decoración, ambientación y producción integral de eventos. Convertimos cada celebración en una experiencia elegante y memorable. Cotiza tu evento hoy.';
 
 export async function generateMetadata(): Promise<Metadata> {
   const iconUrl = await getNavbarLogo();
