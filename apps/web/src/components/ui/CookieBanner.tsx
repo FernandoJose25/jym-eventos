@@ -60,7 +60,7 @@ export default function CookieBanner() {
             onClick={() => setAdBlock(false)}
             style={{
               background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: 6, color: '#fff', fontSize: '0.72rem', fontWeight: 700,
+              borderRadius: 6, color: '#fff', fontSize: '0.75rem', fontWeight: 700,
               padding: '3px 10px', cursor: 'pointer', whiteSpace: 'nowrap',
               fontFamily: 'var(--font-jakarta)',
             }}>

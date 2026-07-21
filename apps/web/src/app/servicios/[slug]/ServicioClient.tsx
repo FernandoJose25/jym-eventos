@@ -456,7 +456,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid rgba(212,160,23,0.1)', borderTopColor: '#d4a017', animation: 'sp .9s linear infinite' }} />
           <div style={{ position: 'absolute', inset: 6, borderRadius: '50%', border: '2px solid rgba(212,160,23,0.06)', borderBottomColor: '#f5c842', animation: 'sp 1.4s linear infinite reverse' }} />
         </div>
-        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.72rem', letterSpacing: '.2em', textTransform: 'uppercase', fontFamily: 'var(--font-jakarta)', margin: 0 }}>Cargando servicio</p>
+        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.75rem', letterSpacing: '.2em', textTransform: 'uppercase', fontFamily: 'var(--font-jakarta)', margin: 0 }}>Cargando servicio</p>
       </div>
       <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
     </div>
@@ -595,12 +595,12 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           <nav style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: '2rem', animation: 'fadeSlideUp .5s ease both', position: 'relative', zIndex: 2 }}>
             {[['Inicio', '/'], ['Servicios', '/#servicios'], [title, null]].map(([label, href], i) => (
               <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {i > 0 && <span style={{ color: 'rgba(212,160,23,0.4)', fontSize: '0.65rem' }}>›</span>}
+                {i > 0 && <span style={{ color: 'rgba(212,160,23,0.4)', fontSize: '0.75rem' }}>›</span>}
                 {href
-                  ? <a href={String(href)} style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.72rem', textDecoration: 'none', fontFamily: 'var(--font-jakarta)', letterSpacing: '.05em', transition: 'color .2s' }}
+                  ? <a href={String(href)} style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.75rem', textDecoration: 'none', fontFamily: 'var(--font-jakarta)', letterSpacing: '.05em', transition: 'color .2s' }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#f5c842'}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.35)'}>{label}</a>
-                  : <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.72rem', fontFamily: 'var(--font-jakarta)', fontWeight: 600, letterSpacing: '.05em' }}>{label}</span>}
+                  : <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.75rem', fontFamily: 'var(--font-jakarta)', fontWeight: 600, letterSpacing: '.05em' }}>{label}</span>}
               </span>
             ))}
           </nav>
@@ -611,7 +611,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
               display: 'inline-flex', alignItems: 'center', gap: 6, width: 'fit-content',
               padding: '0.35rem 1rem', borderRadius: 999, marginBottom: '1.5rem',
               background: `${accentColor}20`, border: `1px solid ${accentColor}50`,
-              color: '#f5c842', fontSize: '0.65rem', fontWeight: 700,
+              color: '#f5c842', fontSize: '0.75rem', fontWeight: 700,
               textTransform: 'uppercase', letterSpacing: '.15em', fontFamily: 'var(--font-jakarta)',
               animation: 'fadeSlideUp .5s .08s ease both', position: 'relative', zIndex: 2,
             }}>
@@ -750,7 +750,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                 <p style={{ color: '#fff', fontWeight: 700, fontSize: '0.85rem', margin: 0, fontFamily: 'var(--font-playfair)' }}>
                   {testimonialName}
                 </p>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#f5c842', fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, color: '#f5c842', fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
                   ★★★★★ {testimonialRating}
                 </span>
               </div>
@@ -772,7 +772,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e', animation: 'pulse 2s infinite' }} />
-                <p style={{ color: '#f5c842', fontWeight: 800, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '.16em', margin: 0, fontFamily: 'var(--font-jakarta)' }}>
+                <p style={{ color: '#f5c842', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '.16em', margin: 0, fontFamily: 'var(--font-jakarta)' }}>
                   {sd.badge}
                 </p>
               </div>
@@ -867,7 +867,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                   background: `${accentColor}12`, border: `1px solid ${accentColor}35`,
                 }}>
                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: accentColor, boxShadow: `0 0 8px ${accentColor}`, animation: 'pulse 2s infinite', display: 'inline-block' }} />
-                  <p style={{ color: accentColor, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', margin: 0 }}>
+                  <p style={{ color: accentColor, fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', margin: 0 }}>
                     {title}
                   </p>
                 </div>
@@ -953,7 +953,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                         minWidth: 34, height: 34, borderRadius: 10,
                         background: `${accentColor}14`, border: `1px solid ${accentColor}30`,
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        color: accentColor, fontSize: '0.68rem', fontWeight: 800,
+                        color: accentColor, fontSize: '0.75rem', fontWeight: 800,
                         fontFamily: 'var(--font-jakarta)', letterSpacing: '.02em',
                         flexShrink: 0,
                       }}>
@@ -1009,7 +1009,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
               transition: 'all .7s ease',
             }}>
               <div style={{ textAlign: 'center', marginBottom: 'clamp(2rem,4vw,2.75rem)' }}>
-                <p style={{ color: '#f5c842', fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Incluido en el servicio</p>
+                <p style={{ color: '#f5c842', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Incluido en el servicio</p>
                 <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.6rem,2.4vw,2.3rem)', color: '#fff', margin: 0, letterSpacing: '-.03em' }}>
                   Todo lo que Necesitas en un Solo Paquete
                 </h2>
@@ -1054,7 +1054,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
         <section style={{ padding: 'clamp(5rem,9vw,8rem) 0', background: '#fff' }}>
           <div className="container">
             <div data-reveal="tem-header" style={{ textAlign: 'center', marginBottom: 'clamp(2.5rem,5vw,4rem)', opacity: isVisible('tem-header') ? 1 : 0, transform: isVisible('tem-header') ? 'none' : 'translateY(24px)', transition: 'all .7s ease' }}>
-              <p style={{ color: accentColor, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>{opcionesEyebrow}</p>
+              <p style={{ color: accentColor, fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>{opcionesEyebrow}</p>
               <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#0c1e30', margin: 0, letterSpacing: '-.03em' }}>{opcionesTitulo}</h2>
             </div>
             <div className="srv-tematicas" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem' }}>
@@ -1105,7 +1105,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
 
           <div className="container" style={{ position: 'relative' }}>
             <div data-reveal="steps-header" style={{ textAlign: 'center', marginBottom: 'clamp(2.5rem,5vw,4rem)', opacity: isVisible('steps-header') ? 1 : 0, transform: isVisible('steps-header') ? 'none' : 'translateY(24px)', transition: 'all .7s ease' }}>
-              <p style={{ color: `${accentColor}aa`, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>{pasosEyebrow}</p>
+              <p style={{ color: `${accentColor}aa`, fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>{pasosEyebrow}</p>
               <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#fff', margin: 0, letterSpacing: '-.03em' }}>{pasosTitulo}</h2>
             </div>
 
@@ -1170,7 +1170,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
         <section style={{ padding: 'clamp(5rem,9vw,8rem) 0', background: '#fff' }}>
           <div className="container">
             <div data-reveal="gal-header" style={{ textAlign: 'center', marginBottom: 'clamp(2.5rem,5vw,4rem)', opacity: isVisible('gal-header') ? 1 : 0, transform: isVisible('gal-header') ? 'none' : 'translateY(24px)', transition: 'all .7s ease' }}>
-              <p style={{ color: accentColor, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Momentos Reales</p>
+              <p style={{ color: accentColor, fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Momentos Reales</p>
               <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#0c1e30', margin: 0, letterSpacing: '-.03em' }}>
                 Así se Ve {title} en Vivo
               </h2>
@@ -1243,7 +1243,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                 display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: '1rem',
                 padding: '0.35rem 1.1rem', borderRadius: 9999,
                 background: `${accentColor}15`, border: `1px solid ${accentColor}35`,
-                color: '#f5c842', fontSize: '0.62rem', fontWeight: 700,
+                color: '#f5c842', fontSize: '0.75rem', fontWeight: 700,
                 textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)'
               }}>
                 <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#f5c842', display: 'inline-block' }} />
@@ -1357,7 +1357,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
                           display: 'inline-flex', alignItems: 'center', gap: 6,
                           padding: '0.4rem 0.9rem', borderRadius: 9999,
                           background: `${relColor}25`, border: `1px solid ${relColor}55`,
-                          color: '#f5c842', fontSize: '0.72rem', fontWeight: 700,
+                          color: '#f5c842', fontSize: '0.75rem', fontWeight: 700,
                           fontFamily: 'var(--font-jakarta)', letterSpacing: '.04em',
                           opacity: 0, transform: 'translateY(8px)',
                           transition: 'opacity .3s .05s ease, transform .3s .05s ease',
@@ -1399,7 +1399,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
           <section style={{ padding: 'clamp(4rem,8vw,6rem) 0', background: '#0c1e30' }}>
             <div className="container" style={{ maxWidth: 760 }}>
               <div data-reveal="faq-header" style={{ textAlign: 'center', marginBottom: 'clamp(2rem,4vw,3rem)', opacity: isVisible('faq-header') ? 1 : 0, transform: isVisible('faq-header') ? 'none' : 'translateY(24px)', transition: 'all .7s ease' }}>
-                <p style={{ color: accentColor, fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Antes de cotizar</p>
+                <p style={{ color: accentColor, fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.2em', fontFamily: 'var(--font-jakarta)', marginBottom: '0.75rem' }}>Antes de cotizar</p>
                 <h2 style={{ fontFamily: 'var(--font-playfair)', fontSize: 'clamp(1.7rem,2.5vw,2.5rem)', color: '#fff', margin: 0, letterSpacing: '-.03em' }}>Preguntas Frecuentes</h2>
               </div>
 
@@ -1457,7 +1457,7 @@ export default function ServicioClient({ initialData = null }: { initialData?: a
               display: 'inline-flex', alignItems: 'center', gap: 8,
               padding: '0.35rem 1rem', borderRadius: 999, marginBottom: '1.5rem',
               background: `${accentColor}18`, border: `1px solid ${accentColor}40`,
-              color: '#f5c842', fontSize: '0.65rem', fontWeight: 700,
+              color: '#f5c842', fontSize: '0.75rem', fontWeight: 700,
               textTransform: 'uppercase', letterSpacing: '.18em', fontFamily: 'var(--font-jakarta)',
             }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f5c842', boxShadow: '0 0 8px #f5c842', animation: 'pulse 2s infinite', display: 'block' }} />

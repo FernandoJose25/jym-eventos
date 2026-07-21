@@ -112,12 +112,12 @@ export default function Navbar() {
               overflow: 'hidden',
             }}>
               {navConfig.logo
-                ? <Image src={navConfig.logo} alt={navConfig.nombre || 'J&M Decoraciones y Eventos'} width={40} height={40} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                ? <Image src={navConfig.logo} alt={navConfig.nombre || 'J&M Decoraciones y Eventos'} width={40} height={40} priority style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 : '🎉'}
             </div>
             <div>
               <p style={{ color: '#fff', fontFamily: 'var(--font-playfair)', fontWeight: 700, fontSize: '1.05rem', lineHeight: 1.2, margin: 0 }}>{navConfig.nombre || 'J&M Decoraciones y Eventos'}</p>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.6rem', margin: 0, letterSpacing: '.06em' }}>{navConfig.tagline || 'Decoraciones & Eventos'}</p>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: 0, letterSpacing: '.06em' }}>{navConfig.tagline || 'Decoraciones & Eventos'}</p>
             </div>
           </Link>
 
@@ -362,7 +362,7 @@ export default function Navbar() {
                   </div>
 
                   <div style={{ marginTop: '0.85rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
-                    <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)' }}>
                       ¿No sabes por dónde empezar?
                     </span>
                     <a href="https://wa.me/51945203708?text=Hola%2C%20quiero%20cotizar%20un%20evento"
@@ -419,7 +419,7 @@ export default function Navbar() {
 
                       <div style={{ position: 'relative', zIndex: 1, padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', flex: 1 }}>
                         <span style={{
-                          alignSelf: 'flex-start', fontSize: '0.6rem', fontWeight: 700,
+                          alignSelf: 'flex-start', fontSize: '0.75rem', fontWeight: 700,
                           letterSpacing: '.06em', textTransform: 'uppercase',
                           color: '#0a1628', background: 'linear-gradient(135deg,#b8860b,#f5c842)',
                           padding: '0.25rem 0.55rem', borderRadius: 9999,
@@ -515,7 +515,7 @@ export default function Navbar() {
             </Link>
           ))}
 
-          <p style={{ color: 'rgba(212,160,23,0.5)', fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '.16em', padding: '1.25rem 1rem 0.6rem', margin: 0, fontWeight: 700 }}>
+          <p style={{ color: 'rgba(212,160,23,0.5)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '.16em', padding: '1.25rem 1rem 0.6rem', margin: 0, fontWeight: 700 }}>
             Servicios
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', padding: '0 0 0.5rem' }}>

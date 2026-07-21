@@ -150,7 +150,7 @@ export default function ContactoClient({ initialContacto }: { initialContacto?: 
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0.38rem 1.2rem',
             borderRadius: 9999, background: 'rgba(212,160,23,.1)', border: '1px solid rgba(212,160,23,.3)',
-            color: '#f5c842', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase',
+            color: '#f5c842', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
             letterSpacing: '.2em', marginBottom: '1.5rem'
           }}>
             ✦ Contáctanos
@@ -205,7 +205,7 @@ export default function ContactoClient({ initialContacto }: { initialContacto?: 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
               <p style={{
-                fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase',
+                fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
                 letterSpacing: '.2em', color: '#d4a017', marginBottom: 4
               }}>
                 Información de contacto
@@ -246,7 +246,7 @@ export default function ContactoClient({ initialContacto }: { initialContacto?: 
                   </div>
                   <div style={{ overflow: 'hidden' }}>
                     <p style={{
-                      fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase',
+                      fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
                       letterSpacing: '.12em', color: 'rgba(255,255,255,0.28)', margin: '0 0 3px'
                     }}>
                       {title}
@@ -262,7 +262,7 @@ export default function ContactoClient({ initialContacto }: { initialContacto?: 
                       </a>
                       : <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.85rem', fontWeight: 600, margin: 0 }}>{value}</p>
                     }
-                    {sub && <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: '0.7rem', margin: '2px 0 0' }}>{sub}</p>}
+                    {sub && <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: '0.75rem', margin: '2px 0 0' }}>{sub}</p>}
                   </div>
                 </div>
               ))}
@@ -270,7 +270,7 @@ export default function ContactoClient({ initialContacto }: { initialContacto?: 
               {/* Redes */}
               <div>
                 <p style={{
-                  fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase',
+                  fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
                   letterSpacing: '.12em', color: 'rgba(255,255,255,0.28)', margin: '8px 0 10px', textAlign: 'center'
                 }}>
                   Síguenos

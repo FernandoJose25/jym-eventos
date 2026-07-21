@@ -103,7 +103,7 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
               <p style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.75rem', margin:0 }}>{t.role}</p>
             </div>
             <strong style={{ position:'relative', zIndex:2, color:'rgba(255,255,255,0.5)',
-                               fontSize:'0.72rem', letterSpacing:'.1em', textTransform:'uppercase' }}>
+                               fontSize:'0.75rem', letterSpacing:'.1em', textTransform:'uppercase' }}>
               Ver →
             </strong>
           </div>
@@ -133,7 +133,7 @@ function FlipCard({ t, idx }: { t: Testimonial; idx: number }) {
             <span style={{
               background:'rgba(0,0,0,0.4)', padding:'2px 10px',
               borderRadius:10, backdropFilter:'blur(2px)',
-              width:'fit-content', fontSize:'0.65rem', color:'rgba(255,255,255,0.75)',
+              width:'fit-content', fontSize:'0.75rem', color:'rgba(255,255,255,0.75)',
             }}>
               {t.role}
             </span>
@@ -241,7 +241,7 @@ function MobileCard({ t, idx }: { t: Testimonial; idx: number }) {
         </div>
         <div>
           <div style={{ fontWeight:700, fontSize:'0.88rem', color:'#fff', marginBottom:2 }}>{t.name}</div>
-          <div style={{ fontSize:'0.72rem', color:'rgba(255,255,255,0.4)' }}>{t.role}</div>
+          <div style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.4)' }}>{t.role}</div>
         </div>
       </div>
     </div>
@@ -309,7 +309,7 @@ export default function TestimonialsSection({ items: propItems }: { items?: Test
         <div style={{ display:'inline-flex', alignItems:'center', gap:8, marginBottom:'1rem',
                        padding:'0.4rem 1.5rem', borderRadius:9999,
                        background:'rgba(212,160,23,0.1)', border:'1px solid rgba(212,160,23,0.3)',
-                       color:'#f5c842', fontSize:'0.7rem', fontWeight:700,
+                       color:'#f5c842', fontSize:'0.75rem', fontWeight:700,
                        textTransform:'uppercase', letterSpacing:'.18em' }}>
           ⭐ Testimonios
         </div>
@@ -337,7 +337,7 @@ export default function TestimonialsSection({ items: propItems }: { items?: Test
           </div>
         </div>
         <div style={{ textAlign:'center', marginTop:'1.5rem' }}>
-          <p style={{ color:'rgba(255,255,255,0.2)', fontSize:'0.7rem',
+          <p style={{ color:'rgba(255,255,255,0.2)', fontSize:'0.75rem',
                        letterSpacing:'.14em', textTransform:'uppercase' }}>
             ✦ Toca cada tarjeta para revelar ✦
           </p>
@@ -381,7 +381,7 @@ export default function TestimonialsSection({ items: propItems }: { items?: Test
 
         {/* Hint swipe */}
         <div style={{ textAlign:'center', padding:'0.75rem 0 0',
-                       color:'rgba(255,255,255,0.2)', fontSize:'0.65rem',
+                       color:'rgba(255,255,255,0.2)', fontSize:'0.75rem',
                        textTransform:'uppercase', letterSpacing:'.1em' }}>
           Desliza para ver más →
         </div>

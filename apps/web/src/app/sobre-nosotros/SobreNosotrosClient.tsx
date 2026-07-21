@@ -272,7 +272,7 @@ export default function SobreNosotrosClient({ initialCfg }: { initialCfg?: Recor
                   display:'inline-flex', alignItems:'center', gap:8,
                   padding:'0.4rem 1.25rem', borderRadius:9999,
                   background:'rgba(212,160,23,0.1)', border:'1px solid rgba(212,160,23,0.3)',
-                  color:'#d4a017', fontSize:'0.68rem', fontWeight:700,
+                  color:'#d4a017', fontSize:'0.75rem', fontWeight:700,
                   textTransform:'uppercase', letterSpacing:'.22em',
                   animation:'pillFloat 4s ease-in-out infinite',
                 }}>
@@ -345,7 +345,7 @@ export default function SobreNosotrosClient({ initialCfg }: { initialCfg?: Recor
                 <div style={{ width:40, height:40, borderRadius:12, background:'linear-gradient(135deg,#b8860b,#f5c842)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.2rem', flexShrink:0 }}>🎉</div>
                 <div>
                   <p style={{ color:'#f5c842', fontWeight:700, fontSize:'0.88rem', margin:0, fontFamily:'var(--font-playfair)' }}>J&M Decoraciones y Eventos</p>
-                  <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.68rem', margin:0 }}>La primera opción en Sechura, Piura</p>
+                  <p style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.75rem', margin:0 }}>La primera opción en Sechura, Piura</p>
                 </div>
               </div>
             </div>
@@ -356,7 +356,7 @@ export default function SobreNosotrosClient({ initialCfg }: { initialCfg?: Recor
           <div style={{ width:26, height:42, borderRadius:13, border:'1.5px solid rgba(255,255,255,0.15)', display:'flex', justifyContent:'center', paddingTop:7 }}>
             <div style={{ width:3, height:7, borderRadius:9999, background:'rgba(255,255,255,0.4)', animation:'scrollBob 1.6s ease-in-out infinite' }}/>
           </div>
-          <p style={{ color:'rgba(255,255,255,0.2)', fontSize:'0.6rem', textTransform:'uppercase', letterSpacing:'.18em', margin:0 }}>Scroll</p>
+          <p style={{ color:'rgba(255,255,255,0.2)', fontSize:'0.75rem', textTransform:'uppercase', letterSpacing:'.18em', margin:0 }}>Scroll</p>
         </div>
       </section>
 
@@ -377,7 +377,7 @@ export default function SobreNosotrosClient({ initialCfg }: { initialCfg?: Recor
                className="sn3-hist-grid">
 
             <div style={{ position:'sticky', top:'7rem' }}>
-              <p className="sn3-reveal" style={{ fontSize:'0.68rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.25em', color:'#d4a017', marginBottom:12 }}>
+              <p className="sn3-reveal" style={{ fontSize:'0.75rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.25em', color:'#d4a017', marginBottom:12 }}>
                 {histSubtitle}
               </p>
               <h2 className="sn3-reveal stg-2" style={{ fontFamily:'var(--font-playfair)', fontSize:'clamp(2.5rem,4vw,3.75rem)', color:'#0a1628', lineHeight:1.05, marginBottom:'1.5rem' }}>
@@ -446,7 +446,7 @@ export default function SobreNosotrosClient({ initialCfg }: { initialCfg?: Recor
 
         <div className="container" style={{ position:'relative', zIndex:2 }}>
           <div style={{ textAlign:'center', marginBottom:'5rem' }}>
-            <div className="sn3-reveal" style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'0.4rem 1.5rem', borderRadius:9999, background:'rgba(212,160,23,0.1)', border:'1px solid rgba(212,160,23,0.25)', color:'#f5c842', fontSize:'0.68rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.22em', marginBottom:'1rem', animation:'pillFloat 4s ease-in-out infinite' }}>
+            <div className="sn3-reveal" style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'0.4rem 1.5rem', borderRadius:9999, background:'rgba(212,160,23,0.1)', border:'1px solid rgba(212,160,23,0.25)', color:'#f5c842', fontSize:'0.75rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.22em', marginBottom:'1rem', animation:'pillFloat 4s ease-in-out infinite' }}>
               ✦ Lo que nos define
             </div>
             <h2 className="sn3-reveal stg-2" style={{ fontFamily:'var(--font-playfair)', color:'#fff', fontSize:'clamp(2.5rem,5vw,4rem)', lineHeight:1.0 }}>
@@ -502,7 +502,7 @@ export default function SobreNosotrosClient({ initialCfg }: { initialCfg?: Recor
 
             {/* Columna Izquierda: Mensaje Institucional */}
             <div>
-              <p className="sn3-reveal" style={{ fontSize:'0.68rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.25em', color:'#d4a017', marginBottom:12 }}>
+              <p className="sn3-reveal" style={{ fontSize:'0.75rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.25em', color:'#d4a017', marginBottom:12 }}>
                 {misionSubtitle}
               </p>
               <h2 className="sn3-reveal stg-2" style={{ fontFamily:'var(--font-playfair)', fontSize:'clamp(2rem,4vw,3.25rem)', color:'#0a1628', lineHeight:1.1, marginBottom:'1.75rem' }}>
@@ -573,7 +573,7 @@ export default function SobreNosotrosClient({ initialCfg }: { initialCfg?: Recor
 
         <div className="container" style={{ position:'relative', zIndex:2, textAlign:'center' }}>
           <div className="sn3-reveal">
-            <p style={{ fontSize:'0.68rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.25em', color:'#d4a017', marginBottom:'1.25rem', animation:'pillFloat 4s ease-in-out infinite' }}>
+            <p style={{ fontSize:'0.75rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.25em', color:'#d4a017', marginBottom:'1.25rem', animation:'pillFloat 4s ease-in-out infinite' }}>
               {ctaBadge}
             </p>
             <h2 style={{ fontFamily:'var(--font-playfair)', fontSize:'clamp(2.5rem,5.5vw,5rem)', color:'#fff', lineHeight:1.0, marginBottom:'1.5rem' }}>

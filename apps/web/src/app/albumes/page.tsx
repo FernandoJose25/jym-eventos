@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { adminDb } from '@/lib/firebase-admin';
 import { SITE_URL } from '@/lib/site';
+import { metaDescription, getOgLogo, pageOpenGraph } from '@/lib/seo';
 import { getAlbumesVisibles } from '@/lib/albums';
 import { cxCard } from '@/lib/cloudinary';
 
@@ -14,19 +15,27 @@ const DEFAULT_TITLE = 'Álbumes de Eventos';
 const DEFAULT_DESC = 'Explora los eventos reales que hemos organizado: cumpleaños, quinceañeros, activaciones corporativas y más, en Sechura, Piura.';
 
 export async function generateMetadata(): Promise<Metadata> {
+  const canonical = `${SITE_URL}/albumes`;
   try {
     const snap = await adminDb.collection('site_config').doc('seo').get();
     const data = snap.exists ? snap.data() ?? {} : {};
+    const title = data.albumesTitle || DEFAULT_TITLE;
+    const description = metaDescription(data.albumesDesc, DEFAULT_DESC);
+    const logo = await getOgLogo();
     return {
-      title: data.albumesTitle || DEFAULT_TITLE,
-      description: data.albumesDesc || DEFAULT_DESC,
-      alternates: { canonical: `${SITE_URL}/albumes` },
+      title,
+      description,
+      alternates: { canonical },
+      openGraph: pageOpenGraph({
+        title, description, url: canonical,
+        images: logo ? [{ url: logo }] : undefined,
+      }),
     };
   } catch {
     return {
       title: DEFAULT_TITLE,
       description: DEFAULT_DESC,
-      alternates: { canonical: `${SITE_URL}/albumes` },
+      alternates: { canonical },
     };
   }
 }
@@ -65,7 +74,7 @@ export default async function Page() {
             display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: '1rem',
             padding: '0.35rem 1.25rem', borderRadius: 9999,
             background: 'rgba(212,160,23,0.1)', border: '1px solid rgba(212,160,23,0.3)',
-            color: '#f5c842', fontSize: '0.72rem', fontWeight: 700,
+            color: '#f5c842', fontSize: '0.75rem', fontWeight: 700,
             textTransform: 'uppercase', letterSpacing: '.12em',
           }}>
             🎉 Eventos Reales
@@ -125,7 +134,7 @@ export default async function Page() {
                     {album.tipoEvento && (
                       <span style={{
                         display: 'inline-block', background: 'rgba(212,160,23,0.9)', color: '#0a1628',
-                        fontSize: '0.65rem', fontWeight: 700, padding: '3px 10px', borderRadius: 999,
+                        fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: 999,
                         textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8,
                       }}>
                         {album.tipoEvento}

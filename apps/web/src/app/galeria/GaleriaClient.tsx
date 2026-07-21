@@ -437,7 +437,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
             display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: '1rem',
             padding: '0.35rem 1.25rem', borderRadius: 9999,
             background: 'rgba(212,160,23,0.1)', border: '1px solid rgba(212,160,23,0.3)',
-            color: '#f5c842', fontSize: '0.72rem', fontWeight: 700,
+            color: '#f5c842', fontSize: '0.75rem', fontWeight: 700,
             textTransform: 'uppercase', letterSpacing: '.12em'
           }}>
             📸 Momentos Mágicos
@@ -470,6 +470,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
               type="text"
               value={searchQ}
               onChange={e => setSearchQ(e.target.value)}
+              aria-label="Buscar en la galería por temática, categoría o descripción"
               placeholder="Buscar por temática, categoría, descripción…"
               style={{
                 width: '100%', padding: '0.65rem 2.5rem 0.65rem 2.6rem',
@@ -515,7 +516,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                   <span>{cat.id}</span>
                   {count > 0 && (
                     <span style={{
-                      fontSize: '0.68rem', padding: '1px 7px', borderRadius: 999,
+                      fontSize: '0.75rem', padding: '1px 7px', borderRadius: 999,
                       background: active ? 'rgba(212,160,23,0.3)' : 'rgba(10,22,40,0.08)',
                       color: active ? '#f5c842' : '#94a3b8', fontWeight: 700
                     }}>
@@ -531,7 +532,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
           {haySubs && (
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: '1rem', flexWrap: 'wrap' }}>
               <p style={{
-                fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em',
+                fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em',
                 color: '#94a3b8', margin: 'auto 8px auto 0', flexShrink: 0
               }}>
                 Subcategoría:
@@ -686,7 +687,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                       {vid && (
                         <div style={{
                           position: 'absolute', top: 10, left: 10, background: 'rgba(10,22,40,0.82)',
-                          color: '#fff', fontSize: '0.7rem', fontWeight: 700,
+                          color: '#fff', fontSize: '0.75rem', fontWeight: 700,
                           padding: '3px 9px', borderRadius: 999, pointerEvents: 'none'
                         }}>
                           🎬 Video
@@ -698,7 +699,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                         <div style={{
                           position: 'absolute', top: 10, left: 10,
                           background: item.albumCount ? 'rgba(212,160,23,0.92)' : 'rgba(148,163,184,0.92)',
-                          color: '#0a1628', fontSize: '0.7rem', fontWeight: 700,
+                          color: '#0a1628', fontSize: '0.75rem', fontWeight: 700,
                           padding: '3px 9px', borderRadius: 999, pointerEvents: 'none',
                           display: 'flex', alignItems: 'center', gap: 4,
                         }}>
@@ -717,7 +718,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                           {item.categoria && (
                             <span style={{
                               display: 'inline-block', background: 'rgba(212,160,23,0.9)',
-                              color: '#0a1628', fontSize: '0.65rem', fontWeight: 700,
+                              color: '#0a1628', fontSize: '0.75rem', fontWeight: 700,
                               padding: '2px 9px', borderRadius: 999, textTransform: 'uppercase',
                               letterSpacing: '.06em', marginBottom: 4
                             }}>
@@ -729,7 +730,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                               {item.subcategoria}
                             </p>
                           )}
-                          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', margin: '2px 0 0' }}>
+                          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', margin: '2px 0 0' }}>
                             {item.isAlbum
                               ? (item.albumCount ? '📁 Ver álbum completo' : '✨ Próximamente más fotos')
                               : vid ? '▶ Reproducir' : '🔍 Ver en grande'}
@@ -912,7 +913,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                   {visibles[lightbox].categoria && (
                     <span style={{
                       display: 'inline-block', background: 'rgba(212,160,23,0.9)', color: '#0a1628',
-                      fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999,
+                      fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999,
                       textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2
                     }}>
                       {visibles[lightbox].categoria}
@@ -927,7 +928,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                       {visibles[lightbox].alt}
                     </p>
                   )}
-                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.68rem', margin: '2px 0 0' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: '2px 0 0' }}>
                     {lightbox + 1} / {visibles.length}
                   </p>
                 </div>
@@ -963,7 +964,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                     {visibles[lightbox].categoria && (
                       <span style={{
                         display: 'inline-block', background: 'rgba(212,160,23,0.9)', color: '#0a1628',
-                        fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999,
+                        fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999,
                         textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 2
                       }}>
                         {visibles[lightbox].categoria}
@@ -978,7 +979,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                         {visibles[lightbox].alt}
                       </p>
                     )}
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.68rem', margin: '2px 0 0' }}>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: '2px 0 0' }}>
                       {lightbox + 1} / {visibles.length}
                     </p>
                   </div>

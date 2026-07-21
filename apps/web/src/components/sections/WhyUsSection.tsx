@@ -186,7 +186,7 @@ function WhyCardMobile({ item, i, isOpen, onToggle }: {
           {item.icon}
         </div>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontSize:'0.6rem', fontWeight:700, color:'rgba(212,160,23,0.5)', letterSpacing:'.1em', textTransform:'uppercase', marginBottom:2 }}>
+          <div style={{ fontSize:'0.75rem', fontWeight:700, color:'rgba(212,160,23,0.5)', letterSpacing:'.1em', textTransform:'uppercase', marginBottom:2 }}>
             {String(i + 1).padStart(2, '0')}
           </div>
           <div style={{ fontFamily:'var(--font-playfair)', fontSize:'0.95rem', fontWeight:700, color:ACCENT, lineHeight:1.2 }}>
@@ -251,7 +251,7 @@ export default function WhyUsSection({ data }: { data: any }) {
                style={{ display:'inline-flex', alignItems:'center', gap:8, marginBottom:'1rem',
                          padding:'0.4rem 1.5rem', borderRadius:9999,
                          background:'rgba(30,58,95,0.07)', border:'1px solid rgba(30,58,95,0.18)',
-                         color:'#1e3a5f', fontSize:'0.72rem', fontWeight:700,
+                         color:'#1e3a5f', fontSize:'0.75rem', fontWeight:700,
                          textTransform:'uppercase', letterSpacing:'.12em' }}>
             ✨ Por qué elegirnos
           </div>

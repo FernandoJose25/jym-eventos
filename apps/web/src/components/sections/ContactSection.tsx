@@ -107,7 +107,7 @@ export default function ContactSection({ data }: Props) {
     e.target.style.background = 'rgba(255,255,255,0.05)';
   };
   const lbl: React.CSSProperties = {
-    display: 'block', fontSize: '0.65rem', fontWeight: 700,
+    display: 'block', fontSize: '0.75rem', fontWeight: 700,
     textTransform: 'uppercase', letterSpacing: '.12em',
     color: 'rgba(255,255,255,0.35)', marginBottom: 6,
   };
@@ -155,7 +155,7 @@ export default function ContactSection({ data }: Props) {
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0.4rem 1.25rem',
             borderRadius: 9999, background: 'rgba(212,160,23,0.1)', border: '1px solid rgba(212,160,23,0.3)',
-            color: '#d4a017', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase',
+            color: '#d4a017', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
             letterSpacing: '.2em', marginBottom: '1.25rem'
           }}>
             ✦ Hablemos
@@ -216,7 +216,7 @@ export default function ContactSection({ data }: Props) {
                 </div>
                 <div style={{ overflow: 'hidden' }}>
                   <p style={{
-                    fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase',
+                    fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
                     letterSpacing: '.12em', color: 'rgba(255,255,255,0.3)', margin: '0 0 3px'
                   }}>
                     {label}
@@ -233,7 +233,7 @@ export default function ContactSection({ data }: Props) {
                     </a>
                     : <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.85rem', fontWeight: 600, margin: 0 }}>{value}</p>
                   }
-                  {sub && <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: '0.7rem', margin: '2px 0 0' }}>{sub}</p>}
+                  {sub && <p style={{ color: 'rgba(255,255,255,0.28)', fontSize: '0.75rem', margin: '2px 0 0' }}>{sub}</p>}
                 </div>
               </div>
             ))}

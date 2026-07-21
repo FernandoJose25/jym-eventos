@@ -1,11 +1,17 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/site';
+import { pageOpenGraph } from '@/lib/seo';
 import LegalPageClient from '@/components/ui/LegalPageClient';
 
 export const metadata: Metadata = {
   title: 'Política de Cookies',
   description: 'Política de cookies de J&M Decoraciones y Eventos. Qué cookies usamos, para qué sirven y cómo puedes gestionarlas.',
   alternates: { canonical: `${SITE_URL}/cookies` },
+  openGraph: pageOpenGraph({
+    title: 'Política de Cookies',
+    description: 'Política de cookies de J&M Decoraciones y Eventos. Qué cookies usamos, para qué sirven y cómo puedes gestionarlas.',
+    url: `${SITE_URL}/cookies`,
+  }),
 };
 
 const DEFAULT_SECTIONS = [

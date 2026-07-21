@@ -171,7 +171,7 @@ export default function AboutSection({ data }: AboutProps) {
                   border:'1px solid rgba(212,160,23,0.3)',
                   animation:'tagFloat 3.5s ease-in-out infinite',
                 }}>
-                  <p style={{ color:'#f5c842', fontSize:'0.68rem', fontWeight:700, margin:0,
+                  <p style={{ color:'#f5c842', fontSize:'0.75rem', fontWeight:700, margin:0,
                                textTransform:'uppercase', letterSpacing:'.1em' }}>
                     ✦ {label}
                   </p>
@@ -229,7 +229,7 @@ export default function AboutSection({ data }: AboutProps) {
                              color:'#0a1628', margin:0, lineHeight:1 }}>
                   {badgeNum}
                 </p>
-                <p style={{ fontSize:'0.62rem', fontWeight:800, color:'rgba(10,22,40,0.8)', margin:'4px 0 0',
+                <p style={{ fontSize:'0.75rem', fontWeight:800, color:'rgba(10,22,40,0.8)', margin:'4px 0 0',
                              textTransform:'uppercase', letterSpacing:'.08em', lineHeight:1.3 }}
                    dangerouslySetInnerHTML={{ __html: badgeTxt }}/>
               </div>
@@ -262,7 +262,7 @@ export default function AboutSection({ data }: AboutProps) {
               display:'inline-flex', alignItems:'center', gap:8, marginBottom:'1.25rem',
               padding:'0.4rem 1.25rem', borderRadius:9999,
               background:'rgba(30,58,95,0.07)', border:'1px solid rgba(30,58,95,0.15)',
-              color:'#1e3a5f', fontSize:'0.7rem', fontWeight:700,
+              color:'#1e3a5f', fontSize:'0.75rem', fontWeight:700,
               textTransform:'uppercase', letterSpacing:'.18em',
               animation: revealed ? 'slideInRight .6s ease .4s both' : 'none',
             }}>
@@ -356,7 +356,7 @@ export default function AboutSection({ data }: AboutProps) {
                   <div className="about-stat-icon" style={{ fontSize:'1.25rem', marginBottom:4 }}>{icon}</div>
                   <p style={{ fontFamily:'var(--font-playfair)', fontSize:'1.6rem', fontWeight:700,
                                color:'#d4a017', margin:'0 0 2px', lineHeight:1 }}>{n}</p>
-                  <p style={{ color:'#94a3b8', fontSize:'0.68rem', margin:0,
+                  <p style={{ color:'#94a3b8', fontSize:'0.75rem', margin:0,
                                textTransform:'uppercase', letterSpacing:'.08em' }}>{l}</p>
                 </div>
               ))}

@@ -22,7 +22,7 @@ export default function BrandsSection({ data }: { data: any }) {
                        borderBottom:'1px solid rgba(212,160,23,0.12)',
                        position:'relative', overflow:'hidden' }}>
       <div style={{ textAlign:'center', marginBottom:'2.5rem', padding:'0 1rem' }}>
-        <p style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.22em', color:'rgba(255,255,255,0.45)' }}>
+        <p style={{ fontSize:'0.75rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.22em', color:'rgba(255,255,255,0.45)' }}>
           {h2}
         </p>
       </div>

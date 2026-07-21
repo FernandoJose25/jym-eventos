@@ -464,7 +464,7 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
                 <button style={VBTN} onClick={e => { e.stopPropagation(); toggleMute(); }}>
                   {muted ? '🔇' : '🔊'}
                 </button>
-                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem' }}>
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem' }}>
                   Usa los botones físicos del dispositivo para ajustar el volumen
                 </span>
               </div>
@@ -479,7 +479,7 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
                   onChange={e => changeVol(Number(e.target.value))}
                   style={{ flex: 1, accentColor: '#f5c842', cursor: 'pointer', touchAction: 'none' }}
                 />
-                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem', minWidth: 34, textAlign: 'right' }}>
+                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.75rem', minWidth: 34, textAlign: 'right' }}>
                   {muted ? '0%' : `${Math.round(volume * 100)}%`}
                 </span>
               </div>
@@ -490,7 +490,7 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
         {/* ── Panel: Menú ── */}
         {panel === 'menu' && (
           <div style={{ marginBottom: 10, padding: '8px 10px', background: 'rgba(0,0,0,0.55)', borderRadius: 10 }}>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.62rem', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '.1em' }}>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '.1em' }}>
               Velocidad
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
@@ -523,7 +523,7 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
         {/* ── Panel: Calidad ── */}
         {panel === 'calidad' && (
           <div style={{ marginBottom: 10, padding: '8px 10px', background: 'rgba(0,0,0,0.55)', borderRadius: 10 }}>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.62rem', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '.1em' }}>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '.1em' }}>
               Calidad de video
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -541,7 +541,7 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
                 </button>
               ))}
             </div>
-            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.62rem', margin: '8px 0 0' }}>
+            <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.75rem', margin: '8px 0 0' }}>
               {nativeHeight && qualitiesDisponibles.length < QUALITIES.length
                 ? `Este video es de ${nativeHeight}p — no se muestran calidades mayores porque no existen en el archivo original`
                 : 'Elige una calidad menor si tu conexión es lenta o tienes datos limitados'}
@@ -564,7 +564,7 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
             {playing ? '⏸' : '▶'}
           </button>
 
-          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.7rem', flexShrink: 0, minWidth: 72 }}>
+          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.75rem', flexShrink: 0, minWidth: 72 }}>
             {fmtTime(cur)} / {fmtTime(dur)}
           </span>
 
@@ -642,7 +642,7 @@ function SkipFeedback({ side, onDone }: { side: 'left' | 'right'; onDone: () => 
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
       }}>
         <span style={{ fontSize: '1.3rem' }}>{side === 'right' ? '⏩' : '⏪'}</span>
-        <span style={{ color: '#fff', fontSize: '0.65rem', fontWeight: 700 }}>5s</span>
+        <span style={{ color: '#fff', fontSize: '0.75rem', fontWeight: 700 }}>5s</span>
       </div>
     </motion.div>
   );
