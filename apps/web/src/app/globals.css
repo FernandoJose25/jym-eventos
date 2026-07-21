@@ -251,3 +251,17 @@ h1 em, h2 em {
 .float-y-slow   { animation: floatSlow 8s ease-in-out infinite; }
 .float-delay-2  { animation-delay: 2s; }
 .breathe-subtle { animation: breatheSubtle 6s ease-in-out infinite; }
+
+/* ── Ocultar el botón flotante de WhatsApp mientras el lightbox está abierto ──
+   El widget (whatsbox.io) se inyecta como script de terceros y flota fijo en
+   la esquina; encima de una foto/video del lightbox estorba la vista. La clase
+   `lightbox-open` la pone/quita useLockBodyScroll en <html>. Los selectores
+   cubren las variantes que usa el widget (id/clase con prefijo wbwacw/wacw). */
+html.lightbox-open [id^="wbwacw"],
+html.lightbox-open [class^="wbwacw"],
+html.lightbox-open [class*=" wbwacw"],
+html.lightbox-open [id^="wacw"],
+html.lightbox-open [class^="wacw"],
+html.lightbox-open [class*=" wacw"] {
+  display: none !important;
+}

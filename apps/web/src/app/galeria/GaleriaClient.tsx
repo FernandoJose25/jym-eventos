@@ -179,20 +179,14 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
   // sola vez evita que el mismo gesto se re-interprete a mitad de camino.
   const swipeAxisRef = useRef<'vertical' | 'horizontal' | null>(null);
   const { scale: imgScale, x: imgX, y: imgY, isZoomed: imgZoomed, handlers: imgZoomHandlers } = useZoomPan(mediaBoxRef);
-  // Zoom del VIDEO activo: vive en un useZoomPan distinto dentro de
-  // CustomVideoPlayer (cada video tiene su propia caja/aspect-ratio), así
-  // que el lightbox no lo conoce salvo que el hijo lo reporte explícitamente.
-  // Sin esto, el guard de swipe de abajo solo miraba imgZoomed y dejaba
-  // navegar de slide en medio de un pan sobre un video ampliado.
-  const [videoZoomed, setVideoZoomed] = useState(false);
-  // Ref espejo del estado de arriba: el guard de touchend necesita leer el
-  // valor MÁS RECIENTE de forma síncrona. Si dependiera del useState directo,
-  // un usuario que suelta el pinch y de inmediato hace swipe podía colarse
-  // antes de que React re-renderizara con isZoomed=true, dejando pasar un
-  // swipe de navegación en medio de lo que debía seguir siendo zoom.
+  // Ref espejo del estado de zoom de la IMAGEN: el guard de touchend necesita
+  // leer el valor MÁS RECIENTE de forma síncrona. Si dependiera del useState
+  // directo, un usuario que suelta el pinch y de inmediato hace swipe podía
+  // colarse antes de que React re-renderizara con isZoomed=true, dejando pasar
+  // un swipe de navegación en medio de lo que debía seguir siendo zoom.
+  // (Los videos ya no tienen zoom, así que solo importa el de imágenes.)
   const mediaZoomedRef = useRef(false);
-  const mediaZoomed = imgZoomed || videoZoomed;
-  useEffect(() => { mediaZoomedRef.current = mediaZoomed; }, [mediaZoomed]);
+  useEffect(() => { mediaZoomedRef.current = imgZoomed; }, [imgZoomed]);
 
   useEffect(() => {
     const CACHE_KEY = 'jym_gallery_cache_v1';
@@ -310,11 +304,6 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
   const haySubs = catActiva !== 'Todos' && subcats.length > 1;
 
   useLockBodyScroll(lightbox !== null);
-
-  // Al cambiar de slide (o cerrar) el video anterior se desmonta y ya
-  // dispara onZoomChange(false) en su cleanup, pero lo forzamos aquí también
-  // para no depender del orden exacto de efectos entre padre/hijo.
-  useEffect(() => { setVideoZoomed(false); }, [lightbox]);
 
   // Lightbox keyboard
   useEffect(() => {
@@ -870,7 +859,7 @@ export default function GaleriaClient({ initialItems = [] }: { initialItems?: GI
                   } : undefined}
                 >
                   {isVideo(visibles[lightbox]) ? (
-                    <CustomVideoPlayer key={visibles[lightbox].id} src={visibles[lightbox].url} sonidoPermitido={visibles[lightbox].sonidoPermitido === true} fullBleed={isTouch} onZoomChange={setVideoZoomed} />
+                    <CustomVideoPlayer key={visibles[lightbox].id} src={visibles[lightbox].url} sonidoPermitido={visibles[lightbox].sonidoPermitido === true} fullBleed={isTouch} />
                   ) : (
                     <motion.div
                       {...(isTouch ? imgZoomHandlers : {})}

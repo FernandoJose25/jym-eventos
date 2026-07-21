@@ -31,6 +31,10 @@ export function useLockBodyScroll(locked: boolean) {
     body.style.position = 'fixed';
     body.style.top = `-${scrollY}px`;
     body.style.width = '100%';
+    // Marca para que el CSS global oculte el botón flotante de WhatsApp
+    // (widget de terceros) mientras el lightbox está abierto — si no, ese
+    // botón queda encima de la foto/video e interrumpe la vista.
+    html.classList.add('lightbox-open');
     return () => {
       html.style.overflow = prev.htmlOverflow;
       body.style.overflow = prev.bodyOverflow;
@@ -38,6 +42,7 @@ export function useLockBodyScroll(locked: boolean) {
       body.style.position = prev.bodyPosition;
       body.style.top = prev.bodyTop;
       body.style.width = prev.bodyWidth;
+      html.classList.remove('lightbox-open');
       window.scrollTo(0, scrollY);
     };
   }, [locked]);

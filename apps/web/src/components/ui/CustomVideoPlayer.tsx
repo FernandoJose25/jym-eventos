@@ -3,7 +3,6 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cxVideo, cxVideoQuality } from '@/lib/cloudinary';
 import { useIsTouchDevice } from '@/lib/hooks/useIsTouchDevice';
-import { useZoomPan } from '@/lib/hooks/useZoomPan';
 
 // ── CustomVideoPlayer ──────────────────────────────────────────────
 const VBTN: React.CSSProperties = {
@@ -50,17 +49,14 @@ function fmtTime(s: number) {
  * visitante no puede activar el sonido bajo ninguna circunstancia (para
  * videos con conversaciones/audio que no se quiere hacer público).
  */
-function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, onZoomChange }: { src: string; sonidoPermitido?: boolean; fullBleed?: boolean; onZoomChange?: (zoomed: boolean) => void }) {
+function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false }: { src: string; sonidoPermitido?: boolean; fullBleed?: boolean }) {
   const videoRef  = useRef<HTMLVideoElement>(null);
   const wrapRef   = useRef<HTMLDivElement>(null);
-  const mediaBoxRef = useRef<HTMLDivElement>(null);
   const timerRef  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  // Aspect ratio real del archivo (ancho/alto) — se usa para que la caja que
-  // recibe el pinch-zoom calce EXACTO con el contenido visual del video, sin
-  // las barras negras que deja `object-fit:contain` cuando el elemento no
-  // comparte el aspect ratio del video. Sin esto, useZoomPan calcula pan/zoom
-  // sobre una caja que incluye esas barras negras: el usuario ve márgenes
-  // negros al hacer zoom y puede arrastrar hacia esas zonas vacías.
+  // Aspect ratio real del archivo (ancho/alto) — se usa para que la caja del
+  // video calce EXACTO con su contenido visual, sin las barras negras que
+  // deja `object-fit:contain` cuando el elemento no comparte el aspect ratio
+  // del archivo.
   const [videoAspect, setVideoAspect] = useState<number | null>(null);
 
   const [playing,     setPlaying]     = useState(false);
@@ -80,24 +76,8 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
   const resumeRef     = useRef<{ time: number; wasPlaying: boolean } | null>(null);
   const skipNextResume = useRef(true); // no restaurar posición en el primer render
 
-  // Gestos táctiles (solo mobile): pinch-zoom persistente + doble-tap lateral
+  // Gestos táctiles (solo mobile): doble-tap lateral para adelantar/retroceder.
   const isTouch = useIsTouchDevice();
-  const { scale, x: panX, y: panY, isZoomed, handlers: zoomHandlers } = useZoomPan(mediaBoxRef);
-  // El pinch-zoom solo debe activarse una vez que conocemos el aspect ratio
-  // real (fullBleed) o al menos ya cargó metadata — si el usuario pellizca
-  // antes de eso, useZoomPan mide con getBoundingClientRect() una caja que
-  // aún no tiene su tamaño/aspect-ratio final, y calcula límites de pan
-  // incorrectos (se queda "pegado" en un zoom que ya no se puede deshacer).
-  const gestosListos = fullBleed ? videoAspect !== null : dur > 0;
-  // El padre (lightbox de galería) usa esto para bloquear su swipe de
-  // navegación mientras el video está en zoom — sin esto, el swipe entre
-  // fotos/videos no sabe que hay un zoom de VIDEO activo (solo conoce el
-  // zoom de imágenes, que vive en un useZoomPan distinto) y puede cambiar
-  // de slide en medio de un gesto de pan sobre el video ampliado.
-  useEffect(() => {
-    onZoomChange?.(isZoomed);
-    return () => onZoomChange?.(false);
-  }, [isZoomed, onZoomChange]);
   const [skipFeedback, setSkipFeedback] = useState<{ side: 'left' | 'right'; key: number } | null>(null);
   const lastVideoTapRef = useRef<{ time: number; x: number } | null>(null);
   const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -248,19 +228,13 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
     bump();
   };
 
-  // Doble-tap lateral (solo mobile, solo si no hay zoom activo): tap derecho
-  // = +5s, tap izquierdo = -5s. Un solo tap conserva el comportamiento
-  // original (togglePlay/bump), con un pequeño delay para poder distinguirlo
-  // de un doble-tap.
-  //
-  // Solo dispara en el 20% más externo de cada lado — el 60% central es la
-  // "zona de zoom" que useZoomPan reclama para su propio doble-tap (ver
-  // ZOOM_TAP_ZONE). Antes ambos hooks escuchaban el mismo touchend y corrían
-  // en paralelo: un doble-tap a la derecha hacía zoom Y adelantaba 5s a la
-  // vez porque nada los excluía mutuamente. Repartir el gesto por zona fija
-  // el conflicto en el origen, sin depender de quién "gane" el timing.
+  // Doble-tap lateral (solo mobile): tap en la mitad derecha = +5s, en la
+  // mitad izquierda = -5s. Un solo tap conserva el comportamiento original
+  // (togglePlay/bump), con un pequeño delay para poder distinguirlo de un
+  // doble-tap. Sin zoom en video, el doble-tap ya no compite con ningún otro
+  // gesto, así que el seek funciona en TODO el ancho (mitad izq / mitad der),
+  // no solo en los bordes.
   const handleVideoTouchEnd = (e: React.TouchEvent) => {
-    if (isZoomed) return; // en zoom, el doble-tap lo maneja useZoomPan (reset)
     const t = e.changedTouches[0]; if (!t) return;
     const now = Date.now();
     const last = lastVideoTapRef.current;
@@ -271,9 +245,7 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
       lastVideoTapRef.current = null;
       const rect = wrapRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const relX = (t.clientX - rect.left) / rect.width;
-      if (relX >= 0.2 && relX <= 0.8) return; // zona central: es doble-tap de zoom, no de seek
-      const isRight = relX > 0.5;
+      const isRight = (t.clientX - rect.left) / rect.width > 0.5;
       skip(isRight ? 5 : -5, isRight ? 'right' : 'left');
     } else {
       lastVideoTapRef.current = { time: now, x: t.clientX };
@@ -353,34 +325,9 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
     >
       {/* Caja de medio: en fullBleed, su tamaño calza EXACTO con el aspect
           ratio real del video (via aspect-ratio) para que no queden barras
-          negras propias dentro de la caja que recibe el pinch-zoom — así
-          useZoomPan calcula pan/límites sobre el contenido visual real, no
-          sobre espacio vacío. */}
+          negras propias alrededor del contenido visual del video. */}
       <motion.div
-        ref={mediaBoxRef}
-        {...(isTouch && gestosListos ? {
-          // `sp()` (stopPropagation) SOLO se aplica mientras hay zoom activo o
-          // el gesto es un pinch de 2 dedos — ahí el video se queda con el
-          // gesto por completo (pan/pinch). Un swipe vertical de 1 dedo para
-          // cambiar de slide, en cambio, debe seguir subiendo al lightbox
-          // padre sin cortar: antes `sp()` se llamaba incondicionalmente en
-          // todo touchmove/touchend, así que el padre nunca se enteraba de
-          // que había un swipe en curso sobre un video — el gesto de
-          // "avanzar/retroceder" simplemente no llegaba a dispararse.
-          onTouchStart: (e: React.TouchEvent) => {
-            if (isZoomed || e.touches.length === 2) sp(e);
-            zoomHandlers.onTouchStart(e);
-          },
-          onTouchMove: (e: React.TouchEvent) => {
-            if (isZoomed || e.touches.length === 2) sp(e);
-            zoomHandlers.onTouchMove(e);
-          },
-          onTouchEnd: (e: React.TouchEvent) => {
-            if (isZoomed) sp(e);
-            zoomHandlers.onTouchEnd(e);
-            handleVideoTouchEnd(e);
-          },
-        } : isTouch ? {
+        {...(isTouch ? {
           onTouchEnd: (e: React.TouchEvent) => { handleVideoTouchEnd(e); },
         } : {})}
         style={fullBleed ? {
@@ -395,12 +342,8 @@ function CustomVideoPlayer({ src, sonidoPermitido = false, fullBleed = false, on
           // metadata real, para que se sienta como un ajuste suave y no un
           // salto instantáneo del contenido.
           transition: 'aspect-ratio 0.25s ease-out',
-          scale, x: panX, y: panY,
-          touchAction: isTouch && gestosListos ? 'none' : 'auto',
         } : {
           position: 'relative', width: '100%',
-          scale, x: panX, y: panY,
-          touchAction: isTouch && gestosListos ? 'none' : 'auto',
         }}
       >
         <video
