@@ -19,7 +19,7 @@ export function toPlain(data: Record<string, any>): Record<string, any> {
 
 export type HomeData = {
   hero: any; stats: any; about: any; contacto: any;
-  services: any[]; gallery: any[]; testimonials: any[];
+  services: any[]; gallery: any[]; testimonials: any[]; stories: any[];
   whyUs: any; brands: any; faq: any; transformaciones: any; loaded: true;
 };
 
@@ -30,7 +30,7 @@ export type HomeData = {
  */
 export async function getHomeData(): Promise<HomeData> {
   try {
-    const [heroS, statsS, aboutS, contactoS, whyUsS, brandsS, faqS, transS, servicesS, galleryS, testimonialsS] =
+    const [heroS, statsS, aboutS, contactoS, whyUsS, brandsS, faqS, transS, servicesS, galleryS, testimonialsS, storiesS] =
       await Promise.allSettled([
         getDoc(doc(db, 'site_config', 'hero')),
         getDoc(doc(db, 'site_config', 'stats')),
@@ -43,6 +43,7 @@ export async function getHomeData(): Promise<HomeData> {
         getDocs(query(collection(db, 'services'), where('visible', '==', true), orderBy('order', 'asc'))),
         getDocs(query(collection(db, 'gallery_items'), where('visible', '==', true), orderBy('order', 'asc'))),
         getDocs(query(collection(db, 'testimonials'), where('visible', '==', true), orderBy('order', 'asc'))),
+        getDocs(query(collection(db, 'instagram_stories'), where('visible', '==', true), orderBy('order', 'asc'))),
       ]);
 
     return {
@@ -57,13 +58,14 @@ export async function getHomeData(): Promise<HomeData> {
       services: servicesS.status === 'fulfilled' ? servicesS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
       gallery: galleryS.status === 'fulfilled' ? galleryS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
       testimonials: testimonialsS.status === 'fulfilled' ? testimonialsS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
+      stories: storiesS.status === 'fulfilled' ? storiesS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
       loaded: true,
     };
   } catch (e) {
     console.error('[getHomeData]', e);
     return {
       hero: {}, stats: {}, about: {}, contacto: {},
-      services: [], gallery: [], testimonials: [],
+      services: [], gallery: [], testimonials: [], stories: [],
       whyUs: null, brands: null, faq: null, transformaciones: null, loaded: true,
     };
   }
