@@ -338,7 +338,7 @@ export default function ConfiguracionPage() {
     await setDoc(doc(db, COL.CONFIGURACION, section), saveData, { merge: true });
     setSaving(false);
     setIsDefaults(false);
-    toast.success('✅ Guardado. Los cambios ya están en la web.');
+    toast.success('✅ Guardado. Se verá en la web en ≤60 segundos.');
   };
 
   /* ─────────────────────────────────────────────────────
