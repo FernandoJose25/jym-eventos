@@ -80,6 +80,21 @@ export default function SugerenciasPanel({ user, unread }: { user: User; unread:
           background: '#fff', borderRadius: 14, border: '1px solid #e2e8f0',
           boxShadow: '0 12px 40px rgba(10,22,40,0.18)', zIndex: 50, overflow: 'hidden',
         }}>
+          <style>{`
+            /* En móvil el dropdown se ancla al botón (esquina superior derecha)
+               y se salía de la pantalla. Lo fijamos casi a ancho completo,
+               centrado bajo la barra, para que nunca se corte. */
+            @media (max-width: 640px) {
+              .sugerencias-dropdown {
+                position: fixed !important;
+                top: 60px !important;
+                left: 12px !important;
+                right: 12px !important;
+                width: auto !important;
+                max-width: none !important;
+              }
+            }
+          `}</style>
           {/* Cabecera */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.875rem 1rem', borderBottom: '1px solid #f1f5f9', background: 'linear-gradient(135deg,#0a1628,#1e3a5f)' }}>
             <Sparkles size={16} style={{ color: '#f5c842' }} />
