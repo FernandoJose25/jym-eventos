@@ -1,4 +1,4 @@
-import { doc, getDoc, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export function toPlain(data: Record<string, any>): Record<string, any> {
@@ -40,13 +40,26 @@ export async function getHomeData(): Promise<HomeData> {
         getDoc(doc(db, 'site_config', 'brands')),
         getDoc(doc(db, 'site_config', 'faq')),
         getDoc(doc(db, 'site_config', 'transformaciones')),
-        getDocs(query(collection(db, 'services'), where('visible', '==', true), orderBy('order', 'asc'))),
-        getDocs(query(collection(db, 'gallery_items'), where('visible', '==', true), orderBy('order', 'asc'))),
-        getDocs(query(collection(db, 'testimonials'), where('visible', '==', true), orderBy('order', 'asc'))),
-        // Sin where+orderBy compuesto (evita exigir un índice compuesto en
-        // Firestore); se filtra visible y se ordena por 'order' en memoria abajo.
+        // Todas estas colecciones se traen SIN el par where('visible')+orderBy('order'):
+        // esa combinación exige un índice compuesto en Firestore y, si falta (o se
+        // borra), la query lanza failed-precondition y el Promise.allSettled la deja
+        // vacía en silencio — lo que dejaba la galería/historias sin datos en SSR y
+        // provocaba el hydration mismatch (#418). Se filtra `visible` y se ordena por
+        // `order` en memoria abajo, que no requiere índice.
+        getDocs(collection(db, 'services')),
+        getDocs(collection(db, 'gallery_items')),
+        getDocs(collection(db, 'testimonials')),
         getDocs(collection(db, 'instagram_stories')),
       ]);
+
+    // Filtra visibles y ordena por `order` en memoria (sin índice compuesto).
+    const visiblesOrdenados = (snap: typeof servicesS) =>
+      snap.status === 'fulfilled'
+        ? snap.value.docs
+          .map(d => toPlain({ id: d.id, ...d.data() }))
+          .filter(x => x.visible !== false)
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        : [];
 
     return {
       hero: heroS.status === 'fulfilled' && heroS.value.exists() ? toPlain(heroS.value.data()) : {},
@@ -57,15 +70,10 @@ export async function getHomeData(): Promise<HomeData> {
       brands: brandsS.status === 'fulfilled' && brandsS.value.exists() ? toPlain(brandsS.value.data()) : null,
       faq: faqS.status === 'fulfilled' && faqS.value.exists() ? toPlain(faqS.value.data()) : null,
       transformaciones: transS.status === 'fulfilled' && transS.value.exists() ? toPlain(transS.value.data()) : null,
-      services: servicesS.status === 'fulfilled' ? servicesS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
-      gallery: galleryS.status === 'fulfilled' ? galleryS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
-      testimonials: testimonialsS.status === 'fulfilled' ? testimonialsS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
-      stories: storiesS.status === 'fulfilled'
-        ? storiesS.value.docs
-          .map(d => toPlain({ id: d.id, ...d.data() }))
-          .filter(s => s.visible !== false)
-          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-        : [],
+      services: visiblesOrdenados(servicesS),
+      gallery: visiblesOrdenados(galleryS),
+      testimonials: visiblesOrdenados(testimonialsS),
+      stories: visiblesOrdenados(storiesS),
       loaded: true,
     };
   } catch (e) {
