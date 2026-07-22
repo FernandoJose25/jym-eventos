@@ -324,39 +324,44 @@ export default function LoginPage() {
       <div className="jym-grain" />
       <div className="jym-hairline" />
 
-      {/* Titular editorial — CONSERVADO (rectángulo rojo) */}
-      <div className="jym-editorial" key={saludo}>
-        <div className="jym-brandmark jym-rise">
-          <span className="jym-brandmark-icon">🎉</span>
-          <div>
-            <p className="jym-brandmark-name">J&amp;M Decoraciones y Eventos</p>
-            <p className="jym-brandmark-tag">Panel Administrativo</p>
+      {/* UNA sola tarjeta que envuelve todo: monstruo grande a la izquierda,
+          formulario a la derecha. */}
+      <div className="jym-card jym-rise jym-rise-2">
+        <div className="jym-card-seal" />
+
+        {/* ── Panel izquierdo: monstruo grande + titular editorial encima ── */}
+        <div className="jym-left" key={saludo}>
+          <div className="jym-brandmark jym-rise">
+            <span className="jym-brandmark-icon">🎉</span>
+            <div>
+              <p className="jym-brandmark-name">J&amp;M Decoraciones y Eventos</p>
+              <p className="jym-brandmark-tag">Panel Administrativo</p>
+            </div>
           </div>
+
+          {/* Mascota reactiva a los campos — protagonista del lado izquierdo */}
+          <MonsterMascot shy={shy} typingEmail={emailFocused && !!email} />
+
+          {fecha && (
+            <p className="jym-datestamp jym-rise jym-rise-1">
+              <span className="jym-dot" />
+              {fecha} · {hora}
+            </p>
+          )}
+
+          <h1 className="jym-headline jym-rise jym-rise-2">
+            {saludo},<br />equipo J&amp;M<span className="jym-headline-dot">.</span>
+          </h1>
+
+          <p className="jym-sub jym-rise jym-rise-3">{msg}</p>
+
+          <p className="jym-locale jym-rise jym-rise-3">Sechura, Piura · Desde 2014</p>
         </div>
 
-        {fecha && (
-          <p className="jym-datestamp jym-rise jym-rise-1">
-            <span className="jym-dot" />
-            {fecha} · {hora}
-          </p>
-        )}
-
-        <h1 className="jym-headline jym-rise jym-rise-2">
-          {saludo},<br />equipo J&amp;M<span className="jym-headline-dot">.</span>
-        </h1>
-
-        <p className="jym-sub jym-rise jym-rise-3">{msg}</p>
-
-        <p className="jym-locale jym-rise jym-rise-3">Sechura, Piura · Desde 2014</p>
-      </div>
-
-      {/* Tarjeta de vidrio con la mascota interactiva encima */}
-      <div className="jym-card-wrap jym-rise jym-rise-2">
-        <div className="jym-card">
-          <div className="jym-card-seal" />
-
+        {/* ── Panel derecho: formulario ── */}
+        <div className="jym-right">
           {stage === 'success' ? (
-            <div className="jym-modal-in" style={{ textAlign: 'center', padding: '0.5rem 0' }}>
+            <div className="jym-modal-in" style={{ textAlign: 'center', padding: '0.5rem 0', width: '100%' }}>
               <div className="jym-success-badge">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0a1628" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12" className="jym-check-draw" />
@@ -366,10 +371,7 @@ export default function LoginPage() {
               <p className="jym-success-sub">Redirigiendo al panel...</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="jym-modal-in">
-              {/* Mascota reactiva a los campos */}
-              <MonsterMascot shy={shy} typingEmail={emailFocused && !!email} />
-
+            <form onSubmit={handleSubmit} className="jym-modal-in jym-form">
               <p className="jym-eyebrow">Iniciar sesión</p>
               <h2 className="jym-card-title">Ingresa a tu cuenta</h2>
 
@@ -472,13 +474,15 @@ export default function LoginPage() {
           background: linear-gradient(90deg, transparent, rgba(245,200,66,0.35), transparent);
         }
 
-        /* ── Titular editorial ── */
-        .jym-editorial {
+        /* ── Panel izquierdo (monstruo + titular) ── */
+        .jym-left {
           position: relative; z-index: 2;
-          flex: 1 1 480px; max-width: 560px;
-          padding-right: clamp(1.5rem, 4vw, 4rem);
+          flex: 1 1 46%; min-width: 0;
+          padding: clamp(2rem, 4vw, 3rem) clamp(1.5rem, 3.5vw, 3rem);
+          display: flex; flex-direction: column; align-items: flex-start;
+          border-right: 1px solid rgba(255,255,255,0.06);
         }
-        .jym-brandmark { display: flex; align-items: center; gap: 12px; margin-bottom: clamp(2.5rem, 6vw, 5rem); }
+        .jym-brandmark { display: flex; align-items: center; gap: 12px; margin-bottom: clamp(1rem, 3vw, 2rem); }
         .jym-brandmark-icon {
           width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0; font-size: 1.3rem;
           display: flex; align-items: center; justify-content: center;
@@ -505,28 +509,25 @@ export default function LoginPage() {
         }
         .jym-headline {
           font-family: var(--font-playfair); color: #fff; font-weight: 700;
-          font-size: clamp(2.6rem, 5.2vw, 4.6rem); line-height: 0.98;
-          letter-spacing: -.02em; margin: 0 0 1.3rem;
+          font-size: clamp(2rem, 3vw, 2.9rem); line-height: 1.0;
+          letter-spacing: -.02em; margin: 0 0 1rem;
         }
         .jym-headline-dot { color: #f5c842; }
         .jym-sub {
-          color: rgba(255,255,255,0.5); font-size: clamp(1rem, 1.1vw, 1.15rem);
-          line-height: 1.65; max-width: 420px; margin: 0 0 clamp(2rem, 5vw, 3.5rem);
+          color: rgba(255,255,255,0.5); font-size: clamp(0.92rem, 1vw, 1.02rem);
+          line-height: 1.6; max-width: 360px; margin: 0 0 1.4rem;
         }
         .jym-locale { color: rgba(255,255,255,0.22); font-size: 0.75rem; margin: 0; letter-spacing: .02em; }
 
-        /* ── Tarjeta de vidrio ── */
-        .jym-card-wrap {
-          position: relative; z-index: 3;
-          flex: 0 1 400px; width: 100%; max-width: 400px;
-          transform: translateY(-6px);
-        }
+        /* ── Tarjeta única (envuelve todo) ── */
         .jym-card {
-          position: relative;
+          position: relative; z-index: 3;
+          width: min(920px, 100%);
+          display: flex; align-items: stretch;
           background: linear-gradient(165deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
           border: 1px solid rgba(255,255,255,0.09);
-          border-radius: 22px;
-          padding: clamp(2rem, 4vw, 2.6rem) clamp(1.75rem, 4vw, 2.4rem);
+          border-radius: 26px;
+          overflow: hidden;
           backdrop-filter: blur(28px) saturate(140%);
           -webkit-backdrop-filter: blur(28px) saturate(140%);
           box-shadow:
@@ -535,15 +536,23 @@ export default function LoginPage() {
             0 1px 0 rgba(255,255,255,0.08) inset;
         }
         .jym-card-seal {
-          position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+          position: absolute; top: 0; left: 8%; right: 8%; height: 1px;
           background: linear-gradient(90deg, transparent, #f5c842 50%, transparent);
-          opacity: 0.55;
+          opacity: 0.55; z-index: 4;
         }
 
-        /* ── Mascota monstruo ── */
+        /* ── Panel derecho (formulario) ── */
+        .jym-right {
+          flex: 1 1 54%; min-width: 0;
+          padding: clamp(2rem, 4vw, 2.8rem) clamp(1.75rem, 4vw, 2.6rem);
+          display: flex; align-items: center; justify-content: center;
+        }
+        .jym-form { width: 100%; max-width: 360px; }
+
+        /* ── Mascota monstruo (protagonista del lado izquierdo, grande) ── */
         .jym-monster-wrap {
-          width: clamp(120px, 40%, 168px); margin: 0 auto 0.4rem;
-          filter: drop-shadow(0 18px 30px rgba(0,0,0,0.4));
+          width: 100%; max-width: 320px; margin: clamp(0.5rem, 2vw, 1.5rem) auto clamp(1.5rem, 4vw, 2.5rem);
+          filter: drop-shadow(0 22px 36px rgba(0,0,0,0.42));
         }
         .jym-monster { width: 100%; height: auto; display: block; overflow: visible; }
         .jym-floaty { animation: jym-float 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
@@ -552,11 +561,11 @@ export default function LoginPage() {
 
         .jym-eyebrow {
           color: #f5c842; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-          letter-spacing: .22em; margin: 0 0 0.55rem; text-align: center;
+          letter-spacing: .22em; margin: 0 0 0.55rem;
         }
         .jym-card-title {
           font-family: var(--font-playfair); color: #fff; font-size: 1.6rem; font-weight: 700;
-          margin: 0 0 1.9rem; letter-spacing: -.01em; text-align: center;
+          margin: 0 0 1.9rem; letter-spacing: -.01em;
         }
         .jym-label {
           display: block; color: rgba(255,255,255,0.45); font-size: 0.72rem;
@@ -645,27 +654,37 @@ export default function LoginPage() {
         .jym-check-draw { animation: jym-check-draw-kf .45s ease .15s both; }
 
         /* ── Layout responsivo ── */
-        @media (max-width: 980px) {
+        /* Tablet/móvil: las dos columnas se apilan en una sola */
+        @media (max-width: 860px) {
           .jym-scene {
-            flex-direction: column; justify-content: flex-start;
-            align-items: stretch; min-height: 100dvh;
-            padding: 2.5rem 1.5rem 2rem;
+            align-items: flex-start; min-height: 100dvh;
+            padding: 2rem 1.25rem;
           }
-          .jym-editorial { max-width: 560px; padding-right: 0; text-align: center; margin-bottom: 1.75rem; }
-          .jym-brandmark { justify-content: center; margin-bottom: 1.5rem; }
-          .jym-datestamp { display: inline-flex; margin-bottom: 0.9rem; }
-          .jym-headline { margin-bottom: 0.7rem; }
-          .jym-sub { margin: 0 auto; }
+          .jym-card {
+            flex-direction: column; width: 100%; max-width: 460px; margin: 0 auto;
+          }
+          .jym-left {
+            border-right: none; border-bottom: 1px solid rgba(255,255,255,0.06);
+            align-items: center; text-align: center;
+            padding: 2rem 1.5rem 1.5rem;
+          }
+          .jym-brandmark { justify-content: center; }
+          .jym-datestamp { align-self: center; }
+          .jym-sub { margin-left: auto; margin-right: auto; }
+          .jym-monster-wrap { max-width: 190px; margin: 0.5rem auto 1.25rem; }
+          .jym-right { padding: 1.75rem 1.5rem 2rem; }
+          .jym-form { max-width: 100%; }
           .jym-locale { display: none; }
-          .jym-card-wrap { transform: none; margin: 0 auto; }
         }
-        @media (max-width: 480px) {
-          .jym-scene { padding: 2rem 1.25rem 1.5rem; }
-          .jym-headline { font-size: 2rem; }
-          .jym-brandmark { margin-bottom: 1.25rem; }
-          .jym-sub { font-size: 0.95rem; margin-bottom: 0; }
-          .jym-card { padding: 1.75rem 1.4rem; border-radius: 18px; }
-          .jym-monster-wrap { width: 118px; margin-bottom: 0.2rem; }
+        @media (max-width: 420px) {
+          .jym-scene { padding: 1.5rem 1rem; }
+          .jym-card { border-radius: 20px; }
+          .jym-left { padding: 1.75rem 1.25rem 1.25rem; }
+          .jym-monster-wrap { max-width: 150px; margin-bottom: 1rem; }
+          .jym-headline { font-size: 1.85rem; }
+          .jym-sub { font-size: 0.9rem; }
+          .jym-right { padding: 1.5rem 1.25rem 1.75rem; }
+          .jym-card-title { font-size: 1.4rem; }
         }
 
         @media (prefers-reduced-motion: reduce) {
