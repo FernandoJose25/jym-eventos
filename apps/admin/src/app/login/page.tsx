@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
@@ -41,6 +41,237 @@ function useGreeting() {
   }, [now]);
 }
 
+/* ── Monstruo mascota interactivo ──
+   Réplica del artifact: los ojos siguen el cursor, parpadea solo, se tapa
+   los ojos + se sonroja cuando el foco entra a la contraseña, y sonríe más
+   ancho al escribir el correo. Re-teñido a la paleta dorada/azul del panel. */
+function MonsterMascot({
+  shy,
+  typingEmail,
+}: {
+  shy: boolean;
+  typingEmail: boolean;
+}) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const pupilL = useRef<SVGGElement>(null);
+  const pupilR = useRef<SVGGElement>(null);
+  const lidL = useRef<SVGRectElement>(null);
+  const lidR = useRef<SVGRectElement>(null);
+  const mouthPath = useRef<SVGPathElement>(null);
+
+  const LID_MAX = 46;
+  const centers = { L: { x: 142, y: 102 }, R: { x: 178, y: 102 } };
+  const shyRef = useRef(shy);
+  shyRef.current = shy;
+
+  const setLids = useCallback((h: number) => {
+    lidL.current?.setAttribute('height', String(h));
+    lidR.current?.setAttribute('height', String(h));
+  }, []);
+
+  const animateLids = useCallback((to: number, dur = 140) => {
+    const from = parseFloat(lidL.current?.getAttribute('height') || '0') || 0;
+    const start = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / dur);
+      setLids(from + (to - from) * t);
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [setLids]);
+
+  // Pupilas siguen el cursor (desactivado con ojos cerrados)
+  useEffect(() => {
+    const track = (clientX: number, clientY: number) => {
+      if (shyRef.current) return;
+      const svg = svgRef.current;
+      if (!svg) return;
+      const r = svg.getBoundingClientRect();
+      const vx = ((clientX - r.left) / r.width) * 320;
+      const vy = ((clientY - r.top) / r.height) * 400;
+      ([['L', pupilL.current], ['R', pupilR.current]] as const).forEach(([key, el]) => {
+        if (!el) return;
+        const c = centers[key];
+        const dx = vx - c.x, dy = vy - c.y;
+        const d = Math.hypot(dx, dy) || 1;
+        const mx = (dx / d) * Math.min(7, d / 6);
+        const my = (dy / d) * Math.min(7, d / 6);
+        el.setAttribute('transform', `translate(${mx.toFixed(1)} ${my.toFixed(1)})`);
+      });
+    };
+    const onMove = (e: MouseEvent) => track(e.clientX, e.clientY);
+    window.addEventListener('mousemove', onMove);
+    return () => window.removeEventListener('mousemove', onMove);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Parpadeo periódico (solo con ojos abiertos)
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (shyRef.current) return;
+      animateLids(LID_MAX, 90);
+      setTimeout(() => { if (!shyRef.current) animateLids(0, 110); }, 150);
+    }, 4200);
+    return () => clearInterval(id);
+  }, [animateLids]);
+
+  // Reacción al modo contraseña (ojos cerrados + sonrisa tímida)
+  useEffect(() => {
+    if (shy) {
+      pupilL.current?.setAttribute('transform', 'translate(0 0)');
+      pupilR.current?.setAttribute('transform', 'translate(0 0)');
+      animateLids(LID_MAX, 160);
+      mouthPath.current?.setAttribute('d', 'M134 140 Q160 162 186 140 Q160 150 134 140 Z');
+    } else {
+      animateLids(0, 180);
+      mouthPath.current?.setAttribute('d', 'M120 138 Q160 190 200 138 Q160 158 120 138 Z');
+    }
+  }, [shy, animateLids]);
+
+  // Sonrisa más ancha mientras se escribe el correo
+  useEffect(() => {
+    if (shyRef.current) return;
+    if (typingEmail) {
+      mouthPath.current?.setAttribute('d', 'M116 136 Q160 200 204 136 Q160 168 116 136 Z');
+    } else {
+      mouthPath.current?.setAttribute('d', 'M120 138 Q160 190 200 138 Q160 158 120 138 Z');
+    }
+  }, [typingEmail]);
+
+  return (
+    <div className="jym-monster-wrap" aria-hidden="true">
+      <svg ref={svgRef} className="jym-monster" viewBox="0 0 320 400" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="jym-skin" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#7AD9F0" />
+            <stop offset="100%" stopColor="#4FC3E8" />
+          </linearGradient>
+          <linearGradient id="jym-jacket" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#2E5FE0" />
+            <stop offset="100%" stopColor="#1E3FB0" />
+          </linearGradient>
+          <linearGradient id="jym-sleeve" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#FBF5E4" />
+            <stop offset="100%" stopColor="#EFE6CE" />
+          </linearGradient>
+        </defs>
+
+        <ellipse cx="160" cy="384" rx="98" ry="14" fill="#000" opacity="0.10" />
+
+        <g className="jym-floaty">
+          {/* PIERNAS */}
+          <g>
+            <path d="M112 300 C104 300 100 312 100 330 L100 360 C100 374 112 380 124 380 C136 380 144 372 144 358 L144 312 C144 302 136 300 128 300 Z" fill="url(#jym-skin)" />
+            <path d="M208 300 C216 300 220 312 220 330 L220 360 C220 374 208 380 196 380 C184 380 176 372 176 358 L176 312 C176 302 184 300 192 300 Z" fill="url(#jym-skin)" />
+            <ellipse cx="118" cy="378" rx="26" ry="13" fill="#3FB0D6" />
+            <ellipse cx="202" cy="378" rx="26" ry="13" fill="#3FB0D6" />
+            <circle cx="104" cy="374" r="5" fill="#EAF7FC" /><circle cx="116" cy="379" r="5" fill="#EAF7FC" /><circle cx="128" cy="379" r="5" fill="#EAF7FC" />
+            <circle cx="192" cy="379" r="5" fill="#EAF7FC" /><circle cx="204" cy="379" r="5" fill="#EAF7FC" /><circle cx="216" cy="374" r="5" fill="#EAF7FC" />
+            <ellipse cx="120" cy="336" rx="13" ry="16" fill="#C9A227" opacity=".9" />
+            <ellipse cx="200" cy="340" rx="12" ry="15" fill="#C9A227" opacity=".9" />
+          </g>
+
+          {/* CUERNOS */}
+          <path d="M120 74 C96 60 84 36 92 26 C104 30 106 46 116 56 C122 62 124 68 128 74 Z" fill="#E7CBA0" stroke="#D6B586" strokeWidth="2" />
+          <path d="M200 74 C224 60 236 36 228 26 C216 30 214 46 204 56 C198 62 196 68 192 74 Z" fill="#E7CBA0" stroke="#D6B586" strokeWidth="2" />
+          <g stroke="#3FB0D6" strokeWidth="4" strokeLinecap="round" fill="none">
+            <path d="M148 60 C146 44 142 38 138 34" />
+            <path d="M158 58 C158 40 158 34 158 28" />
+            <path d="M168 60 C170 44 176 38 182 34" />
+            <path d="M153 59 C151 46 149 40 147 32" />
+            <path d="M163 59 C165 46 168 40 172 32" />
+          </g>
+
+          {/* BRAZO IZQUIERDO */}
+          <g>
+            <path d="M74 168 C50 178 40 214 44 258 C46 280 58 290 76 288 L96 200 Z" fill="url(#jym-sleeve)" />
+            <path d="M44 258 C46 280 58 290 76 288 L80 268 C64 270 52 262 48 250 Z" fill="#2E5FE0" />
+            <rect x="46" y="256" width="34" height="6" fill="#fff" opacity=".85" transform="rotate(-6 63 259)" />
+            <circle cx="62" cy="284" r="21" fill="url(#jym-skin)" />
+            <circle cx="50" cy="278" r="7" fill="#4FC3E8" /><circle cx="52" cy="292" r="7" fill="#4FC3E8" /><circle cx="64" cy="298" r="7" fill="#4FC3E8" />
+            <ellipse cx="60" cy="284" rx="10" ry="8" fill="#C9A227" opacity=".55" />
+          </g>
+
+          {/* BRAZO DERECHO */}
+          <g>
+            <path d="M246 168 C270 178 280 214 276 258 C274 280 262 290 244 288 L224 200 Z" fill="url(#jym-sleeve)" />
+            <path d="M276 258 C274 280 262 290 244 288 L240 268 C256 270 268 262 272 250 Z" fill="#2E5FE0" />
+            <rect x="240" y="256" width="34" height="6" fill="#fff" opacity=".85" transform="rotate(6 257 259)" />
+            <circle cx="258" cy="284" r="21" fill="url(#jym-skin)" />
+            <circle cx="270" cy="278" r="7" fill="#4FC3E8" /><circle cx="268" cy="292" r="7" fill="#4FC3E8" /><circle cx="256" cy="298" r="7" fill="#4FC3E8" />
+            <ellipse cx="260" cy="284" rx="10" ry="8" fill="#C9A227" opacity=".55" />
+          </g>
+
+          {/* CUERPO */}
+          <path d="M160 52 C104 52 80 92 80 132 C80 156 92 170 100 184 C86 198 82 238 90 282 C96 318 124 334 160 334 C196 334 224 318 230 282 C238 238 234 198 220 184 C228 170 240 156 240 132 C240 92 216 52 160 52 Z" fill="url(#jym-skin)" />
+          <ellipse cx="160" cy="132" rx="62" ry="54" fill="#BDEBF6" opacity=".85" />
+          <path d="M160 188 C196 188 214 216 210 264 C206 302 186 318 160 318 C134 318 114 302 110 264 C106 216 124 188 160 188 Z" fill="#CFEFF8" opacity=".6" />
+          <ellipse cx="126" cy="250" rx="14" ry="17" fill="#C9A227" opacity=".9" />
+          <ellipse cx="196" cy="250" rx="14" ry="17" fill="#C9A227" opacity=".9" />
+          <ellipse cx="160" cy="292" rx="13" ry="15" fill="#C9A227" opacity=".9" />
+
+          {/* CHAQUETA */}
+          <path d="M104 180 C86 196 82 236 90 282 L128 282 C120 240 122 200 132 184 C124 178 112 176 104 180 Z" fill="url(#jym-jacket)" />
+          <path d="M216 180 C234 196 238 236 230 282 L192 282 C200 240 198 200 188 184 C196 178 208 176 216 180 Z" fill="url(#jym-jacket)" />
+          <path d="M132 184 L160 202 L188 184 L180 196 L160 210 L140 196 Z" fill="#24399A" />
+          <path d="M92 276 L128 276 L128 284 L91 284 Z" fill="#fff" opacity=".92" />
+          <path d="M192 276 L228 276 L229 284 L192 284 Z" fill="#fff" opacity=".92" />
+          <circle cx="150" cy="222" r="3.2" fill="#12225E" />
+          <circle cx="150" cy="240" r="3.2" fill="#12225E" />
+          <circle cx="150" cy="258" r="3.2" fill="#12225E" />
+
+          {/* CARA */}
+          <g>
+            <ellipse cx="142" cy="100" rx="19" ry="22" fill="#fff" />
+            <ellipse cx="178" cy="100" rx="19" ry="22" fill="#fff" />
+            <g ref={pupilL}>
+              <circle cx="142" cy="102" r="11" fill="#2E7FD6" />
+              <circle cx="142" cy="102" r="6" fill="#17172A" />
+              <circle cx="139" cy="98" r="2.6" fill="#fff" />
+            </g>
+            <g ref={pupilR}>
+              <circle cx="178" cy="102" r="11" fill="#2E7FD6" />
+              <circle cx="178" cy="102" r="6" fill="#17172A" />
+              <circle cx="175" cy="98" r="2.6" fill="#fff" />
+            </g>
+            <rect ref={lidL} x="123" y="76" width="38" height="0" rx="8" fill="#5FCBEC" />
+            <rect ref={lidR} x="159" y="76" width="38" height="0" rx="8" fill="#5FCBEC" />
+          </g>
+
+          {/* GAFAS */}
+          <g fill="none" stroke="#1F1F1F" strokeWidth="6">
+            <rect x="118" y="78" width="48" height="46" rx="20" />
+            <rect x="154" y="78" width="48" height="46" rx="20" />
+            <path d="M166 96 q-6 -5 -12 0" strokeLinecap="round" />
+            <path d="M118 92 l-16 -4" strokeLinecap="round" />
+            <path d="M202 92 l16 -4" strokeLinecap="round" />
+          </g>
+
+          <ellipse cx="160" cy="126" rx="8" ry="6.5" fill="#3AA0C8" />
+
+          {/* BOCA */}
+          <g>
+            <path ref={mouthPath} d="M120 138 Q160 190 200 138 Q160 158 120 138 Z" fill="#B85560" />
+            <path d="M126 140 Q160 168 194 140 Q160 150 126 140 Z" fill="#E58A93" opacity=".7" />
+            <path d="M136 141 h15 v11 q-7 3 -15 1 Z" fill="#fff" />
+            <path d="M153 143 h16 v12 q-8 3 -16 0 Z" fill="#fff" />
+            <path d="M171 141 h15 v11 q-8 3 -15 -1 Z" fill="#fff" />
+            <line x1="151" y1="141" x2="151" y2="153" stroke="#E3E3E3" strokeWidth="1.2" />
+            <line x1="169" y1="143" x2="169" y2="155" stroke="#E3E3E3" strokeWidth="1.2" />
+            <ellipse cx="160" cy="166" rx="13" ry="7" fill="#E8544E" opacity=".9" />
+          </g>
+
+          {/* SONROJO */}
+          <g className="jym-blush" style={{ opacity: shy ? 1 : 0 }}>
+            <ellipse cx="118" cy="120" rx="12" ry="8" fill="#F5C842" opacity=".55" />
+            <ellipse cx="202" cy="120" rx="12" ry="8" fill="#F5C842" opacity=".55" />
+          </g>
+        </g>
+      </svg>
+    </div>
+  );
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { signIn, user, loading } = useAuth();
@@ -49,7 +280,13 @@ export default function LoginPage() {
   const [pass, setPass] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
+  const [passFocused, setPassFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
   const { saludo, msg, hora, fecha } = useGreeting();
+
+  // El monstruo se tapa los ojos cuando el foco está en la contraseña
+  // Y esta oculta (si el usuario pulsa "ver", los abre para "espiar").
+  const shy = passFocused && !showPass;
 
   useEffect(() => {
     if (!loading && user) router.replace('/dashboard');
@@ -87,7 +324,7 @@ export default function LoginPage() {
       <div className="jym-grain" />
       <div className="jym-hairline" />
 
-      {/* Titular editorial — vive detrás/junto a la tarjeta, no en un panel separado */}
+      {/* Titular editorial — CONSERVADO (rectángulo rojo) */}
       <div className="jym-editorial" key={saludo}>
         <div className="jym-brandmark jym-rise">
           <span className="jym-brandmark-icon">🎉</span>
@@ -113,7 +350,7 @@ export default function LoginPage() {
         <p className="jym-locale jym-rise jym-rise-3">Sechura, Piura · Desde 2014</p>
       </div>
 
-      {/* Tarjeta de vidrio — desplazada, no centrada en simetría perfecta */}
+      {/* Tarjeta de vidrio con la mascota interactiva encima */}
       <div className="jym-card-wrap jym-rise jym-rise-2">
         <div className="jym-card">
           <div className="jym-card-seal" />
@@ -130,6 +367,9 @@ export default function LoginPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="jym-modal-in">
+              {/* Mascota reactiva a los campos */}
+              <MonsterMascot shy={shy} typingEmail={emailFocused && !!email} />
+
               <p className="jym-eyebrow">Iniciar sesión</p>
               <h2 className="jym-card-title">Ingresa a tu cuenta</h2>
 
@@ -143,6 +383,8 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
                 />
               </div>
 
@@ -155,6 +397,8 @@ export default function LoginPage() {
                   type={showPass ? 'text' : 'password'}
                   value={pass}
                   onChange={e => setPass(e.target.value)}
+                  onFocus={() => setPassFocused(true)}
+                  onBlur={() => setPassFocused(false)}
                   autoComplete="current-password"
                 />
                 <button
@@ -296,13 +540,23 @@ export default function LoginPage() {
           opacity: 0.55;
         }
 
+        /* ── Mascota monstruo ── */
+        .jym-monster-wrap {
+          width: clamp(120px, 40%, 168px); margin: 0 auto 0.4rem;
+          filter: drop-shadow(0 18px 30px rgba(0,0,0,0.4));
+        }
+        .jym-monster { width: 100%; height: auto; display: block; overflow: visible; }
+        .jym-floaty { animation: jym-float 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+        @keyframes jym-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+        .jym-blush { transition: opacity .25s ease; }
+
         .jym-eyebrow {
           color: #f5c842; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-          letter-spacing: .22em; margin: 0 0 0.55rem;
+          letter-spacing: .22em; margin: 0 0 0.55rem; text-align: center;
         }
         .jym-card-title {
           font-family: var(--font-playfair); color: #fff; font-size: 1.6rem; font-weight: 700;
-          margin: 0 0 1.9rem; letter-spacing: -.01em;
+          margin: 0 0 1.9rem; letter-spacing: -.01em; text-align: center;
         }
         .jym-label {
           display: block; color: rgba(255,255,255,0.45); font-size: 0.72rem;
@@ -411,10 +665,11 @@ export default function LoginPage() {
           .jym-brandmark { margin-bottom: 1.25rem; }
           .jym-sub { font-size: 0.95rem; margin-bottom: 0; }
           .jym-card { padding: 1.75rem 1.4rem; border-radius: 18px; }
+          .jym-monster-wrap { width: 118px; margin-bottom: 0.2rem; }
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .jym-rise, .jym-fade-in, .jym-modal-in, .jym-check-draw, .jym-glow { animation: none !important; }
+          .jym-rise, .jym-fade-in, .jym-modal-in, .jym-check-draw, .jym-glow, .jym-floaty { animation: none !important; }
         }
       `}</style>
     </div>
