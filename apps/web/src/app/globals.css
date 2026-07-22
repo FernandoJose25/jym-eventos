@@ -179,11 +179,34 @@ h1 em, h2 em {
   .container { padding: 0 1rem; }
 }
 
-/* Historias tipo Instagram: solo se ve arriba (antes del Hero) en mobile;
-   en desktop esa instancia se oculta (queda la de más abajo, junto a Stats). */
-.stories-mobile-only { display: none; }
+/* Historias tipo Instagram: solo en mobile, superpuestas sobre la parte
+   superior del Hero (no empujan el hero hacia abajo). Absolute → se van con
+   el scroll. En desktop no se muestran. */
+.stories-overlay-mobile { display: none; }
 @media(max-width:768px) {
-  .stories-mobile-only { display: block; }
+  .stories-overlay-mobile {
+    display: block;
+    position: absolute;
+    top: 72px; /* alto del navbar público (Navbar.tsx: height 72) */
+    left: 0; right: 0;
+    z-index: 20;
+    pointer-events: none; /* deja pasar toques al hero salvo en los círculos */
+  }
+  /* Reduce el padding vertical de la sección y le da el degradado oscuro
+     sutil para que los círculos se lean sobre cualquier hero. */
+  .stories-overlay-mobile > section {
+    padding: 0.75rem 0 1.25rem !important;
+    background: linear-gradient(180deg, rgba(5,13,26,0.55), rgba(5,13,26,0.15) 70%, transparent) !important;
+    pointer-events: none;
+  }
+  /* Los elementos interactivos (círculos, visor) sí reciben toques. */
+  .stories-overlay-mobile .stories-row,
+  .stories-overlay-mobile button,
+  .stories-overlay-mobile a { pointer-events: auto; }
+  /* Oculta el divisor (1er div) y el título "Revive los momentos" (2º hijo,
+     .reveal) del overlay: sobre el hero solo queremos los círculos. La fila de
+     círculos (.stories-row) es el último hijo y se conserva. */
+  .stories-overlay-mobile > section > .container > *:not(.stories-row) { display: none; }
 }
 
 /* ── SAFE AREA / TOUCH TARGETS ─────────────────────────────── */

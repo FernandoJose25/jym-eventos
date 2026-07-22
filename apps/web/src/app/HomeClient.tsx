@@ -41,13 +41,17 @@ function Section({ children, className = '', delay = 0 }: { children: React.Reac
 export default function HomeClient({ data }: { data: HomeData }) {
   return (
     <>
-      {/* Historias tipo Instagram — solo mobile, debajo del navbar y antes del Hero */}
-      <div className="stories-mobile-only">
-        <StoriesSection items={data.gallery} stories={data.stories} />
+      {/* Hero con las Historias superpuestas encima (solo mobile). El wrapper
+          relativo deja que las historias floten sobre la parte superior del
+          hero en posición absoluta, así se van con el scroll en vez de empujar
+          el hero hacia abajo. */}
+      <div style={{ position: 'relative' }}>
+        <div className="stories-overlay-mobile">
+          <StoriesSection items={data.gallery} stories={data.stories} />
+        </div>
+        {/* Hero — sin reveal (es lo primero que se ve) */}
+        <HeroSection data={data.hero} />
       </div>
-
-      {/* Hero — sin reveal (es lo primero que se ve) */}
-      <HeroSection data={data.hero} />
 
       {/* Stats */}
       <Section>
