@@ -156,7 +156,7 @@ function MonsterMascot({
           </linearGradient>
         </defs>
 
-        <ellipse cx="160" cy="384" rx="98" ry="14" fill="#000" opacity="0.10" />
+        <ellipse className="jym-floor-shadow" cx="160" cy="384" rx="98" ry="14" fill="#000" opacity="0.10" style={{ transformBox: 'fill-box', transformOrigin: 'center' }} />
 
         <g className="jym-floaty">
           {/* PIERNAS */}
@@ -561,8 +561,17 @@ export default function LoginPage() {
           width: 100%; height: auto; max-height: 46vh;
           display: block; margin: 0 auto; overflow: visible;
         }
-        .jym-floaty { animation: jym-float 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-        @keyframes jym-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+        .jym-floaty { animation: jym-float 3.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; will-change: transform; }
+        @keyframes jym-float {
+          0%   { transform: translateY(0) rotate(0deg); }
+          50%  { transform: translateY(-16px) rotate(-1.2deg); }
+          100% { transform: translateY(0) rotate(0deg); }
+        }
+        .jym-floor-shadow { animation: jym-shadow 3.4s ease-in-out infinite; }
+        @keyframes jym-shadow {
+          0%,100% { transform: scale(1); opacity: 0.10; }
+          50%     { transform: scale(0.82); opacity: 0.06; }
+        }
         .jym-blush { transition: opacity .25s ease; }
 
         .jym-eyebrow {
@@ -700,7 +709,7 @@ export default function LoginPage() {
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .jym-rise, .jym-fade-in, .jym-modal-in, .jym-check-draw, .jym-glow, .jym-floaty { animation: none !important; }
+          .jym-rise, .jym-fade-in, .jym-modal-in, .jym-check-draw, .jym-glow, .jym-floaty, .jym-floor-shadow { animation: none !important; }
         }
       `}</style>
     </div>
