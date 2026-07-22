@@ -329,16 +329,8 @@ export default function LoginPage() {
       <div className="jym-card jym-rise jym-rise-2">
         <div className="jym-card-seal" />
 
-        {/* ── Panel izquierdo: monstruo grande + titular editorial encima ── */}
+        {/* ── Panel izquierdo: monstruo grande + titular editorial ── */}
         <div className="jym-left" key={saludo}>
-          <div className="jym-brandmark jym-rise">
-            <span className="jym-brandmark-icon">🎉</span>
-            <div>
-              <p className="jym-brandmark-name">J&amp;M Decoraciones y Eventos</p>
-              <p className="jym-brandmark-tag">Panel Administrativo</p>
-            </div>
-          </div>
-
           {/* Mascota reactiva a los campos — protagonista del lado izquierdo */}
           <MonsterMascot shy={shy} typingEmail={emailFocused && !!email} />
 
@@ -372,6 +364,14 @@ export default function LoginPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="jym-modal-in jym-form">
+              <div className="jym-brandmark">
+                <span className="jym-brandmark-icon">🎉</span>
+                <div>
+                  <p className="jym-brandmark-name">J&amp;M Decoraciones y Eventos</p>
+                  <p className="jym-brandmark-tag">Panel Administrativo</p>
+                </div>
+              </div>
+
               <p className="jym-eyebrow">Iniciar sesión</p>
               <h2 className="jym-card-title">Ingresa a tu cuenta</h2>
 
@@ -433,13 +433,13 @@ export default function LoginPage() {
 
       <style>{`
         .jym-scene {
-          min-height: 100vh;
+          height: 100vh; height: 100dvh;
           position: relative;
           overflow: hidden;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: clamp(1.5rem, 5vw, 5rem);
+          padding: clamp(1rem, 3vw, 2.5rem);
           background:
             radial-gradient(120% 90% at 15% 10%, #16233d 0%, transparent 55%),
             linear-gradient(155deg, #050b16 0%, #081226 40%, #0a1628 75%, #050b16 100%);
@@ -478,11 +478,12 @@ export default function LoginPage() {
         .jym-left {
           position: relative; z-index: 2;
           flex: 1 1 46%; min-width: 0;
-          padding: clamp(2rem, 4vw, 3rem) clamp(1.5rem, 3.5vw, 3rem);
-          display: flex; flex-direction: column; align-items: flex-start;
+          padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1.5rem, 3.5vw, 3rem);
+          display: flex; flex-direction: column;
+          align-items: flex-start; justify-content: center;
           border-right: 1px solid rgba(255,255,255,0.06);
         }
-        .jym-brandmark { display: flex; align-items: center; gap: 12px; margin-bottom: clamp(1rem, 3vw, 2rem); }
+        .jym-brandmark { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; }
         .jym-brandmark-icon {
           width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0; font-size: 1.3rem;
           display: flex; align-items: center; justify-content: center;
@@ -522,7 +523,7 @@ export default function LoginPage() {
         /* ── Tarjeta única (envuelve todo) ── */
         .jym-card {
           position: relative; z-index: 3;
-          width: min(920px, 100%);
+          width: min(920px, 100%); max-height: calc(100vh - 2rem); max-height: calc(100dvh - 2rem);
           display: flex; align-items: stretch;
           background: linear-gradient(165deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
           border: 1px solid rgba(255,255,255,0.09);
@@ -544,17 +545,22 @@ export default function LoginPage() {
         /* ── Panel derecho (formulario) ── */
         .jym-right {
           flex: 1 1 54%; min-width: 0;
-          padding: clamp(2rem, 4vw, 2.8rem) clamp(1.75rem, 4vw, 2.6rem);
+          padding: clamp(1.5rem, 3vw, 2.4rem) clamp(1.75rem, 4vw, 2.6rem);
           display: flex; align-items: center; justify-content: center;
+          overflow-y: auto;
         }
         .jym-form { width: 100%; max-width: 360px; }
 
-        /* ── Mascota monstruo (protagonista del lado izquierdo, grande) ── */
+        /* ── Mascota monstruo (protagonista del lado izquierdo, grande) ──
+           Se limita por altura para que la escena entera quepa en 100vh. */
         .jym-monster-wrap {
-          width: 100%; max-width: 320px; margin: clamp(0.5rem, 2vw, 1.5rem) auto clamp(1.5rem, 4vw, 2.5rem);
+          width: 100%; max-width: 300px; margin: 0 auto 1.25rem;
           filter: drop-shadow(0 22px 36px rgba(0,0,0,0.42));
         }
-        .jym-monster { width: 100%; height: auto; display: block; overflow: visible; }
+        .jym-monster {
+          width: 100%; height: auto; max-height: 46vh;
+          display: block; margin: 0 auto; overflow: visible;
+        }
         .jym-floaty { animation: jym-float 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
         @keyframes jym-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
         .jym-blush { transition: opacity .25s ease; }
@@ -564,9 +570,12 @@ export default function LoginPage() {
           letter-spacing: .22em; margin: 0 0 0.55rem;
         }
         .jym-card-title {
-          font-family: var(--font-playfair); color: #fff; font-size: 1.6rem; font-weight: 700;
-          margin: 0 0 1.9rem; letter-spacing: -.01em;
+          font-family: var(--font-playfair); color: #fff; font-size: 1.5rem; font-weight: 700;
+          margin: 0 0 1.5rem; letter-spacing: -.01em;
         }
+        /* Brandmark dentro del formulario: más compacto */
+        .jym-form .jym-brandmark { margin-bottom: 1.4rem; }
+        .jym-form .jym-brandmark-icon { width: 38px; height: 38px; font-size: 1.15rem; }
         .jym-label {
           display: block; color: rgba(255,255,255,0.45); font-size: 0.72rem;
           font-weight: 600; letter-spacing: .04em; margin-bottom: 8px;
@@ -616,7 +625,7 @@ export default function LoginPage() {
         @keyframes jym-spin-kf { to { transform: rotate(360deg); } }
 
         .jym-footnote {
-          text-align: center; color: rgba(255,255,255,0.22); font-size: 0.7rem; margin-top: 1.75rem;
+          text-align: center; color: rgba(255,255,255,0.22); font-size: 0.7rem; margin-top: 1.35rem;
         }
 
         .jym-success-badge {
@@ -654,25 +663,28 @@ export default function LoginPage() {
         .jym-check-draw { animation: jym-check-draw-kf .45s ease .15s both; }
 
         /* ── Layout responsivo ── */
-        /* Tablet/móvil: las dos columnas se apilan en una sola */
+        /* Tablet/móvil: las dos columnas se apilan; aquí SÍ se permite scroll
+           porque un login apilado no cabe en una sola pantalla. */
         @media (max-width: 860px) {
           .jym-scene {
-            align-items: flex-start; min-height: 100dvh;
+            height: auto; min-height: 100dvh;
+            align-items: flex-start;
+            overflow-y: auto;
             padding: 2rem 1.25rem;
           }
           .jym-card {
-            flex-direction: column; width: 100%; max-width: 460px; margin: 0 auto;
+            flex-direction: column; width: 100%; max-width: 460px; max-height: none; margin: 0 auto;
           }
           .jym-left {
             border-right: none; border-bottom: 1px solid rgba(255,255,255,0.06);
             align-items: center; text-align: center;
             padding: 2rem 1.5rem 1.5rem;
           }
-          .jym-brandmark { justify-content: center; }
           .jym-datestamp { align-self: center; }
           .jym-sub { margin-left: auto; margin-right: auto; }
           .jym-monster-wrap { max-width: 190px; margin: 0.5rem auto 1.25rem; }
-          .jym-right { padding: 1.75rem 1.5rem 2rem; }
+          .jym-monster { max-height: none; }
+          .jym-right { padding: 1.75rem 1.5rem 2rem; overflow-y: visible; }
           .jym-form { max-width: 100%; }
           .jym-locale { display: none; }
         }
