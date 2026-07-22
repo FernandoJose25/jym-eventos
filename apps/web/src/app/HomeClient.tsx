@@ -41,17 +41,17 @@ function Section({ children, className = '', delay = 0 }: { children: React.Reac
 export default function HomeClient({ data }: { data: HomeData }) {
   return (
     <>
+      {/* Historias tipo Instagram — solo mobile, debajo del navbar y antes del Hero */}
+      <div className="stories-mobile-only">
+        <StoriesSection items={data.gallery} stories={data.stories} />
+      </div>
+
       {/* Hero — sin reveal (es lo primero que se ve) */}
       <HeroSection data={data.hero} />
 
       {/* Stats */}
       <Section>
         <StatsSection data={{ ...data.stats, s4num: String(data.services.length) }} />
-      </Section>
-
-      {/* Historias tipo Instagram — enganche temprano, alimentado por la galería */}
-      <Section>
-        <StoriesSection items={data.gallery} />
       </Section>
 
       {/* Marcas — carrusel justo después de las stats, como en el diseño */}

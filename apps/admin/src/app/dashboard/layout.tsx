@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Image, MessageSquare,
   Palette, Users, LogOut, Menu, X,
   ChevronRight, Briefcase, ChevronDown, Layers, Globe, BarChart2, Camera, Share2,
-  PartyPopper, Star,
+  PartyPopper, Star, Instagram,
 } from 'lucide-react';
 import { SERVICE_ICONS } from '@/lib/serviceIcons';
 import SugerenciasPanel from '@/components/SugerenciasPanel';
@@ -19,6 +19,7 @@ const NAV = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', group: 'principal' },
   { href: '/dashboard/servicios', icon: Briefcase, label: 'Servicios', group: 'contenido' },
   { href: '/dashboard/galeria', icon: Image, label: 'Galería', group: 'contenido' },
+  { href: '/dashboard/historias-instagram', icon: Instagram, label: 'Historias Instagram', group: 'contenido' },
   { href: '/dashboard/configuracion?s=testimonios', icon: Star, label: 'Testimonios', group: 'contenido' },
   { href: '/dashboard/camara-invitado', icon: Camera, label: 'Cámara Invitado', group: 'contenido' },
   { href: '/dashboard/redes-sociales', icon: Share2, label: 'Redes Sociales', group: 'contenido' },

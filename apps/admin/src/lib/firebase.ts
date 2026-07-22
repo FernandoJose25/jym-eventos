@@ -31,4 +31,5 @@ export const COL = {
   CONFIGURACION: 'site_config',
   CAMARA_INVITADO: 'camara_invitado_links',
   REDES_SOCIALES: 'redes_sociales_config',
+  HISTORIAS_INSTAGRAM: 'instagram_stories',
 } as const;

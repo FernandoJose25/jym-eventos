@@ -2,64 +2,80 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import Image from 'next/image';
 import DividerJM from '@/components/ui/DividerJM';
+import { cxVideo } from '@/lib/cloudinary';
 
 /* Historias estilo Instagram: una fila de círculos con aro dorado, uno por
-   categoría de la galería. Al tocar uno se abre un visor a pantalla completa
-   que pasa las fotos de esa categoría con barra de progreso automática (patrón
-   que todo el mundo ya sabe usar). No requiere contenido nuevo: reutiliza las
-   fotos de la galería que ya trae la home. Termina, como todo, en WhatsApp. */
+   historia curada a mano en el panel admin (Historias Instagram). Al tocar
+   uno se abre un visor a pantalla completa que reproduce en secuencia las
+   fotos/videos de esa historia, con barra de progreso automática (patrón que
+   todo el mundo ya sabe usar). Termina, como todo, en WhatsApp. */
 
 interface GItem {
   id: string; url: string; alt?: string;
   categoria?: string; focalX?: number; focalY?: number; tipo?: string;
 }
 
-const CAT_EMOJI: Record<string, string> = {
-  'Shows Infantiles': '🎭', 'Show Hora Loca': '🎉', 'Activaciones Empresariales': '🏢',
-  'Decoración Temática': '🎨', 'Fotografía': '📸', 'Filmación y Fotografía': '📸',
-  'Catering': '🍽️', 'Catering y Carritos Snacks': '🍽️', 'Bodas': '💍', 'Matrimonio': '💍',
-  'Quinceañero': '👑', 'Quinceaños': '👑', 'Cumpleaños': '🎂', 'General': '✨',
-};
+interface StoryDoc {
+  id: string; titulo: string; emoji?: string; visible?: boolean;
+  items?: { galleryItemId: string }[];
+}
 
-const STORY_MS = 3500; // duración por foto
+const STORY_MS_FOTO = 3500; // duración por foto
+const STORY_MS_VIDEO_MAX = 15000; // tope por si un video no reporta su duración
 
 interface Grupo { categoria: string; emoji: string; fotos: GItem[] }
 
-export default function StoriesSection({ items = [] }: { items?: GItem[] }) {
-  // Agrupa por categoría, ignorando videos (el visor muestra imágenes).
-  const grupos = useMemo<Grupo[]>(() => {
-    const map = new Map<string, GItem[]>();
-    for (const it of items) {
-      if (!it.url || it.tipo === 'video') continue;
-      const cat = it.categoria || 'General';
-      if (!map.has(cat)) map.set(cat, []);
-      map.get(cat)!.push(it);
-    }
-    return Array.from(map.entries())
-      .map(([categoria, fotos]) => ({ categoria, emoji: CAT_EMOJI[categoria] || '✨', fotos: fotos.slice(0, 6) }))
-      .filter(g => g.fotos.length > 0);
+export default function StoriesSection({ items = [], stories = [] }: { items?: GItem[]; stories?: StoryDoc[] }) {
+  const galeriaPorId = useMemo(() => {
+    const map = new Map<string, GItem>();
+    for (const it of items) map.set(it.id, it);
+    return map;
   }, [items]);
+
+  // Resuelve cada historia curada contra los items reales de la galería,
+  // preservando el orden manual definido en el admin.
+  const grupos = useMemo<Grupo[]>(() => {
+    return stories
+      .filter(s => s.visible !== false && (s.items?.length ?? 0) > 0)
+      .map(s => ({
+        categoria: s.titulo,
+        emoji: s.emoji || '✨',
+        fotos: (s.items || [])
+          .map(ref => galeriaPorId.get(ref.galleryItemId))
+          .filter((g): g is GItem => !!g?.url),
+      }))
+      .filter(g => g.fotos.length > 0);
+  }, [stories, galeriaPorId]);
 
   const [openGrupo, setOpenGrupo] = useState<number | null>(null);
   const [foto, setFoto] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Avance automático de fotos dentro de la historia abierta
+  const actualEsVideo = (it?: GItem) => it?.tipo === 'video';
+
+  // Avance automático: fotos usan tiempo fijo, videos avanzan cuando terminan
+  // (o al tope de seguridad si el evento 'ended' no llega).
   useEffect(() => {
     if (openGrupo === null) return;
     const g = grupos[openGrupo];
     if (!g) return;
+    const actual = g.fotos[foto];
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      setFoto(f => {
-        if (f + 1 < g.fotos.length) return f + 1;
-        // última foto: pasa a la siguiente categoría o cierra
-        if (openGrupo + 1 < grupos.length) { setOpenGrupo(openGrupo + 1); return 0; }
-        setOpenGrupo(null);
-        return 0;
-      });
-    }, STORY_MS);
+    if (actualEsVideo(actual)) {
+      timer.current = setTimeout(() => next(), STORY_MS_VIDEO_MAX);
+    } else {
+      timer.current = setTimeout(() => {
+        setFoto(f => {
+          if (f + 1 < g.fotos.length) return f + 1;
+          if (openGrupo + 1 < grupos.length) { setOpenGrupo(openGrupo + 1); return 0; }
+          setOpenGrupo(null);
+          return 0;
+        });
+      }, STORY_MS_FOTO);
+    }
     return () => { if (timer.current) clearTimeout(timer.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openGrupo, foto, grupos]);
 
   // Bloquea el scroll del fondo mientras el visor está abierto
@@ -97,7 +113,7 @@ export default function StoriesSection({ items = [] }: { items?: GItem[] }) {
     else if (openGrupo! - 1 >= 0) { const p = openGrupo! - 1; setOpenGrupo(p); setFoto(grupos[p].fotos.length - 1); }
   };
 
-  if (grupos.length < 2) return null; // con una sola categoría no vale la pena
+  if (grupos.length === 0) return null;
 
   const g = openGrupo !== null ? grupos[openGrupo] : null;
   const actual = g?.fotos[foto];
@@ -119,7 +135,7 @@ export default function StoriesSection({ items = [] }: { items?: GItem[] }) {
           justifyContent: 'flex-start', scrollbarWidth: 'none',
         }}>
           {grupos.map((gr, i) => (
-            <button key={gr.categoria} onClick={() => abrir(i)}
+            <button key={gr.categoria + i} onClick={() => abrir(i)}
               style={{
                 flex: '0 0 auto', width: 76, textAlign: 'center', background: 'none',
                 border: 'none', cursor: 'pointer', padding: 0,
@@ -135,11 +151,16 @@ export default function StoriesSection({ items = [] }: { items?: GItem[] }) {
                   display: 'block', width: '100%', height: '100%', borderRadius: '50%',
                   border: '2px solid #0a1628', overflow: 'hidden', position: 'relative',
                 }}>
-                  <Image src={gr.fotos[0].url} alt="" fill sizes="68px"
-                    style={{
-                      objectFit: 'cover',
-                      objectPosition: `${(gr.fotos[0].focalX ?? 0.5) * 100}% ${(gr.fotos[0].focalY ?? 0.5) * 100}%`,
-                    }} />
+                  {gr.fotos[0].tipo === 'video' ? (
+                    <video src={cxVideo(gr.fotos[0].url)} muted playsInline preload="metadata"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <Image src={gr.fotos[0].url} alt="" fill sizes="68px"
+                      style={{
+                        objectFit: 'cover',
+                        objectPosition: `${(gr.fotos[0].focalX ?? 0.5) * 100}% ${(gr.fotos[0].focalY ?? 0.5) * 100}%`,
+                      }} />
+                  )}
                 </span>
               </span>
               <span style={{
@@ -179,7 +200,7 @@ export default function StoriesSection({ items = [] }: { items?: GItem[] }) {
                     display: 'block', height: '100%', borderRadius: 9999, background: '#f5c842',
                     width: i < foto ? '100%' : i === foto ? '100%' : '0%',
                     transformOrigin: 'left',
-                    animation: i === foto ? `storyBar ${STORY_MS}ms linear forwards` : 'none',
+                    animation: i === foto && !actualEsVideo(actual) ? `storyBar ${STORY_MS_FOTO}ms linear forwards` : 'none',
                   }} />
                 </span>
               ))}
@@ -196,15 +217,30 @@ export default function StoriesSection({ items = [] }: { items?: GItem[] }) {
               </button>
             </div>
 
-            {/* Foto */}
+            {/* Foto o video */}
             <div style={{ position: 'relative', flex: 1, borderRadius: 16, overflow: 'hidden', background: '#050d1a' }}>
-              <Image key={actual.id} src={actual.url} alt={actual.alt || `${g.categoria} · J&M`} fill
-                sizes="(max-width: 440px) 100vw, 440px"
-                style={{
-                  objectFit: 'cover',
-                  objectPosition: `${(actual.focalX ?? 0.5) * 100}% ${(actual.focalY ?? 0.5) * 100}%`,
-                  animation: 'storyImgIn .4s cubic-bezier(.16,1,.3,1)',
-                }} />
+              {actualEsVideo(actual) ? (
+                <video
+                  key={actual.id}
+                  ref={videoRef}
+                  src={cxVideo(actual.url)}
+                  autoPlay
+                  muted
+                  playsInline
+                  onEnded={next}
+                  style={{
+                    width: '100%', height: '100%', objectFit: 'cover',
+                    animation: 'storyImgIn .4s cubic-bezier(.16,1,.3,1)',
+                  }} />
+              ) : (
+                <Image key={actual.id} src={actual.url} alt={actual.alt || `${g.categoria} · J&M`} fill
+                  sizes="(max-width: 440px) 100vw, 440px"
+                  style={{
+                    objectFit: 'cover',
+                    objectPosition: `${(actual.focalX ?? 0.5) * 100}% ${(actual.focalY ?? 0.5) * 100}%`,
+                    animation: 'storyImgIn .4s cubic-bezier(.16,1,.3,1)',
+                  }} />
+              )}
 
               {/* Zonas de toque: izquierda = anterior, derecha = siguiente */}
               <button onClick={prev} aria-label="Anterior"

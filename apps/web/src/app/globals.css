@@ -179,6 +179,13 @@ h1 em, h2 em {
   .container { padding: 0 1rem; }
 }
 
+/* Historias tipo Instagram: solo se ve arriba (antes del Hero) en mobile;
+   en desktop esa instancia se oculta (queda la de más abajo, junto a Stats). */
+.stories-mobile-only { display: none; }
+@media(max-width:768px) {
+  .stories-mobile-only { display: block; }
+}
+
 /* ── SAFE AREA / TOUCH TARGETS ─────────────────────────────── */
 @media(max-width:480px) {
   html { scroll-padding-top: 64px; }
