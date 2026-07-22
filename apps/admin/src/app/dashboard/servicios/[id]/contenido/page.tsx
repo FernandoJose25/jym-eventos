@@ -75,6 +75,8 @@ export default function ServiceContentPage() {
   const [opcModal, setOpcModal] = useState<{ index:number|null; form:any } | null>(null);
   /* Pasos modal (timeline "cómo trabajamos") */
   const [pasoModal, setPasoModal] = useState<{ index:number|null; form:any } | null>(null);
+  /* FAQ modal (preguntas frecuentes propias del servicio) */
+  const [faqModal, setFaqModal] = useState<{ index:number|null; form:any } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -92,7 +94,7 @@ export default function ServiceContentPage() {
     'longDescH2', 'longDesc', 'longDesc2', 'includes', 'stats',
     'testimonialName', 'testimonialRating', 'testimonialLocation',
     'ctaH2', 'ctaP', 'btn1Text', 'opciones', 'opcionesEyebrow', 'opcionesTitulo',
-    'pasos', 'pasosEyebrow', 'pasosTitulo',
+    'pasos', 'pasosEyebrow', 'pasosTitulo', 'faq',
   ]);
 
   const handleGenerate = async () => {
@@ -243,6 +245,37 @@ export default function ServiceContentPage() {
 
   const setPasoField = (k: string, v: any) =>
     setPasoModal(p => p ? { ...p, form: { ...p.form, [k]: v } } : null);
+
+  /* ── FAQ helpers (preguntas frecuentes propias del servicio) ──
+     Se guardan en detail.faq con campos pregunta/respuesta; la web las lee vía
+     getFaqServicio (lib/faqServicios.ts): si hay al menos una, mandan sobre el
+     FAQ hardcodeado de respaldo. */
+  const faq: any[] = srvData.detail?.faq || [];
+
+  const openFaqEdit = (index: number) => setFaqModal({ index, form: { ...faq[index] } });
+  const openFaqAdd  = () => setFaqModal({ index:null, form:{ pregunta:'', respuesta:'' } });
+
+  const saveFaq = () => {
+    if (!faqModal) return;
+    const { index, form } = faqModal;
+    if (!form.pregunta?.trim() || !form.respuesta?.trim()) {
+      toast.error('La pregunta y la respuesta son obligatorias');
+      return;
+    }
+    const next = [...faq];
+    if (index === null) next.push(form); else next[index] = form;
+    setDetail('faq', next);
+    setFaqModal(null);
+  };
+
+  const deleteFaq = (i: number) => open({
+    type:'delete', title:'Eliminar pregunta',
+    description:'Esta acción no se puede deshacer.',
+    onConfirm: async () => setDetail('faq', faq.filter((_: any, j: number) => j !== i)),
+  });
+
+  const setFaqField = (k: string, v: any) =>
+    setFaqModal(p => p ? { ...p, form: { ...p.form, [k]: v } } : null);
 
   if (loading) return (
     <div style={{ display:'flex', flexDirection:'column', gap:16, maxWidth:900, margin:'0 auto' }}>
@@ -460,6 +493,29 @@ export default function ServiceContentPage() {
           </div>
         </fieldset>
 
+        {/* FAQ propia del servicio */}
+        <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:14, padding:'1.25rem 1.5rem' }}>
+          <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 8px' }}>Preguntas Frecuentes del servicio</legend>
+          <p style={{ fontSize:'0.78rem', color:'#64748b', margin:'0 0 12px' }}>
+            Opcional. Si dejas esto vacío, la web muestra un FAQ automático con la política de reserva y adelanto. En cuanto agregues al menos una pregunta aquí, estas reemplazan al FAQ automático de este servicio.
+          </p>
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div style={{ display:'flex', justifyContent:'flex-end' }}>
+              <button onClick={openFaqAdd} className="btn-outline" style={{ fontSize:'0.78rem', padding:'0.35rem 0.875rem' }}>+ Agregar pregunta</button>
+            </div>
+            {faq.length === 0 && (
+              <p style={{ color:'#94a3b8', fontSize:'0.82rem', textAlign:'center', padding:'1.5rem', background:'#f8fafc', borderRadius:10, border:'1px dashed #e2e8f0' }}>
+                Sin preguntas propias. La web usará el FAQ automático de este servicio.
+              </p>
+            )}
+            {faq.map((f: any, i: number) => (
+              <ItemCard key={i} item={{ title: f.pregunta, desc: f.respuesta }}
+                onEdit={() => openFaqEdit(i)}
+                onDelete={() => deleteFaq(i)}/>
+            ))}
+          </div>
+        </fieldset>
+
         {/* CTA */}
         <fieldset style={{ border:'1px solid #e2e8f0', borderRadius:14, padding:'1.25rem 1.5rem' }}>
           <legend style={{ fontSize:'0.72rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'#1e3a5f', padding:'0 8px' }}>CTA final de la página</legend>
@@ -642,6 +698,29 @@ export default function ServiceContentPage() {
               {lbl('Descripción')}
               <textarea rows={3} value={pasoModal.form.desc||''} onChange={e=>setPasoField('desc',e.target.value)}
                         className="admin-input" style={{ resize:'vertical' }} placeholder="Descripción breve del paso..."/>
+            </div>
+          </div>
+        )}
+      </EditModal>
+
+      {/* Modal FAQ */}
+      <EditModal
+        open={!!faqModal}
+        title={faqModal?.index === null ? 'Agregar pregunta' : 'Editar pregunta'}
+        onSave={saveFaq}
+        onCancel={() => setFaqModal(null)}
+      >
+        {faqModal && (
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div>
+              {lbl('Pregunta')}
+              <input type="text" value={faqModal.form.pregunta||''} onChange={e=>setFaqField('pregunta',e.target.value)}
+                     className="admin-input" placeholder="¿Con cuánta anticipación debo reservar?"/>
+            </div>
+            <div>
+              {lbl('Respuesta')}
+              <textarea rows={4} value={faqModal.form.respuesta||''} onChange={e=>setFaqField('respuesta',e.target.value)}
+                        className="admin-input" style={{ resize:'vertical' }} placeholder="Lo ideal es reservar con al menos 3 semanas de anticipación..."/>
             </div>
           </div>
         )}
