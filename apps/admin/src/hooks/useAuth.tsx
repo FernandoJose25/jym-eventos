@@ -57,7 +57,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn  = async (email: string, pass: string) => {
-    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    // 1) Antes de tocar Firebase, verifica si esta IP+correo ya agotó sus
+    //    intentos. Es el freno de fuerza bruta real: cuenta los FALLOS, no
+    //    las sesiones válidas (esto último ya lo cubre /api/session).
+    const check = await fetch('/api/login-attempt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accion: 'check', email }),
+    });
+    if (check.status === 429) {
+      const data = await check.json().catch(() => ({}));
+      throw new Error(data.error || 'Demasiados intentos. Espera unos minutos.');
+    }
+
+    // 2) Intento real contra Firebase. Si la contraseña es incorrecta,
+    //    registramos el fallo antes de propagar el error.
+    let cred;
+    try {
+      cred = await signInWithEmailAndPassword(auth, email, pass);
+    } catch (err) {
+      fetch('/api/login-attempt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'fail', email }),
+      }).catch(() => {});
+      throw err;
+    }
+
+    // 3) Login válido → limpia el contador de fallos (best effort) y canjea
+    //    el ID token por la cookie httpOnly de sesión.
+    fetch('/api/login-attempt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accion: 'success', email }),
+    }).catch(() => {});
+
     const idToken = await cred.user.getIdToken();
     const res = await fetch('/api/session', {
       method: 'POST',
