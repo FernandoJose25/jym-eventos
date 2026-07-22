@@ -331,7 +331,13 @@ export default function LoginPage() {
 
         {/* ── Panel izquierdo: monstruo grande + titular editorial encima ── */}
         <div className="jym-left" key={saludo}>
-
+          <div className="jym-brandmark jym-rise">
+            <span className="jym-brandmark-icon">🎉</span>
+            <div>
+              <p className="jym-brandmark-name">J&amp;M Decoraciones y Eventos</p>
+              <p className="jym-brandmark-tag">Panel Administrativo</p>
+            </div>
+          </div>
 
           {/* Mascota reactiva a los campos — protagonista del lado izquierdo */}
           <MonsterMascot shy={shy} typingEmail={emailFocused && !!email} />
