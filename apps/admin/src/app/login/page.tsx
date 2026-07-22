@@ -9,11 +9,11 @@ type Stage = 'form' | 'loading' | 'success';
 /* Mensajes según franja horaria — siempre hay algo relevante que decir,
    sin importar a qué hora o qué día entre el equipo. */
 const FRANJAS = [
-  { hasta: 5,  saludo: 'Buona notte',    msg: 'La ciudad duerme, pero las reservas de mañana no esperan.' },
-  { hasta: 12, saludo: 'Buenos días',    msg: 'Nuevo día, nuevas fiestas por planear. Vamos con todo.' },
-  { hasta: 18, saludo: 'Buenas tardes',  msg: 'El ritmo del día sigue. Revisa qué eventos necesitan tu toque.' },
-  { hasta: 21, saludo: 'Buenas noches',  msg: 'El día casi termina, pero siempre hay un detalle más por afinar.' },
-  { hasta: 24, saludo: 'Buenas noches',  msg: 'Trabajo nocturno también cuenta. Gracias por el compromiso.' },
+  { hasta: 5, saludo: 'Buona notte', msg: 'La ciudad duerme, pero las reservas de mañana no esperan.' },
+  { hasta: 12, saludo: 'Buenos días', msg: 'Nuevo día, nuevas fiestas por planear. Vamos con todo.' },
+  { hasta: 18, saludo: 'Buenas tardes', msg: 'El ritmo del día sigue. Revisa qué eventos necesitan tu toque.' },
+  { hasta: 21, saludo: 'Buenas noches', msg: 'El día casi termina, pero siempre hay un detalle más por afinar.' },
+  { hasta: 24, saludo: 'Buenas noches', msg: 'Trabajo nocturno también cuenta. Gracias por el compromiso.' },
 ];
 
 const DIAS_ESPECIALES: Record<number, string> = {
@@ -331,13 +331,7 @@ export default function LoginPage() {
 
         {/* ── Panel izquierdo: monstruo grande + titular editorial encima ── */}
         <div className="jym-left" key={saludo}>
-          <div className="jym-brandmark jym-rise">
-            <span className="jym-brandmark-icon">🎉</span>
-            <div>
-              <p className="jym-brandmark-name">J&amp;M Decoraciones y Eventos</p>
-              <p className="jym-brandmark-tag">Panel Administrativo</p>
-            </div>
-          </div>
+
 
           {/* Mascota reactiva a los campos — protagonista del lado izquierdo */}
           <MonsterMascot shy={shy} typingEmail={emailFocused && !!email} />
