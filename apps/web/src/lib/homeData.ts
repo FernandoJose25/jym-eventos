@@ -43,7 +43,9 @@ export async function getHomeData(): Promise<HomeData> {
         getDocs(query(collection(db, 'services'), where('visible', '==', true), orderBy('order', 'asc'))),
         getDocs(query(collection(db, 'gallery_items'), where('visible', '==', true), orderBy('order', 'asc'))),
         getDocs(query(collection(db, 'testimonials'), where('visible', '==', true), orderBy('order', 'asc'))),
-        getDocs(query(collection(db, 'instagram_stories'), where('visible', '==', true), orderBy('order', 'asc'))),
+        // Sin where+orderBy compuesto (evita exigir un índice compuesto en
+        // Firestore); se filtra visible y se ordena por 'order' en memoria abajo.
+        getDocs(collection(db, 'instagram_stories')),
       ]);
 
     return {
@@ -58,7 +60,12 @@ export async function getHomeData(): Promise<HomeData> {
       services: servicesS.status === 'fulfilled' ? servicesS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
       gallery: galleryS.status === 'fulfilled' ? galleryS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
       testimonials: testimonialsS.status === 'fulfilled' ? testimonialsS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
-      stories: storiesS.status === 'fulfilled' ? storiesS.value.docs.map(d => toPlain({ id: d.id, ...d.data() })) : [],
+      stories: storiesS.status === 'fulfilled'
+        ? storiesS.value.docs
+          .map(d => toPlain({ id: d.id, ...d.data() }))
+          .filter(s => s.visible !== false)
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+        : [],
       loaded: true,
     };
   } catch (e) {
