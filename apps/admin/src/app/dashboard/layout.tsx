@@ -9,10 +9,11 @@ import { db, COL } from '@/lib/firebase';
 import {
   LayoutDashboard, Image, MessageSquare,
   Palette, Users, LogOut, Menu, X,
-  ChevronRight, Briefcase, Bell, ChevronDown, Layers, Globe, BarChart2, Camera, Share2,
+  ChevronRight, Briefcase, ChevronDown, Layers, Globe, BarChart2, Camera, Share2,
   PartyPopper, Star,
 } from 'lucide-react';
 import { SERVICE_ICONS } from '@/lib/serviceIcons';
+import SugerenciasPanel from '@/components/SugerenciasPanel';
 
 const NAV = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', group: 'principal' },
@@ -292,13 +293,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             })()}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            {unread > 0 && (
-              <Link href="/dashboard/mensajes"
-                style={{ position: 'relative', color: '#64748b', textDecoration: 'none', display: 'flex', alignItems: 'center', padding: 6, minWidth: 32, minHeight: 32 }}>
-                <Bell size={17} />
-                <span style={{ position: 'absolute', top: 3, right: 3, width: 7, height: 7, borderRadius: '50%', background: '#ef4444' }} />
-              </Link>
-            )}
+            <SugerenciasPanel user={user} unread={unread} />
             <a href="https://jmdecoracionesyeventos.com" target="_blank" rel="noopener noreferrer"
               className="topbar-web-btn"
               style={{
