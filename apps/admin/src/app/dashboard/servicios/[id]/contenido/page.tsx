@@ -140,7 +140,7 @@ export default function ServiceContentPage() {
     setSaving(true);
     await updateDoc(doc(db, COL.SERVICIOS, id), srvData);
     setSaving(false);
-    toast.success('✅ Servicio actualizado. Los cambios ya están en la web.');
+    toast.success('✅ Servicio actualizado. Se verá en la web en ≤60 segundos.');
   };
 
   /* ── Includes helpers ── */

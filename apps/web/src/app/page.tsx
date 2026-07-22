@@ -7,9 +7,9 @@ import { metaDescription } from '@/lib/seo';
 import HomeClient from './HomeClient';
 
 // Evita que Next.js "congele" la Home en el momento del build.
-// Así, los cambios hechos en el panel admin (Firestore) se ven
-// de inmediato en cada visita, sin esperar un nuevo despliegue.
-export const dynamic = 'force-dynamic';
+// Los cambios hechos en el panel admin (Firestore) se ven en ≤60s
+// (ISR), sin esperar un nuevo despliegue ni pagar SSR en cada visita.
+export const revalidate = 60;
 
 const DEFAULT_TITLE = 'J&M Decoraciones y Eventos — Eventos de Lujo en Sechura, Piura';
 const DEFAULT_DESC = 'Decoración, ambientación y producción integral de eventos en Sechura, Piura. Bodas, quinceaños y fiestas temáticas. Cotiza tu evento hoy.';

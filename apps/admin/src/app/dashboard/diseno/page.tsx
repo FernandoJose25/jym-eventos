@@ -70,7 +70,7 @@ export default function DisenoPage() {
     await setDoc(doc(db, COL.CONFIGURACION, 'estilos'), { colors }, { merge:true });
     setHasChanges(false);
     setSaving(false);
-    toast.success('✅ Colores guardados. Los cambios ya están en la web.');
+    toast.success('✅ Colores guardados. Se verán en la web en ≤60 segundos.');
   };
 
   const handleReset = () => {
