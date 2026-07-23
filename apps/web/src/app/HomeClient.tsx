@@ -13,7 +13,6 @@ import StoriesSection      from '@/components/sections/StoriesSection';
 // al wrapper <Section> con whileInView.
 const ServicesSection        = dynamic(() => import('@/components/sections/ServicesSection'));
 const WhyUsSection           = dynamic(() => import('@/components/sections/WhyUsSection'));
-const GallerySection         = dynamic(() => import('@/components/sections/GallerySection'));
 const AboutSection           = dynamic(() => import('@/components/sections/AboutSection'));
 const TestimonialsSection    = dynamic(() => import('@/components/sections/TestimonialsSection'));
 const FaqSection             = dynamic(() => import('@/components/sections/FaqSection'));
@@ -86,11 +85,6 @@ export default function HomeClient({ data }: { data: HomeData }) {
       {/* Antes / Después — prueba visual de la transformación (si hay pares cargados) */}
       <Section>
         <TransformacionesSection data={data.transformaciones} />
-      </Section>
-
-      {/* Galería */}
-      <Section>
-        <GallerySection items={data.gallery} />
       </Section>
 
       {/* Testimonios */}
