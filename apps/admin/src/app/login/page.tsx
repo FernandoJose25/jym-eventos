@@ -272,6 +272,39 @@ function MonsterMascot({
   );
 }
 
+/* Traduce el error real (código de Firebase Auth o mensaje de nuestros
+   propios endpoints) a un texto legible. Antes CUALQUIER error que no
+   incluyera "Demasiados intentos" cala como "credenciales incorrectas",
+   ocultando: bloqueo por auth/too-many-requests de Firebase (independiente
+   de nuestro limitador en Redis), cuenta con activo:false, o un 500 de
+   /api/session por variables de entorno de Firebase Admin mal configuradas
+   en Vercel. Con ese mensaje genérico era imposible distinguir "contraseña
+   mal" de "el servidor está roto". */
+function mensajeDeError(err: any): string {
+  const code = err?.code as string | undefined;
+  const msg = (err?.message as string | undefined) || '';
+
+  if (msg.includes('Demasiados intentos')) return msg;
+
+  switch (code) {
+    case 'auth/too-many-requests':
+      return 'Firebase bloqueó los intentos desde este dispositivo por actividad inusual. Espera unos minutos o restablece tu contraseña.';
+    case 'auth/user-disabled':
+      return 'Esta cuenta está deshabilitada en Firebase Authentication.';
+    case 'auth/network-request-failed':
+      return 'Sin conexión con Firebase. Revisa tu internet e inténtalo de nuevo.';
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+    case 'auth/invalid-email':
+      return 'Correo o contraseña incorrectos';
+    default:
+      // Errores propios de /api/session (cookie no emitida) llegan aquí
+      // con su mensaje real en vez de perderse en el mensaje genérico.
+      return msg || 'Correo o contraseña incorrectos';
+  }
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { signIn, user, loading } = useAuth();
@@ -306,11 +339,7 @@ export default function LoginPage() {
       setTimeout(() => { window.location.href = '/dashboard'; }, 900);
     } catch (err: any) {
       setStage('form');
-      setError(
-        err?.message?.includes('Demasiados intentos')
-          ? err.message
-          : 'Correo o contraseña incorrectos'
-      );
+      setError(mensajeDeError(err));
     }
   };
 
