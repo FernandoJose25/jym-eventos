@@ -3,24 +3,23 @@ import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
 // Cargadas de inmediato: son lo primero que se ve al abrir la home, así que
 // deben estar en el bundle inicial (arriba del pliegue).
-import HeroSection         from '@/components/sections/HeroSection';
-import StatsSection        from '@/components/sections/StatsSection';
-import StoriesSection      from '@/components/sections/StoriesSection';
+import HeroSection from '@/components/sections/HeroSection';
+import StatsSection from '@/components/sections/StatsSection';
 // El resto se difiere con next/dynamic: no descargan ni ejecutan su JS hasta
 // que hacen falta, lo que aligera muchísimo la carga inicial en móviles de
 // gama media (era la causa de la lentitud percibida en celular, no las
 // imágenes ni el caché). Todas se renderizan igual al hacer scroll gracias
 // al wrapper <Section> con whileInView.
-const ServicesSection        = dynamic(() => import('@/components/sections/ServicesSection'));
-const WhyUsSection           = dynamic(() => import('@/components/sections/WhyUsSection'));
-const AboutSection           = dynamic(() => import('@/components/sections/AboutSection'));
-const TestimonialsSection    = dynamic(() => import('@/components/sections/TestimonialsSection'));
-const FaqSection             = dynamic(() => import('@/components/sections/FaqSection'));
-const CotizadorSection       = dynamic(() => import('@/components/sections/CotizadorSection'));
+const ServicesSection = dynamic(() => import('@/components/sections/ServicesSection'));
+const WhyUsSection = dynamic(() => import('@/components/sections/WhyUsSection'));
+const AboutSection = dynamic(() => import('@/components/sections/AboutSection'));
+const TestimonialsSection = dynamic(() => import('@/components/sections/TestimonialsSection'));
+const FaqSection = dynamic(() => import('@/components/sections/FaqSection'));
+const CotizadorSection = dynamic(() => import('@/components/sections/CotizadorSection'));
 const TransformacionesSection = dynamic(() => import('@/components/sections/TransformacionesSection'));
-const BrandsSection          = dynamic(() => import('@/components/sections/BrandsSection'));
-const ContactSection         = dynamic(() => import('@/components/sections/ContactSection'));
-import type { HomeData }   from '@/lib/homeData';
+const BrandsSection = dynamic(() => import('@/components/sections/BrandsSection'));
+const ContactSection = dynamic(() => import('@/components/sections/ContactSection'));
+import type { HomeData } from '@/lib/homeData';
 
 // Wrapper con animación de entrada al scroll (fade + slide suave, sin rebote)
 function Section({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
@@ -40,17 +39,8 @@ function Section({ children, className = '', delay = 0 }: { children: React.Reac
 export default function HomeClient({ data }: { data: HomeData }) {
   return (
     <>
-      {/* Hero con las Historias superpuestas encima (solo mobile). El wrapper
-          relativo deja que las historias floten sobre la parte superior del
-          hero en posición absoluta, así se van con el scroll en vez de empujar
-          el hero hacia abajo. */}
-      <div style={{ position: 'relative' }}>
-        <div className="stories-overlay-mobile">
-          <StoriesSection items={data.gallery} stories={data.stories} />
-        </div>
-        {/* Hero — sin reveal (es lo primero que se ve) */}
-        <HeroSection data={data.hero} />
-      </div>
+      {/* Hero */}
+      <HeroSection data={data.hero} />
 
       {/* Stats */}
       <Section>

@@ -19,7 +19,7 @@ export function toPlain(data: Record<string, any>): Record<string, any> {
 
 export type HomeData = {
   hero: any; stats: any; about: any; contacto: any;
-  services: any[]; gallery: any[]; testimonials: any[]; stories: any[];
+  services: any[]; gallery: any[]; testimonials: any[];
   whyUs: any; brands: any; faq: any; transformaciones: any; loaded: true;
 };
 
@@ -30,7 +30,7 @@ export type HomeData = {
  */
 export async function getHomeData(): Promise<HomeData> {
   try {
-    const [heroS, statsS, aboutS, contactoS, whyUsS, brandsS, faqS, transS, servicesS, galleryS, testimonialsS, storiesS] =
+    const [heroS, statsS, aboutS, contactoS, whyUsS, brandsS, faqS, transS, servicesS, galleryS, testimonialsS] =
       await Promise.allSettled([
         getDoc(doc(db, 'site_config', 'hero')),
         getDoc(doc(db, 'site_config', 'stats')),
@@ -43,13 +43,12 @@ export async function getHomeData(): Promise<HomeData> {
         // Todas estas colecciones se traen SIN el par where('visible')+orderBy('order'):
         // esa combinación exige un índice compuesto en Firestore y, si falta (o se
         // borra), la query lanza failed-precondition y el Promise.allSettled la deja
-        // vacía en silencio — lo que dejaba la galería/historias sin datos en SSR y
+        // vacía en silencio — lo que dejaba la galería sin datos en SSR y
         // provocaba el hydration mismatch (#418). Se filtra `visible` y se ordena por
         // `order` en memoria abajo, que no requiere índice.
         getDocs(collection(db, 'services')),
         getDocs(collection(db, 'gallery_items')),
         getDocs(collection(db, 'testimonials')),
-        getDocs(collection(db, 'instagram_stories')),
       ]);
 
     // Filtra visibles y ordena por `order` en memoria (sin índice compuesto).
@@ -73,14 +72,13 @@ export async function getHomeData(): Promise<HomeData> {
       services: visiblesOrdenados(servicesS),
       gallery: visiblesOrdenados(galleryS),
       testimonials: visiblesOrdenados(testimonialsS),
-      stories: visiblesOrdenados(storiesS),
       loaded: true,
     };
   } catch (e) {
     console.error('[getHomeData]', e);
     return {
       hero: {}, stats: {}, about: {}, contacto: {},
-      services: [], gallery: [], testimonials: [], stories: [],
+      services: [], gallery: [], testimonials: [],
       whyUs: null, brands: null, faq: null, transformaciones: null, loaded: true,
     };
   }
