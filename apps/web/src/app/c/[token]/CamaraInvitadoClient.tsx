@@ -1,3 +1,4 @@
+// apps/web/src/app/c/[token]/CamaraInvitadoClient.tsx
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
@@ -94,39 +95,24 @@ export default function CamaraInvitadoClient({ link }: { link: CamaraInvitadoLin
         fileToUpload = await componerFoto(pendingFile, link.plantillaActiva ? (link.plantillaUrl || null) : null);
       }
 
-      const signRes = await fetch('/api/camara-invitado/sign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: link.token,
-          fileSize: fileToUpload.size,
-          fileType: pendingIsVideo ? pendingFile.type : 'image/jpeg',
-        }),
-      });
-      if (!signRes.ok) {
-        const { error: msg } = await signRes.json().catch(() => ({ error: '' }));
-        throw new Error(msg || 'No se pudo autorizar la subida');
-      }
-      const { timestamp, signature, apiKey, cloudName, folder, albumId, albumTipoEvento, resourceType } = await signRes.json();
-
       const form = new FormData();
+      form.append('token', link.token);
       form.append('file', fileToUpload, pendingIsVideo ? pendingFile.name : 'foto.jpg');
-      form.append('api_key', apiKey);
-      form.append('timestamp', String(timestamp));
-      form.append('signature', signature);
-      form.append('folder', folder);
 
-      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
+      const uploadRes = await fetch('/api/camara-invitado/upload', {
         method: 'POST', body: form,
       });
-      if (!uploadRes.ok) throw new Error('Error al subir a Cloudinary');
-      const { secure_url: url } = await uploadRes.json();
+      if (!uploadRes.ok) {
+        const { error: msg } = await uploadRes.json().catch(() => ({ error: '' }));
+        throw new Error(msg || 'No se pudo subir el archivo. Intenta de nuevo.');
+      }
+      const { url, albumId, albumTipoEvento, tipo } = await uploadRes.json();
 
       await addDoc(collection(db, 'gallery_items'), {
         url,
         albumId,
         categoria: albumTipoEvento || 'General',
-        tipo: pendingIsVideo ? 'video' : 'imagen',
+        tipo,
         origen: 'invitado',
         visible: true,
         order: 0,
@@ -137,7 +123,7 @@ export default function CamaraInvitadoClient({ link }: { link: CamaraInvitadoLin
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: link.token }),
-      }).catch(() => {});
+      }).catch(() => { });
 
       setStep('listo');
     } catch (e: any) {

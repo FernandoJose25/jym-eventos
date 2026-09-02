@@ -1,5 +1,7 @@
+// apps/web/src/lib/firebase-admin.ts
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 
 // SDK de SERVIDOR — úsalo solo dentro de generateMetadata, sitemap.ts, robots.ts
 // y Server Components. Para todo lo que corre en el navegador (los *Client.tsx)
@@ -34,7 +36,13 @@ const adminApp = getApps().length
   : initializeApp({
     credential: cert(getServiceAccount()),
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   });
 
 export const adminDb = getFirestore(adminApp);
+// Usado por /api/camara-invitado/upload para subir archivos de invitados sin
+// sesión: el Admin SDK ignora storage.rules (que exige auth), así que el
+// endpoint valida todo (token, álbum activo, tamaño/tipo, rate limit) antes
+// de tocar el bucket — es la única puerta de escritura anónima al storage.
+export const adminStorage = getStorage(adminApp);
 export default adminApp;

@@ -1,3 +1,4 @@
+// apps/admin/firestore.rules
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -62,10 +63,15 @@ service cloud.firestore {
         request.resource.data.albumId is string &&
         request.resource.data.albumId.size() > 0 &&
         request.resource.data.url is string &&
-        request.resource.data.url.matches('^https://res[.]cloudinary[.]com/.*') &&
+        // Cámara Invitado sube vía /api/camara-invitado/upload (Admin SDK) a
+        // Firebase Storage, no a Cloudinary — el server siempre escribe bajo
+        // invitados/{albumId}/..., así que restringimos la URL a ese prefijo
+        // para no aceptar cualquier link externo inventado por el cliente.
+        request.resource.data.url.matches('^https://storage[.]googleapis[.]com/[^/]+/invitados/.*') &&
         request.resource.data.tipo in ['imagen', 'video'] &&
         request.resource.data.visible is bool &&
         exists(/databases/$(database)/documents/albums/$(request.resource.data.albumId));
     }
   }
 }
+
