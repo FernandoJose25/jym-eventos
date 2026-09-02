@@ -74,10 +74,23 @@ export async function POST(req: NextRequest) {
         const path = `invitados/${link.albumId}/${Date.now()}-${randomUUID()}.${ext}`;
 
         const bucket = adminStorage.bucket();
-        await bucket.file(path).save(buffer, {
+        const fileRef = bucket.file(path);
+        await fileRef.save(buffer, {
             contentType: file.type,
             resumable: false,
         });
+
+        // save() deja el objeto con ACL privado por defecto — sin esto la URL de
+        // storage.googleapis.com responde 403 y la foto nunca carga en la web
+        // pública. Si el bucket tiene "uniform bucket-level access" activado,
+        // makePublic() truena (no existen ACLs por objeto ahí) pero en ese caso
+        // el acceso público ya lo da el IAM del bucket completo, así que se
+        // ignora ese error puntual sin abortar la subida.
+        try {
+            await fileRef.makePublic();
+        } catch (aclErr) {
+            console.warn('[camara-invitado/upload] makePublic() omitido:', aclErr);
+        }
 
         // Mismo formato de URL pública que usa el resto de la app para Storage
         // (ver next.config.ts: bucket con lectura pública vía storage.googleapis.com).
