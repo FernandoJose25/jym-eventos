@@ -969,12 +969,18 @@ export default function ImageUploader({
     setError(''); setUploading(true); setProgress(0); setQuality(null);
     const isVideo = file.type.startsWith('video/') || VIDEO_EXTS.test(file.name);
 
-    // dimensiones originales
+    // dimensiones originales — no crítico: si falla, seguimos sin ellas en
+    // vez de colgar la subida entera para siempre (antes solo había
+    // onload, sin onerror: una imagen que el navegador no podía decodificar
+    // dejaba este await esperando indefinidamente, con la barra trabada en
+    // 0% y sin ningún error visible).
     let origW = 0, origH = 0;
     if (!isVideo) {
       await new Promise<void>(res => {
         const img = new Image();
-        img.onload = () => { origW = img.naturalWidth; origH = img.naturalHeight; res(); };
+        const terminar = () => res();
+        img.onload = () => { origW = img.naturalWidth; origH = img.naturalHeight; terminar(); };
+        img.onerror = terminar;
         img.src = URL.createObjectURL(file);
       });
     }
