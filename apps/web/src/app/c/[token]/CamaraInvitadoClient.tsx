@@ -95,18 +95,30 @@ export default function CamaraInvitadoClient({ link }: { link: CamaraInvitadoLin
         fileToUpload = await componerFoto(pendingFile, link.plantillaActiva ? (link.plantillaUrl || null) : null);
       }
 
-      const form = new FormData();
-      form.append('token', link.token);
-      form.append('file', fileToUpload, pendingIsVideo ? pendingFile.name : 'foto.jpg');
-
-      const uploadRes = await fetch('/api/camara-invitado/upload', {
-        method: 'POST', body: form,
+      const signRes = await fetch('/api/camara-invitado/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: link.token,
+          fileSize: fileToUpload.size,
+          fileType: pendingIsVideo ? pendingFile.type : 'image/jpeg',
+        }),
       });
-      if (!uploadRes.ok) {
-        const { error: msg } = await uploadRes.json().catch(() => ({ error: '' }));
-        throw new Error(msg || 'No se pudo subir el archivo. Intenta de nuevo.');
+      if (!signRes.ok) {
+        const { error: msg } = await signRes.json().catch(() => ({ error: '' }));
+        throw new Error(msg || 'No se pudo autorizar la subida');
       }
-      const { url, albumId, albumTipoEvento, tipo } = await uploadRes.json();
+      const { uploadUrl, contentType, url, albumId, albumTipoEvento, tipo } = await signRes.json();
+
+      const putRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': contentType,
+          'x-goog-acl': 'public-read',
+        },
+        body: fileToUpload,
+      });
+      if (!putRes.ok) throw new Error('No se pudo subir el archivo. Intenta de nuevo.');
 
       await addDoc(collection(db, 'gallery_items'), {
         url,
