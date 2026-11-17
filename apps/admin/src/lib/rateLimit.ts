@@ -10,6 +10,9 @@ const redis =
     ? new Redis({
         url: process.env.UPSTASH_REDIS_REST_URL,
         token: process.env.UPSTASH_REDIS_REST_TOKEN,
+        // Si Upstash no responde (ej. base archivada por inactividad), no
+        // queremos 5 reintentos con backoff (~4 s) antes de caer al fail-open.
+        retry: { retries: 1 },
       })
     : null;
 
@@ -52,8 +55,17 @@ export async function estaBloqueado(
 ): Promise<{ bloqueado: false } | { bloqueado: true; retryAfterSeconds: number }> {
   if (!redis) return { bloqueado: false };
   const clave = claveFallos(ip, email);
-  const [fallosRaw, ttl] = await Promise.all([redis.get<number>(clave), redis.ttl(clave)]);
-  const fallos = fallosRaw ?? 0;
+  let fallos: number;
+  let ttl: number;
+  try {
+    const [fallosRaw, ttlRaw] = await Promise.all([redis.get<number>(clave), redis.ttl(clave)]);
+    fallos = fallosRaw ?? 0;
+    ttl = ttlRaw;
+  } catch (err) {
+    // Upstash caído / base archivada → fail-open: nunca dejar al admin fuera.
+    console.error('[rateLimit] Upstash no disponible, se omite el bloqueo de login:', err);
+    return { bloqueado: false };
+  }
   if (fallos >= MAX_FALLOS) {
     return { bloqueado: true, retryAfterSeconds: Math.max(1, ttl) };
   }
@@ -67,14 +79,20 @@ export async function estaBloqueado(
 export async function registrarFallo(ip: string, email: string): Promise<void> {
   if (!redis) return;
   const clave = claveFallos(ip, email);
-  const n = await redis.incr(clave);
-  if (n === 1) await redis.expire(clave, VENTANA_SEG);
+  try {
+    const n = await redis.incr(clave);
+    if (n === 1) await redis.expire(clave, VENTANA_SEG);
+  } catch (err) {
+    console.error('[rateLimit] Upstash no disponible, no se registró el fallo:', err);
+  }
 }
 
 // Login exitoso → borra el contador para no arrastrar fallos previos.
 export async function limpiarFallos(ip: string, email: string): Promise<void> {
   if (!redis) return;
-  await redis.del(claveFallos(ip, email));
+  await redis.del(claveFallos(ip, email)).catch((err) => {
+    console.error('[rateLimit] Upstash no disponible, no se limpió el contador:', err);
+  });
 }
 
 export function ipDe(req: Request): string {
@@ -87,7 +105,13 @@ export async function checkLimit(
   key: string
 ): Promise<{ ok: true } | { ok: false; retryAfterSeconds: number }> {
   if (!limiter) return { ok: true };
-  const { success, reset } = await limiter.limit(key);
-  if (success) return { ok: true };
-  return { ok: false, retryAfterSeconds: Math.max(1, Math.ceil((reset - Date.now()) / 1000)) };
+  try {
+    const { success, reset } = await limiter.limit(key);
+    if (success) return { ok: true };
+    return { ok: false, retryAfterSeconds: Math.max(1, Math.ceil((reset - Date.now()) / 1000)) };
+  } catch (err) {
+    // Upstash caído / base archivada / credenciales inválidas → fail-open.
+    console.error('[rateLimit] Upstash no disponible, se omite el límite:', err);
+    return { ok: true };
+  }
 }

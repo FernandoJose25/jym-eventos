@@ -10,6 +10,9 @@ const redis =
     ? new Redis({
         url: process.env.UPSTASH_REDIS_REST_URL,
         token: process.env.UPSTASH_REDIS_REST_TOKEN,
+        // Si Upstash no responde (ej. base archivada por inactividad), no
+        // queremos 5 reintentos con backoff (~4 s) antes de caer al fail-open.
+        retry: { retries: 1 },
       })
     : null;
 
@@ -42,7 +45,13 @@ export async function checkLimit(
   key: string
 ): Promise<{ ok: true } | { ok: false; retryAfterSeconds: number }> {
   if (!limiter) return { ok: true };
-  const { success, reset } = await limiter.limit(key);
-  if (success) return { ok: true };
-  return { ok: false, retryAfterSeconds: Math.max(1, Math.ceil((reset - Date.now()) / 1000)) };
+  try {
+    const { success, reset } = await limiter.limit(key);
+    if (success) return { ok: true };
+    return { ok: false, retryAfterSeconds: Math.max(1, Math.ceil((reset - Date.now()) / 1000)) };
+  } catch (err) {
+    // Upstash caído / base archivada / credenciales inválidas → fail-open.
+    console.error('[rateLimit] Upstash no disponible, se omite el límite:', err);
+    return { ok: true };
+  }
 }
