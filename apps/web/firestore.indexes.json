@@ -1,6 +1,20 @@
 {
   "indexes": [
     {
+      "collectionGroup": "albums",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "visible",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "order",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "gallery_items",
       "queryScope": "COLLECTION",
       "fields": [

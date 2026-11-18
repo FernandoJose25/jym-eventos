@@ -10,3 +10,10 @@ dist/
 
 # Graphify: artefactos del grafo de conocimiento (se regeneran solos)
 graphify-out/
+
+# Herramientas locales (IDE, agentes de IA, caché de Firebase)
+.idea/
+.claude/
+.agents/
+skills-lock.json
+.firebase/
