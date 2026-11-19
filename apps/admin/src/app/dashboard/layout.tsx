@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Image, MessageSquare,
   Palette, Users, LogOut, Menu, X,
   ChevronRight, Briefcase, ChevronDown, Layers, Globe, BarChart2, Camera, Share2,
-  PartyPopper, Star, Instagram,
+  PartyPopper, Star, Instagram, Smartphone,
 } from 'lucide-react';
 import { SERVICE_ICONS } from '@/lib/serviceIcons';
 import SugerenciasPanel from '@/components/SugerenciasPanel';
@@ -28,6 +28,7 @@ const NAV = [
   { href: '/dashboard/diseno', icon: Palette, label: 'Diseño', group: 'sistema' },
   { href: '/dashboard/configuracion', icon: Globe, label: 'Configuración', group: 'sistema' },
   { href: '/dashboard/usuarios', icon: Users, label: 'Usuarios', group: 'sistema' },
+  { href: '/dashboard/versiones', icon: Smartphone, label: 'Versiones', group: 'sistema' },
 ];
 
 const GROUPS: Record<string, string> = {
