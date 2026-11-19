@@ -37,6 +37,17 @@ export const urlSubida = (key: string) => firmar('PUT', key, 3600);
 /** Enlace de descarga para las redes: dura lo suficiente para que procesen videos largos (24 h). */
 export const urlLectura = (key: string) => firmar('GET', key, 86400);
 
+/**
+ * El mismo enlace de descarga, servido desde el dominio de CASTREAM (castream-app.vercel.app/m/…
+ * reenvía al depósito sin tocar la firma). TikTok solo descarga de dominios verificados por la app.
+ */
+export async function urlLecturaVerificada(key: string): Promise<string> {
+  const { bucket } = b2();
+  const firmada = new URL(await urlLectura(key));
+  const base = process.env.CASTREAM_MEDIA_BASE ?? 'https://castream-app.vercel.app/m';
+  return `${base}${firmada.pathname.slice(bucket.length + 1)}${firmada.search}`;
+}
+
 /** Comprueba que el teléfono terminó de subir el archivo. */
 export async function existe(key: string): Promise<boolean> {
   const { endpoint, bucket, aws } = b2();

@@ -26,19 +26,35 @@ async function conectadasDe(uid: string): Promise<Conectada[]> {
   return data;
 }
 
+interface IgDePagina { usuario: string | null; motivo: string | null }
+
 /**
  * Cuentas profesionales de Instagram vinculadas a las Páginas conectadas: quedan como
- * destinos de publicación (provider 'instagram'). Publican con el token de su Página.
+ * destinos (provider 'instagram') y publican con el token de su Página (Meta ya no da a
+ * las apps nuevas el login propio de Instagram). Devuelve y guarda en la Página qué
+ * Instagram se encontró o por qué no.
  */
-async function sincronizarInstagram(uid: string, businessId: string, paginas: PaginaFacebook[]) {
+async function sincronizarInstagram(uid: string, businessId: string, paginas: PaginaFacebook[]): Promise<Record<string, IgDePagina>> {
   const db = castreamDb();
+  const resultado: Record<string, IgDePagina> = {};
   const encontradas = await Promise.all(paginas.map(async p => {
-    const data = await graph<{ instagram_business_account?: { id: string; username?: string } }>(
-      `/${p.pageId}`, { fields: 'instagram_business_account{id,username}', access_token: p.accessToken },
-    ).catch(() => ({ instagram_business_account: undefined }));
-    const ig = data.instagram_business_account;
-    return ig ? { ig, pageId: p.pageId } : null;
+    try {
+      const data = await graph<{ instagram_business_account?: { id: string; username?: string } }>(
+        `/${p.pageId}`, { fields: 'instagram_business_account{id,username}', access_token: p.accessToken },
+      );
+      const ig = data.instagram_business_account;
+      resultado[p.pageId] = ig
+        ? { usuario: ig.username ? `@${ig.username}` : 'Instagram', motivo: null }
+        : { usuario: null, motivo: 'La Página no tiene una cuenta profesional de Instagram vinculada.' };
+      return ig ? { ig, pageId: p.pageId } : null;
+    } catch (e: any) {
+      resultado[p.pageId] = { usuario: null, motivo: `Facebook no dejó ver el Instagram de la Página: ${e.message}` };
+      return null;
+    }
   }));
+
+  await Promise.all(paginas.map(p => db.from('connected_accounts').update({ meta: { instagram: resultado[p.pageId] } })
+    .eq('user_id', uid).eq('provider', 'facebook').eq('page_id', p.pageId)));
   const igs = encontradas.filter((x): x is NonNullable<typeof x> => !!x);
   if (igs.length) {
     const { error } = await db.from('connected_accounts').upsert(igs.map(({ ig, pageId }) => ({
@@ -58,6 +74,7 @@ async function sincronizarInstagram(uid: string, businessId: string, paginas: Pa
   let borrar = db.from('connected_accounts').delete().eq('user_id', uid).eq('provider', 'instagram');
   if (vigentes.length) borrar = borrar.not('page_id', 'in', `(${vigentes.join(',')})`);
   await borrar;
+  return resultado;
 }
 
 const errorGraph = (e: any) => NextResponse.json(
@@ -88,12 +105,12 @@ export async function GET(req: NextRequest) {
   }));
 
   const ids = new Set(conectadas.map(c => c.page_id));
-  await sincronizarInstagram(auth.uid, auth.businessId, frescas.paginas.filter(p => ids.has(p.pageId)))
-    .catch(e => console.error('[publisher/facebook/pages] instagram', e));
+  const instagram = await sincronizarInstagram(auth.uid, auth.businessId, frescas.paginas.filter(p => ids.has(p.pageId)))
+    .catch((e): Record<string, IgDePagina> => { console.error('[publisher/facebook/pages] instagram', e); return {}; });
   return NextResponse.json({
     vinculado: true,
     fbUserName: frescas.fbUserName,
-    paginas: frescas.paginas.map(({ accessToken: _, ...p }) => ({ ...p, conectada: ids.has(p.pageId) })),
+    paginas: frescas.paginas.map(({ accessToken: _, ...p }) => ({ ...p, conectada: ids.has(p.pageId), instagram: instagram[p.pageId] ?? null })),
   });
 }
 

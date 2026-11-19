@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { urlSubida } from '@/lib/castreamStorage';
+import { PRIVACIDADES, type OpcionesTikTok, type Privacidad } from '@/lib/castreamTikTok';
 import { castreamDb, verifyAppUser } from '@/lib/publisher';
 
 /**
@@ -7,7 +8,8 @@ import { castreamDb, verifyAppUser } from '@/lib/publisher';
  * enlace de subida por archivo. El teléfono sube los originales directo al depósito
  * (sin pasar por Vercel) y luego llama a /api/publisher/posts/publish.
  *
- * POST { caption, media: [{ type, mime, size, width?, height? }], destinos: [connected_account_id] }
+ * POST { caption, media: [{ type, mime, size, width?, height? }], destinos: [connected_account_id],
+ *        opciones?: { [connected_account_id]: OpcionesTikTok } }
  *   → { postId, uploads: [{ key, url }] }
  */
 
@@ -18,6 +20,18 @@ const MAX_TEXTO = 2200; // límite de Instagram
 
 interface MediaIn { type?: unknown; mime?: unknown; size?: unknown; width?: unknown; height?: unknown }
 
+/** Opciones de TikTok válidas o un mensaje para la persona. */
+function opcionesTikTok(o: any): OpcionesTikTok | string {
+  if (o?.modo === 'borrador') return { modo: 'borrador' };
+  if (o?.modo !== 'directo') return 'Elige si TikTok va a tus borradores o se publica directo.';
+  if (!PRIVACIDADES.includes(o.privacidad)) return 'Elige quién puede ver la publicación en TikTok.';
+  if (o.patrocinado && o.privacidad === 'SELF_ONLY') return 'El contenido de marca no puede ser privado en TikTok.';
+  return {
+    modo: 'directo', privacidad: o.privacidad as Privacidad,
+    comentarios: !!o.comentarios, duo: !!o.duo, stitch: !!o.stitch, marcaPropia: !!o.marcaPropia, patrocinado: !!o.patrocinado,
+  };
+}
+
 export async function POST(req: NextRequest) {
   const auth = await verifyAppUser(req);
   if (auth.response) return auth.response;
@@ -26,6 +40,7 @@ export async function POST(req: NextRequest) {
   const caption = typeof body.caption === 'string' ? body.caption : '';
   const media: MediaIn[] = Array.isArray(body.media) ? body.media : [];
   const destinos: string[] = Array.isArray(body.destinos) ? body.destinos.filter((d: unknown) => typeof d === 'string') : [];
+  const opcionesIn: Record<string, unknown> = body.opciones && typeof body.opciones === 'object' ? body.opciones : {};
 
   const malo = (error: string) => NextResponse.json({ error }, { status: 400 });
   if (caption.length > MAX_TEXTO) return malo(`El texto pasa de ${MAX_TEXTO} caracteres (límite de Instagram).`);
@@ -42,8 +57,14 @@ export async function POST(req: NextRequest) {
 
   const db = castreamDb();
   const { data: cuentas } = await db.from('connected_accounts')
-    .select('id, provider, label').eq('user_id', auth.uid).in('id', destinos).in('provider', ['facebook', 'instagram']);
+    .select('id, provider, label').eq('user_id', auth.uid).in('id', destinos).in('provider', ['facebook', 'instagram', 'tiktok']);
   if (!cuentas || cuentas.length !== destinos.length) return malo('Alguna red elegida ya no está conectada.');
+  const opciones: Record<string, OpcionesTikTok> = {};
+  for (const c of cuentas.filter(c => c.provider === 'tiktok')) {
+    const o = opcionesTikTok(opcionesIn[c.id]);
+    if (typeof o === 'string') return malo(o);
+    opciones[c.id] = o;
+  }
 
   const { data: post, error } = await db.from('posts').insert({ user_id: auth.uid, business_id: auth.businessId, caption }).select('id').single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -63,6 +84,7 @@ export async function POST(req: NextRequest) {
       db.from('posts').update({ media: archivos }).eq('id', post.id).then(r => { if (r.error) throw r.error; }),
       db.from('post_targets').insert(cuentas.map(c => ({
         post_id: post.id, user_id: auth.uid, network: c.provider, connected_account_id: c.id, account_label: c.label,
+        options: opciones[c.id] ?? {},
       }))).then(r => { if (r.error) throw r.error; }),
     ]);
     return NextResponse.json({ postId: post.id, uploads });

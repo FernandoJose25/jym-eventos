@@ -1,11 +1,13 @@
 import sharp from 'sharp';
 import { borrar, descargar, subir, urlLectura } from './castreamStorage';
+import { type OpcionesTikTok, clavesTikTok, estadoTikTok, iniciarTikTok, tokenTikTok } from './castreamTikTok';
 import { decryptToken } from './googleTokenCrypto';
 import { GRAPH_VERSION, castreamDb, graph } from './publisher';
 
 /**
  * Motor de publicación de CASTREAM. Cada destino (una Página de Facebook, una cuenta
- * de Instagram…) avanza por su cuenta: pendiente → procesando → publicado | error.
+ * de Instagram o de TikTok) avanza por su cuenta: pendiente → procesando → publicado |
+ * borrador (bandeja de TikTok) | error.
  * Facebook e Instagram descargan el original del depósito con un enlace firmado; los
  * videos y los contenedores de Instagram se procesan en la red y se revisan con
  * avanzarPendientes() (lo llama la app mientras mira el estado y un cron cada minuto).
@@ -22,8 +24,8 @@ export interface MediaPost {
 }
 
 interface Post { id: string; user_id: string; caption: string; media: MediaPost[]; created_at: string; files_deleted: boolean }
-interface Destino { id: string; post_id: string; user_id: string; network: 'facebook' | 'instagram' | 'tiktok'; connected_account_id: string | null; status: string; work_id: string | null; attempts: number }
-interface Cuenta { page_id: string; meta: { facebookPageId?: string } }
+interface Destino { id: string; post_id: string; user_id: string; network: 'facebook' | 'instagram' | 'tiktok'; connected_account_id: string | null; status: string; work_id: string | null; attempts: number; options: Record<string, unknown> }
+interface Cuenta { page_id: string; meta: { facebookPageId?: string; usuario?: string | null } }
 
 const FB = `https://graph.facebook.com/${GRAPH_VERSION}`;
 const FB_VIDEO = `https://graph-video.facebook.com/${GRAPH_VERSION}`;
@@ -42,6 +44,13 @@ async function graphPost<T>(base: string, path: string, params: Record<string, s
   return data as T;
 }
 
+async function graphGet<T>(base: string, path: string, params: Record<string, string>): Promise<T> {
+  const res = await fetch(`${base}${path}?${new URLSearchParams(params)}`, { cache: 'no-store' });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.error) throw new Error(data.error?.message || `Meta respondió ${res.status}`);
+  return data as T;
+}
+
 async function tokenDePagina(uid: string, fbPageId: string): Promise<string> {
   const { data } = await castreamDb().from('secrets').select('facebook_page_tokens').eq('user_id', uid).maybeSingle();
   const cifrado = data?.facebook_page_tokens?.[fbPageId];
@@ -49,14 +58,25 @@ async function tokenDePagina(uid: string, fbPageId: string): Promise<string> {
   return decryptToken(cifrado);
 }
 
-/** Página e id de la red del destino, con el token que publica (IG usa el de su Página). */
+/**
+ * Id de la cuenta en la red, el token que publica y el host de la API. Instagram publica
+ * con el token de la Página de Facebook a la que está vinculado (inicio de sesión unificado).
+ */
 async function contexto(d: Destino) {
   const { data: cuenta } = await castreamDb().from('connected_accounts')
     .select('page_id, meta').eq('id', d.connected_account_id ?? '').eq('user_id', d.user_id).maybeSingle<Cuenta>();
   if (!cuenta) throw new Error('La cuenta de destino ya no está conectada.');
   const fbPageId = d.network === 'instagram' ? cuenta.meta.facebookPageId : cuenta.page_id;
   if (!fbPageId) throw new Error('No se encontró la Página de Facebook de esta cuenta.');
-  return { id: cuenta.page_id, token: await tokenDePagina(d.user_id, fbPageId) };
+  return { id: cuenta.page_id, token: await tokenDePagina(d.user_id, fbPageId), base: FB };
+}
+
+/** TikTok publica con su propio token (se renueva solo); el usuario arma el enlace al resultado. */
+async function contextoTikTok(d: Destino) {
+  const { data: cuenta } = await castreamDb().from('connected_accounts')
+    .select('page_id, meta').eq('id', d.connected_account_id ?? '').eq('user_id', d.user_id).maybeSingle<Cuenta>();
+  if (!cuenta) throw new Error('La cuenta de TikTok ya no está conectada.');
+  return { token: await tokenTikTok(d.user_id, d.connected_account_id!), usuario: cuenta.meta.usuario ?? null };
 }
 
 /* ── Instagram exige JPEG, máx. 8 MB y proporción entre 4:5 y 1.91:1 ── */
@@ -95,7 +115,11 @@ async function fotoParaInstagram(m: MediaPost): Promise<string> {
 type Cambio = Partial<Pick<Destino, 'status' | 'work_id' | 'attempts'>> & { external_id?: string; external_url?: string; error?: string | null };
 
 async function iniciar(d: Destino, post: Post): Promise<Cambio> {
-  const { id, token } = await contexto(d);
+  if (d.network === 'tiktok') {
+    const { token } = await contextoTikTok(d);
+    return { status: 'procesando', work_id: await iniciarTikTok(token, post, d.options as unknown as OpcionesTikTok) };
+  }
+  const { id, token, base } = await contexto(d);
   const video = post.media.find(m => m.type === 'video');
 
   if (d.network === 'facebook') {
@@ -119,24 +143,24 @@ async function iniciar(d: Destino, post: Post): Promise<Cambio> {
 
   if (d.network === 'instagram') {
     if (video) {
-      const c = await graphPost<{ id: string }>(FB, `/${id}/media`, {
+      const c = await graphPost<{ id: string }>(base, `/${id}/media`, {
         media_type: 'REELS', video_url: await urlLectura(video.key), caption: post.caption, share_to_feed: 'true', access_token: token,
       });
       return { status: 'procesando', work_id: c.id };
     }
     if (post.media.length === 1) {
-      const c = await graphPost<{ id: string }>(FB, `/${id}/media`, { image_url: await fotoParaInstagram(post.media[0]), caption: post.caption, access_token: token });
+      const c = await graphPost<{ id: string }>(base, `/${id}/media`, { image_url: await fotoParaInstagram(post.media[0]), caption: post.caption, access_token: token });
       return { status: 'procesando', work_id: c.id };
     }
     const hijos = await Promise.all(post.media.map(async m =>
-      graphPost<{ id: string }>(FB, `/${id}/media`, { image_url: await fotoParaInstagram(m), is_carousel_item: 'true', access_token: token })));
-    const c = await graphPost<{ id: string }>(FB, `/${id}/media`, {
+      graphPost<{ id: string }>(base, `/${id}/media`, { image_url: await fotoParaInstagram(m), is_carousel_item: 'true', access_token: token })));
+    const c = await graphPost<{ id: string }>(base, `/${id}/media`, {
       media_type: 'CAROUSEL', children: hijos.map(h => h.id).join(','), caption: post.caption, access_token: token,
     });
     return { status: 'procesando', work_id: c.id };
   }
 
-  throw new Error('TikTok todavía no está conectado en CASTREAM.');
+  throw new Error('Red no soportada.');
 }
 
 /* ── Revisión de lo que la red sigue procesando ── */
@@ -145,7 +169,26 @@ async function avanzar(d: Destino, post: Post): Promise<Cambio | null> {
   if (Date.now() - new Date(post.created_at).getTime() > LIMITE_PROCESO_MS) {
     return { status: 'error', error: 'La red tardó demasiado en procesar el archivo.' };
   }
-  const { id, token } = await contexto(d);
+
+  if (d.network === 'tiktok') {
+    const { token, usuario } = await contextoTikTok(d);
+    const e = await estadoTikTok(token, d.work_id!);
+    if (e.estado === 'borrador') return { status: 'borrador' };
+    if (e.estado === 'error') return { status: 'error', error: e.motivo };
+    if (e.estado === 'publicado') {
+      // Sin id público (privado o en revisión de TikTok) se enlaza al perfil.
+      const tipo = post.media.some(m => m.type === 'video') ? 'video' : 'photo';
+      const perfil = usuario ? `https://www.tiktok.com/@${usuario}` : undefined;
+      return {
+        status: 'publicado',
+        external_id: e.postId ?? d.work_id!,
+        external_url: e.postId && perfil ? `${perfil}/${tipo}/${e.postId}` : perfil,
+      };
+    }
+    return { attempts: d.attempts + 1 };
+  }
+
+  const { id, token, base } = await contexto(d);
 
   if (d.network === 'facebook') {
     const v = await graph<{ status?: { video_status?: string }; permalink_url?: string }>(`/${d.work_id}`, { fields: 'status,permalink_url', access_token: token });
@@ -156,10 +199,10 @@ async function avanzar(d: Destino, post: Post): Promise<Cambio | null> {
   }
 
   if (d.network === 'instagram') {
-    const c = await graph<{ status_code?: string; status?: string }>(`/${d.work_id}`, { fields: 'status_code,status', access_token: token });
+    const c = await graphGet<{ status_code?: string; status?: string }>(base, `/${d.work_id}`, { fields: 'status_code,status', access_token: token });
     if (c.status_code === 'FINISHED') {
-      const pub = await graphPost<{ id: string }>(FB, `/${id}/media_publish`, { creation_id: d.work_id!, access_token: token });
-      const media = await graph<{ permalink?: string }>(`/${pub.id}`, { fields: 'permalink', access_token: token }).catch(() => ({ permalink: undefined }));
+      const pub = await graphPost<{ id: string }>(base, `/${id}/media_publish`, { creation_id: d.work_id!, access_token: token });
+      const media = await graphGet<{ permalink?: string }>(base, `/${pub.id}`, { fields: 'permalink', access_token: token }).catch(() => ({ permalink: undefined }));
       return { status: 'publicado', external_id: pub.id, external_url: media.permalink };
     }
     if (c.status_code === 'ERROR' || c.status_code === 'EXPIRED') {
@@ -189,7 +232,7 @@ async function cerrarSiTermino(post: Post) {
   if (!estados.length || estados.some(s => !TERMINALES.includes(s))) return;
   const errores = estados.filter(s => s === 'error').length;
   const status = errores === 0 ? 'terminado' : errores === estados.length ? 'error' : 'parcial';
-  if (!post.files_deleted) await borrar(post.media.flatMap(m => [m.key, claveIG(m.key)]));
+  if (!post.files_deleted) await borrar([...post.media.flatMap(m => [m.key, claveIG(m.key)]), ...clavesTikTok(post.media)]);
   await db.from('posts').update({ status, files_deleted: true }).eq('id', post.id);
 }
 
