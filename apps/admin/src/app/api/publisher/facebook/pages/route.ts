@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decryptToken, encryptToken } from '@/lib/googleTokenCrypto';
-import { castreamDb, paginasDeFacebook, verifyAppUser, type PaginaFacebook } from '@/lib/publisher';
+import { castreamDb, graph, paginasDeFacebook, verifyAppUser, type PaginaFacebook } from '@/lib/publisher';
 
 /**
  * Paso 3: Páginas de la persona con su aptitud para Live, y elección de cuáles
@@ -24,6 +24,40 @@ async function conectadasDe(uid: string): Promise<Conectada[]> {
     .select('id, page_id').eq('user_id', uid).eq('provider', 'facebook');
   if (error) throw error;
   return data;
+}
+
+/**
+ * Cuentas profesionales de Instagram vinculadas a las Páginas conectadas: quedan como
+ * destinos de publicación (provider 'instagram'). Publican con el token de su Página.
+ */
+async function sincronizarInstagram(uid: string, businessId: string, paginas: PaginaFacebook[]) {
+  const db = castreamDb();
+  const encontradas = await Promise.all(paginas.map(async p => {
+    const data = await graph<{ instagram_business_account?: { id: string; username?: string } }>(
+      `/${p.pageId}`, { fields: 'instagram_business_account{id,username}', access_token: p.accessToken },
+    ).catch(() => ({ instagram_business_account: undefined }));
+    const ig = data.instagram_business_account;
+    return ig ? { ig, pageId: p.pageId } : null;
+  }));
+  const igs = encontradas.filter((x): x is NonNullable<typeof x> => !!x);
+  if (igs.length) {
+    const { error } = await db.from('connected_accounts').upsert(igs.map(({ ig, pageId }) => ({
+      user_id: uid,
+      business_id: businessId,
+      provider: 'instagram',
+      page_id: ig.id,
+      external_id: ig.id,
+      page_name: ig.username ?? null,
+      label: ig.username ? `@${ig.username}` : 'Instagram',
+      meta: { facebookPageId: pageId },
+    })), { onConflict: 'user_id,provider,page_id' });
+    if (error) throw error;
+  }
+  // Las que ya no cuelgan de una Página conectada dejan de ser destino.
+  const vigentes = igs.map(x => x.ig.id);
+  let borrar = db.from('connected_accounts').delete().eq('user_id', uid).eq('provider', 'instagram');
+  if (vigentes.length) borrar = borrar.not('page_id', 'in', `(${vigentes.join(',')})`);
+  await borrar;
 }
 
 const errorGraph = (e: any) => NextResponse.json(
@@ -54,6 +88,8 @@ export async function GET(req: NextRequest) {
   }));
 
   const ids = new Set(conectadas.map(c => c.page_id));
+  await sincronizarInstagram(auth.uid, auth.businessId, frescas.paginas.filter(p => ids.has(p.pageId)))
+    .catch(e => console.error('[publisher/facebook/pages] instagram', e));
   return NextResponse.json({
     vinculado: true,
     fbUserName: frescas.fbUserName,
@@ -112,6 +148,7 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     }).eq('user_id', auth.uid);
     if (error) throw error;
+    await sincronizarInstagram(auth.uid, auth.businessId, elegidas);
 
     return NextResponse.json({ ok: true, conectadas: elegidas.length });
   } catch (e: any) {
