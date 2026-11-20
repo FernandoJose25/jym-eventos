@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ErrorLive, iniciarLive } from '@/lib/castreamLive';
 import { verifyAppUser } from '@/lib/publisher';
 
+// A las dos redes puede esperar a que Upstream apague un stream que quedó abierto.
+export const maxDuration = 60;
+
 /**
- * Crea la transmisión: el Live de Facebook en la Página y, si va también a TikTok, la
- * sesión del relay. Devuelve la URL a la que el celular manda la señal.
+ * Crea la transmisión: el Live de Facebook en la Página y, si va también a TikTok, prepara
+ * Upstream para repartir la señal. Devuelve la URL a la que el celular manda la señal.
  *
  * POST { cuentaFacebookId?, titulo, tiktok?: { servidor, clave, usuario? } } → { sesionId, ingesta, facebookUrl }
  */

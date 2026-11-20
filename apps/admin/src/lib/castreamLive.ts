@@ -1,12 +1,13 @@
 import { randomBytes } from 'crypto';
 import { tokenDePagina } from './castreamPublish';
 import { GRAPH_VERSION, castreamDb } from './publisher';
+import { pararAmbas, prepararAmbas, upstreamDisponible } from './castreamUpstream';
 
 /**
  * En vivo de CASTREAM. Facebook Live se crea por API en la Página (live_videos) y devuelve
  * su URL RTMPS. TikTok no tiene API de Live: la persona pega el servidor y la clave de su
  * LIVE Producer. A una sola red, el celular transmite directo; a las dos a la vez, manda una
- * sola señal al relay (CASTREAM_RELAY_RTMP), que la reparte.
+ * sola señal a Upstream.so (servicio en línea gratuito, UPSTREAM_API_KEY), que la reparte.
  * Los comentarios de Facebook los trae tickLive() mientras la app transmite; los de TikTok los
  * lee el celular directo de Euler Stream con un pase temporal (paseChatTikTok).
  */
@@ -25,7 +26,7 @@ async function fb<T>(metodo: 'GET' | 'POST', path: string, params: Record<string
   return data as T;
 }
 
-export const relayDisponible = () => !!process.env.CASTREAM_RELAY_RTMP;
+export const relayDisponible = upstreamDisponible;
 
 export interface PedidoLive {
   /** null: solo TikTok. */
@@ -47,13 +48,13 @@ function rtmpTikTok(servidor: string, clave: string): string {
 export async function iniciarLive(uid: string, businessId: string, p: PedidoLive) {
   const db = castreamDb();
   if (!p.cuentaFacebookId && !p.tiktok) throw new ErrorLive('Elige dónde transmitir.');
-  const relay = process.env.CASTREAM_RELAY_RTMP?.replace(/\/+$/, '');
   const tiktokRtmp = p.tiktok ? rtmpTikTok(p.tiktok.servidor, p.tiktok.clave) : null;
   const ambas = !!p.cuentaFacebookId && !!tiktokRtmp;
-  if (ambas && !relay) throw new ErrorLive('Transmitir a Facebook y TikTok a la vez necesita el servidor de transmisión de CASTREAM. Por ahora elige una sola red.');
+  if (ambas && !upstreamDisponible()) throw new ErrorLive('Transmitir a Facebook y TikTok a la vez todavía no está configurado. Por ahora elige una sola red.');
   const titulo = p.titulo.trim().slice(0, 254) || 'En vivo';
 
   let facebook: { cuentaId: string; liveId: string; rtmp: string; url: string | null } | null = null;
+  let ingestaAmbas: string | null = null;
   if (p.cuentaFacebookId) {
     const { data: cuenta } = await db.from('connected_accounts')
       .select('id, page_id, eligible_for_live, ineligible_reason')
@@ -69,6 +70,26 @@ export async function iniciarLive(uid: string, businessId: string, p: PedidoLive
     const info = await fb<{ permalink_url?: string }>('GET', `/${live.id}`, { fields: 'permalink_url', access_token: token })
       .catch(() => ({ permalink_url: undefined }));
     facebook = { cuentaId: cuenta.id, liveId: live.id, rtmp, url: info.permalink_url ? `https://www.facebook.com${info.permalink_url}` : null };
+
+    if (ambas) {
+      // Otro live a la vez de otra persona usa el único stream de Upstream; uno propio que quedó
+      // abierto (la app se cerró sin terminar) se puede apagar.
+      const ocupado = async () => {
+        const { data } = await db.from('live_sessions').select('id').eq('relay', true).neq('status', 'terminado')
+          .neq('user_id', uid).gte('created_at', new Date(Date.now() - 6 * 3600_000).toISOString()).limit(1);
+        return !!data?.length;
+      };
+      try {
+        ingestaAmbas = await prepararAmbas(rtmp, tiktokRtmp!, ocupado);
+      } catch (e) {
+        await fb('POST', `/${live.id}`, { end_live_video: 'true', access_token: token }).catch(() => {});
+        throw new ErrorLive(e instanceof Error && e.message === 'OCUPADO'
+          ? 'Ahora mismo hay otro live a Facebook y TikTok a la vez. Espera a que termine o transmite a una sola red.'
+          : `No se pudo preparar la transmisión a las dos redes: ${e instanceof Error ? e.message : e}`);
+      }
+      await db.from('live_sessions').update({ status: 'terminado', ended_at: new Date().toISOString() })
+        .eq('user_id', uid).eq('relay', true).neq('status', 'terminado');
+    }
   }
 
   const { data: sesion, error } = await db.from('live_sessions').insert({
@@ -92,8 +113,8 @@ export async function iniciarLive(uid: string, businessId: string, p: PedidoLive
 
   return {
     sesionId: sesion.id as string,
-    // A las dos: una sola señal al relay. A una: directo a esa red.
-    ingesta: ambas ? `${relay}/live/${sesion.id}?key=${ingestKey}` : (facebook?.rtmp ?? tiktokRtmp!),
+    // A las dos: una sola señal a Upstream. A una: directo a esa red.
+    ingesta: ingestaAmbas ?? facebook?.rtmp ?? tiktokRtmp!,
     facebookUrl: facebook?.url ?? null,
   };
 }
@@ -101,7 +122,7 @@ export async function iniciarLive(uid: string, businessId: string, p: PedidoLive
 async function leerSesion(uid: string, sesionId: string) {
   const db = castreamDb();
   const { data: s } = await db.from('live_sessions')
-    .select('id, status, facebook_live_id, facebook_account_id, started_at').eq('id', sesionId).eq('user_id', uid).maybeSingle();
+    .select('id, status, relay, facebook_live_id, facebook_account_id, started_at').eq('id', sesionId).eq('user_id', uid).maybeSingle();
   if (!s) throw new ErrorLive('Transmisión no encontrada.');
   const { data: cuenta } = await db.from('connected_accounts').select('page_id').eq('id', s.facebook_account_id ?? '').maybeSingle();
   return { s, pageId: cuenta?.page_id as string | undefined };
@@ -115,6 +136,7 @@ export async function terminarLive(uid: string, sesionId: string) {
     await fb('POST', `/${s.facebook_live_id}`, { end_live_video: 'true', access_token: token })
       .catch(e => console.error('[live/end] Facebook', e)); // si ya terminó por su lado, igual se cierra aquí
   }
+  if (s.status !== 'terminado' && s.relay) await pararAmbas().catch(e => console.error('[live/end] Upstream', e));
   await db.from('live_sessions').update({ status: 'terminado', ended_at: new Date().toISOString() }).eq('id', s.id);
   await db.from('live_secrets').delete().eq('session_id', s.id);
 }
