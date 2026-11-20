@@ -5,9 +5,10 @@ import { GRAPH_VERSION, castreamDb } from './publisher';
 /**
  * En vivo de CASTREAM. Facebook Live se crea por API en la Página (live_videos) y devuelve
  * su URL RTMPS. TikTok no tiene API de Live: la persona pega el servidor y la clave de su
- * LIVE Producer. Con TikTok, el celular publica una sola señal en el relay (CASTREAM_RELAY_RTMP),
- * que la reparte a ambas redes y lee el chat de TikTok; solo con Facebook va directo.
- * Los comentarios de Facebook los trae tickLive() mientras la app transmite.
+ * LIVE Producer. A una sola red, el celular transmite directo; a las dos a la vez, manda una
+ * sola señal al relay (CASTREAM_RELAY_RTMP), que la reparte.
+ * Los comentarios de Facebook los trae tickLive() mientras la app transmite; los de TikTok los
+ * lee el celular directo de Euler Stream con un pase temporal (paseChatTikTok).
  */
 
 const FB = `https://graph.facebook.com/${GRAPH_VERSION}`;
@@ -27,7 +28,8 @@ async function fb<T>(metodo: 'GET' | 'POST', path: string, params: Record<string
 export const relayDisponible = () => !!process.env.CASTREAM_RELAY_RTMP;
 
 export interface PedidoLive {
-  cuentaFacebookId: string;
+  /** null: solo TikTok. */
+  cuentaFacebookId: string | null;
   titulo: string;
   tiktok?: { servidor: string; clave: string; usuario?: string } | null;
 }
@@ -44,51 +46,55 @@ function rtmpTikTok(servidor: string, clave: string): string {
 
 export async function iniciarLive(uid: string, businessId: string, p: PedidoLive) {
   const db = castreamDb();
-  const { data: cuenta } = await db.from('connected_accounts')
-    .select('id, page_id, eligible_for_live, ineligible_reason')
-    .eq('id', p.cuentaFacebookId).eq('user_id', uid).eq('provider', 'facebook').maybeSingle();
-  if (!cuenta) throw new ErrorLive('La Página ya no está conectada: revísala en Tus redes.');
-  if (cuenta.eligible_for_live === false) throw new ErrorLive(cuenta.ineligible_reason || 'Esta Página no puede transmitir en vivo.');
-
+  if (!p.cuentaFacebookId && !p.tiktok) throw new ErrorLive('Elige dónde transmitir.');
   const relay = process.env.CASTREAM_RELAY_RTMP?.replace(/\/+$/, '');
   const tiktokRtmp = p.tiktok ? rtmpTikTok(p.tiktok.servidor, p.tiktok.clave) : null;
-  if (tiktokRtmp && !relay) throw new ErrorLive('Para transmitir también a TikTok falta activar el servidor de transmisión de CASTREAM.');
-
-  const token = await tokenDePagina(uid, cuenta.page_id);
+  const ambas = !!p.cuentaFacebookId && !!tiktokRtmp;
+  if (ambas && !relay) throw new ErrorLive('Transmitir a Facebook y TikTok a la vez necesita el servidor de transmisión de CASTREAM. Por ahora elige una sola red.');
   const titulo = p.titulo.trim().slice(0, 254) || 'En vivo';
-  const live = await fb<{ id: string; secure_stream_url?: string; stream_url?: string }>('POST', `/${cuenta.page_id}/live_videos`, {
-    status: 'LIVE_NOW', title: titulo, description: titulo, access_token: token,
-  });
-  const facebookRtmp = live.secure_stream_url ?? live.stream_url;
-  if (!facebookRtmp) throw new ErrorLive('Facebook no entregó la dirección para transmitir.');
-  const info = await fb<{ permalink_url?: string }>('GET', `/${live.id}`, { fields: 'permalink_url', access_token: token })
-    .catch(() => ({ permalink_url: undefined }));
-  const facebookUrl = info.permalink_url ? `https://www.facebook.com${info.permalink_url}` : null;
+
+  let facebook: { cuentaId: string; liveId: string; rtmp: string; url: string | null } | null = null;
+  if (p.cuentaFacebookId) {
+    const { data: cuenta } = await db.from('connected_accounts')
+      .select('id, page_id, eligible_for_live, ineligible_reason')
+      .eq('id', p.cuentaFacebookId).eq('user_id', uid).eq('provider', 'facebook').maybeSingle();
+    if (!cuenta) throw new ErrorLive('La Página ya no está conectada: revísala en Tus redes.');
+    if (cuenta.eligible_for_live === false) throw new ErrorLive(cuenta.ineligible_reason || 'Esta Página no puede transmitir en vivo.');
+    const token = await tokenDePagina(uid, cuenta.page_id);
+    const live = await fb<{ id: string; secure_stream_url?: string; stream_url?: string }>('POST', `/${cuenta.page_id}/live_videos`, {
+      status: 'LIVE_NOW', title: titulo, description: titulo, access_token: token,
+    });
+    const rtmp = live.secure_stream_url ?? live.stream_url;
+    if (!rtmp) throw new ErrorLive('Facebook no entregó la dirección para transmitir.');
+    const info = await fb<{ permalink_url?: string }>('GET', `/${live.id}`, { fields: 'permalink_url', access_token: token })
+      .catch(() => ({ permalink_url: undefined }));
+    facebook = { cuentaId: cuenta.id, liveId: live.id, rtmp, url: info.permalink_url ? `https://www.facebook.com${info.permalink_url}` : null };
+  }
 
   const { data: sesion, error } = await db.from('live_sessions').insert({
     user_id: uid,
     business_id: businessId,
-    facebook_account_id: cuenta.id,
-    facebook_live_id: live.id,
-    facebook_url: facebookUrl,
+    facebook_account_id: facebook?.cuentaId ?? null,
+    facebook_live_id: facebook?.liveId ?? null,
+    facebook_url: facebook?.url ?? null,
     tiktok: !!tiktokRtmp,
     tiktok_usuario: p.tiktok?.usuario?.trim().replace(/^@/, '') || null,
     titulo,
-    relay: !!tiktokRtmp,
+    relay: ambas,
   }).select('id').single();
   if (error) throw error;
 
   const ingestKey = randomBytes(18).toString('base64url');
   const { error: e2 } = await db.from('live_secrets').insert({
-    session_id: sesion.id, ingest_key: ingestKey, facebook_rtmp: facebookRtmp, tiktok_rtmp: tiktokRtmp,
+    session_id: sesion.id, ingest_key: ingestKey, facebook_rtmp: facebook?.rtmp ?? null, tiktok_rtmp: tiktokRtmp,
   });
   if (e2) throw e2;
 
   return {
     sesionId: sesion.id as string,
-    // Con TikTok: una sola señal al relay; si no, directo a Facebook.
-    ingesta: tiktokRtmp ? `${relay}/live/${sesion.id}?key=${ingestKey}` : facebookRtmp,
-    facebookUrl,
+    // A las dos: una sola señal al relay. A una: directo a esa red.
+    ingesta: ambas ? `${relay}/live/${sesion.id}?key=${ingestKey}` : (facebook?.rtmp ?? tiktokRtmp!),
+    facebookUrl: facebook?.url ?? null,
   };
 }
 
@@ -126,6 +132,7 @@ export async function tickLive(uid: string, sesionId: string, conectado: boolean
   if (conectado && s.status === 'preparando') {
     await db.from('live_sessions').update({ status: 'en_vivo', started_at: new Date().toISOString() }).eq('id', s.id);
   }
+  // Solo TikTok: no hay nada que traer de Facebook.
   if (!s.facebook_live_id || !pageId) return { vistas: null, errorComentarios: null, terminado: false };
 
   const token = await tokenDePagina(uid, pageId);
@@ -159,4 +166,31 @@ export async function tickLive(uid: string, sesionId: string, conectado: boolean
     errorComentarios,
     terminado: false,
   };
+}
+
+/**
+ * URL del WebSocket de Euler Stream con un pase (JWT) válido 2 minutos, solo para el @usuario
+ * de esta transmisión y una conexión a la vez. El celular la usa para leer el chat de TikTok.
+ */
+export async function paseChatTikTok(uid: string, sesionId: string): Promise<string | null> {
+  const { data: s } = await castreamDb().from('live_sessions')
+    .select('tiktok_usuario, status').eq('id', sesionId).eq('user_id', uid).maybeSingle();
+  if (!s) throw new ErrorLive('Transmisión no encontrada.');
+  if (!s.tiktok_usuario || s.status === 'terminado') return null;
+  const clave = process.env.EULER_API_KEY;
+  const cuenta = process.env.EULER_ACCOUNT_ID;
+  if (!clave || !cuenta) throw new ErrorLive('Falta configurar el chat de TikTok en el servidor.');
+  const res = await fetch(`https://tiktok.eulerstream.com/accounts/${cuenta}/jwt/create`, {
+    method: 'POST',
+    headers: { 'x-api-key': clave, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      expireAfter: 120,
+      name: `castream-${sesionId.slice(0, 8)}`,
+      websockets: { allowedCreators: [s.tiktok_usuario], maxWebSockets: 1 },
+    }),
+    cache: 'no-store',
+  });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok || !d.token) throw new ErrorLive(d.message || 'No se pudo abrir el chat de TikTok.');
+  return `wss://ws.eulerstream.com?uniqueId=${encodeURIComponent(s.tiktok_usuario)}&jwtKey=${encodeURIComponent(d.token)}`;
 }
