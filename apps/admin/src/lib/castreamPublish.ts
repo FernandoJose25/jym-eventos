@@ -51,7 +51,7 @@ async function graphGet<T>(base: string, path: string, params: Record<string, st
   return data as T;
 }
 
-async function tokenDePagina(uid: string, fbPageId: string): Promise<string> {
+export async function tokenDePagina(uid: string, fbPageId: string): Promise<string> {
   const { data } = await castreamDb().from('secrets').select('facebook_page_tokens').eq('user_id', uid).maybeSingle();
   const cifrado = data?.facebook_page_tokens?.[fbPageId];
   if (!cifrado) throw new Error('La Página ya no está conectada: vuelve a conectarla en Facebook.');
@@ -224,6 +224,8 @@ async function leerPost(postId: string): Promise<Post> {
   return data as Post;
 }
 
+const clavesDe = (post: Pick<Post, 'media'>) => [...post.media.flatMap(m => [m.key, claveIG(m.key)]), ...clavesTikTok(post.media)];
+
 /** Si todos los destinos terminaron: estado final del post y limpieza del depósito. */
 async function cerrarSiTermino(post: Post) {
   const db = castreamDb();
@@ -232,7 +234,7 @@ async function cerrarSiTermino(post: Post) {
   if (!estados.length || estados.some(s => !TERMINALES.includes(s))) return;
   const errores = estados.filter(s => s === 'error').length;
   const status = errores === 0 ? 'terminado' : errores === estados.length ? 'error' : 'parcial';
-  if (!post.files_deleted) await borrar([...post.media.flatMap(m => [m.key, claveIG(m.key)]), ...clavesTikTok(post.media)]);
+  if (!post.files_deleted) await borrar(clavesDe(post));
   await db.from('posts').update({ status, files_deleted: true }).eq('id', post.id);
 }
 
@@ -257,6 +259,36 @@ export async function publicarPost(postId: string): Promise<void> {
     }
   }));
   await cerrarSiTermino(await leerPost(postId));
+}
+
+/**
+ * Publica las programadas cuya hora ya llegó (lo llama el cron cada minuto). Cada una se
+ * "toma" pasando de programado a publicando, así dos ejecuciones no la publican dos veces.
+ */
+export async function publicarProgramados(): Promise<number> {
+  const db = castreamDb();
+  const { data } = await db.from('posts').select('id').eq('status', 'programado')
+    .lte('scheduled_at', new Date().toISOString()).order('scheduled_at').limit(5);
+  let n = 0;
+  for (const { id } of data ?? []) {
+    const { data: tomada } = await db.from('posts').update({ status: 'publicando' })
+      .eq('id', id).eq('status', 'programado').select('id').maybeSingle();
+    if (!tomada) continue;
+    await publicarPost(id).catch(e => console.error('[programados]', id, e));
+    n++;
+  }
+  return n;
+}
+
+/** Cancela una publicación programada: borra sus archivos del depósito y la publicación. */
+export async function cancelarProgramado(uid: string, postId: string): Promise<boolean> {
+  const db = castreamDb();
+  const { data: post } = await db.from('posts').select('id, media')
+    .eq('id', postId).eq('user_id', uid).eq('status', 'programado').maybeSingle();
+  if (!post) return false;
+  await borrar(clavesDe(post as Pick<Post, 'media'>));
+  await db.from('posts').delete().eq('id', post.id);
+  return true;
 }
 
 /** Revisa lo que sigue procesando en las redes (de un usuario o de todos, para el cron). */

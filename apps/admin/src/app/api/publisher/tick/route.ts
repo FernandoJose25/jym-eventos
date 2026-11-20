@@ -1,6 +1,6 @@
 import { timingSafeEqual } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { avanzarPendientes } from '@/lib/castreamPublish';
+import { avanzarPendientes, publicarProgramados } from '@/lib/castreamPublish';
 import { verifyAppUser } from '@/lib/publisher';
 
 export const maxDuration = 60;
@@ -14,13 +14,17 @@ const esCron = (req: NextRequest) => {
 
 /**
  * Revisa los destinos que las redes siguen procesando (videos, contenedores de Instagram).
- * Lo llama un cron de Supabase cada minuto (header x-cron-secret: todos los usuarios) y la
- * app mientras alguien mira el estado (solo sus publicaciones).
+ * Lo llama un cron de Supabase cada minuto (header x-cron-secret: todos los usuarios, y además
+ * publica las programadas cuya hora llegó) y la app mientras alguien mira el estado (solo sus
+ * publicaciones).
  *
- * POST → { revisados }
+ * POST → { revisados, programados? }
  */
 export async function POST(req: NextRequest) {
-  if (esCron(req)) return NextResponse.json({ revisados: await avanzarPendientes() });
+  if (esCron(req)) {
+    const programados = await publicarProgramados();
+    return NextResponse.json({ revisados: await avanzarPendientes(), programados });
+  }
 
   const auth = await verifyAppUser(req);
   if (auth.response) return auth.response;

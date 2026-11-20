@@ -9,7 +9,7 @@ import { castreamDb, verifyAppUser } from '@/lib/publisher';
  * (sin pasar por Vercel) y luego llama a /api/publisher/posts/publish.
  *
  * POST { caption, media: [{ type, mime, size, width?, height? }], destinos: [connected_account_id],
- *        opciones?: { [connected_account_id]: OpcionesTikTok } }
+ *        opciones?: { [connected_account_id]: OpcionesTikTok }, programadoPara?: ISO }
  *   → { postId, uploads: [{ key, url }] }
  */
 
@@ -17,6 +17,8 @@ const EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', '
 const MAX_FOTOS = 10;
 const MAX_VIDEO_BYTES = 1024 * 1024 * 1024;
 const MAX_TEXTO = 2200; // límite de Instagram
+const MIN_ANTICIPO_MS = 2 * 60 * 1000;
+const MAX_ANTICIPO_MS = 7 * 24 * 60 * 60 * 1000; // los archivos esperan en el depósito temporal
 
 interface MediaIn { type?: unknown; mime?: unknown; size?: unknown; width?: unknown; height?: unknown }
 
@@ -41,6 +43,7 @@ export async function POST(req: NextRequest) {
   const media: MediaIn[] = Array.isArray(body.media) ? body.media : [];
   const destinos: string[] = Array.isArray(body.destinos) ? body.destinos.filter((d: unknown) => typeof d === 'string') : [];
   const opcionesIn: Record<string, unknown> = body.opciones && typeof body.opciones === 'object' ? body.opciones : {};
+  const programado = typeof body.programadoPara === 'string' ? new Date(body.programadoPara) : null;
 
   const malo = (error: string) => NextResponse.json({ error }, { status: 400 });
   if (caption.length > MAX_TEXTO) return malo(`El texto pasa de ${MAX_TEXTO} caracteres (límite de Instagram).`);
@@ -49,6 +52,11 @@ export async function POST(req: NextRequest) {
   const videos = media.filter(m => m.type === 'video').length;
   if (videos && media.length > 1) return malo('Un video se publica solo: no lo mezcles con otras fotos o videos.');
   if (media.length > MAX_FOTOS) return malo(`Máximo ${MAX_FOTOS} fotos por publicación.`);
+  if (programado) {
+    const falta = programado.getTime() - Date.now();
+    if (Number.isNaN(falta) || falta < MIN_ANTICIPO_MS) return malo('Elige una hora que sea al menos 2 minutos más tarde.');
+    if (falta > MAX_ANTICIPO_MS) return malo('Por ahora puedes programar hasta 7 días antes.');
+  }
   for (const m of media) {
     if (typeof m.mime !== 'string' || !EXT[m.mime]) return malo('Formato no soportado: usa fotos JPG/PNG o videos MP4/MOV.');
     if (typeof m.size !== 'number' || m.size <= 0) return malo('No se pudo leer el tamaño de un archivo.');
@@ -66,7 +74,9 @@ export async function POST(req: NextRequest) {
     opciones[c.id] = o;
   }
 
-  const { data: post, error } = await db.from('posts').insert({ user_id: auth.uid, business_id: auth.businessId, caption }).select('id').single();
+  const { data: post, error } = await db.from('posts').insert({
+    user_id: auth.uid, business_id: auth.businessId, caption, scheduled_at: programado?.toISOString() ?? null,
+  }).select('id').single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const archivos = media.map((m, i) => ({
